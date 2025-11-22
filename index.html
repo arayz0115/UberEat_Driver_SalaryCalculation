@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Driver 淨利計算 V8.1</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 Chart.js (用於圓餅圖) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <!-- 載入 Chart.js Datalabels Plugin (用於圓餅圖內顯示數值) -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, serverTimestamp, setDoc, doc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- 核心常數 (預設值) ---
+        const DEFAULT_FUEL_EFFICIENCY_KML = 42;  
+        const DEFAULT_MAINT_COST_PER_KM = 0.60;  
+
+        // --- 狀態變數 ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db = null;
+        let auth = null;
+        let userId = null;
+        let isAuthReady = false;
+        
+        // App 核心狀態
+        let currentOilPrice = 30.0;
+        let chartInstance = null; // 圓餅圖實例
+        let userConfig = {
+            fuelEfficiency: DEFAULT_FUEL_EFFICIENCY_KML,
+            maintCostPerKm: DEFAULT_MAINT_COST_PER_KM
+        };
+        let currentViewDate = new Date(); // 報表瀏覽基準日
+        let currentReportPeriod = 'day'; 
+
+        setLogLevel('debug');
+
+        // --- Firebase 初始化與認證 ---
+        const configDocPath = (uid) => `artifacts/${appId}/users/${uid}/config/costs`;
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true;
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                    document.getElementById('user-info').textContent = `ID: ${userId}`;
+                    window.db = db;
+                    window.userId = userId;
+                    
+                    await loadConfig(); 
+                    await fetchOilPrice(true); // 首次載入時自動獲取油價
+                    window.initApp(); 
+                    
+                } else if (!isAuthReady) {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+            });
+        } catch (error) {
+            console.error("Firebase 初始化失敗:", error);
+            document.getElementById('loading-text').textContent = "雲端初始化失敗，請檢查設定。";
+        }
+
+        // --- 設定檔讀寫 ---
+        async function loadConfig() {
+            if (!db || !userId) return;
+
+            onSnapshot(doc(db, configDocPath(userId)), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    userConfig.fuelEfficiency = data.fuelEfficiency || DEFAULT_FUEL_EFFICIENCY_KML;
+                    userConfig.maintCostPerKm = data.maintCostPerKm || DEFAULT_MAINT_COST_PER_KM;
+                }
+                updateConfigUI(); 
+                liveCalculate(); 
+            }, (error) => {
+                console.error("載入配置失敗:", error);
+                updateConfigUI(); 
+            });
+        }
+
+        window.saveConfig = async function() {
+            if (!db || !userId) {
+                showMessage("雲端尚未連線。", 'error');
+                return;
+            }
+            
+            const fuel = parseFloat(document.getElementById('fuelEfficiencyInput').value);
+            const maint = parseFloat(document.getElementById('maintCostInput').value);
+
+            if (isNaN(fuel) || isNaN(maint) || fuel <= 0 || maint < 0) {
+                 showMessage("請輸入有效的參數值。", 'error');
+                 updateConfigUI(); 
+                 return;
+            }
+
+            userConfig.fuelEfficiency = fuel;
+            userConfig.maintCostPerKm = maint;
+
+            try {
+                await setDoc(doc(db, configDocPath(userId)), userConfig, { merge: true });
+                showMessage("設定已儲存到雲端！", 'success');
+                liveCalculate(); 
+            } catch (e) {
+                console.error("儲存配置失敗:", e);
+                showMessage("儲存設定到雲端失敗", 'error');
+            }
+        }
+
+        function updateConfigUI() {
+            document.getElementById('fuelEfficiencyInput').value = userConfig.fuelEfficiency;
+            document.getElementById('maintCostInput').value = userConfig.maintCostPerKm;
+            document.getElementById('fuelEfficiencyDisplay').textContent = `${userConfig.fuelEfficiency} km/L`;
+            document.getElementById('maintCostDisplay').textContent = `$${userConfig.maintCostPerKm.toFixed(2)}/km`;
+        }
+
+        /**
+         * 輔助函數：將小數時數轉換為 H 小時 M 分鐘格式
+         * @param {number} decimalHours - 總小時數 (含小數, e.g., 8.5)
+         * @returns {string} - H 小時 M 分鐘 (e.g., "8 小時 30 分")
+         */
+        function formatHours(decimalHours) {
+            if (isNaN(decimalHours) || decimalHours === 0) return '0 小時 0 分';
+            const hours = Math.floor(decimalHours);
+            const minutes = Math.round((decimalHours - hours) * 60);
+            return `${hours} 小時 ${minutes} 分`;
+        }
+        
+        // --- 即時計算功能 ---
+        window.liveCalculate = function() {
+            // 讀取輸入值
+            const income = parseFloat(document.getElementById('income').value) || 0;
+            const km = parseFloat(document.getElementById('mileage').value) || 0; 
+            const hours = parseFloat(document.getElementById('hours').value) || 0;
+            const minutes = parseFloat(document.getElementById('minutes').value) || 0;
+            const totalHours = hours + (minutes / 60);
+
+            const fuelEff = userConfig.fuelEfficiency || DEFAULT_FUEL_EFFICIENCY_KML;
+            const maintCostPerKm = userConfig.maintCostPerKm || DEFAULT_MAINT_COST_PER_KM;
+
+            // 成本計算
+            const gasCost = (km / fuelEff) * currentOilPrice;
+            const maintCost = km * maintCostPerKm;
+            const totalCost = gasCost + maintCost;
+            const netProfit = income - totalCost;
+
+            // 時薪計算
+            let grossHourlyRate = 0;
+            let netHourlyRate = 0;
+            if (totalHours > 0) {
+                grossHourlyRate = income / totalHours;
+                netHourlyRate = netProfit / totalHours;
+            }
+
+            // 更新 UI 數值
+            document.getElementById('liveGrossIncome').textContent = `$${income.toFixed(1)}`; 
+            document.getElementById('liveGasCost').textContent = `$${gasCost.toFixed(1)}`;
+            document.getElementById('liveMaintCost').textContent = `$${maintCost.toFixed(1)}`;
+            document.getElementById('liveNetProfit').textContent = `$${netProfit.toFixed(1)}`;
+            document.getElementById('liveTotalCost').textContent = `$${totalCost.toFixed(1)}`;
+
+            // 時薪顯示
+            document.getElementById('liveGrossHourly').textContent = `$${grossHourlyRate.toFixed(1)}/hr`;
+            document.getElementById('liveNetHourly').textContent = `$${netHourlyRate.toFixed(1)}/hr`;
+
+            // 調整淨利顏色
+            document.getElementById('liveNetProfit').classList.toggle('net-profit', netProfit >= 0);
+            document.getElementById('liveNetProfit').classList.toggle('cost-val', netProfit < 0);
+            document.getElementById('liveNetHourly').classList.toggle('net-profit', netHourlyRate >= 0);
+            document.getElementById('liveNetHourly').classList.toggle('cost-val', netHourlyRate < 0);
+        }
+
+        // --- 動態油價獲取 (使用 Google Search) ---
+        window.fetchOilPrice = async function(isInitial = false) {
+            const button = document.getElementById('fetchOilPriceButton');
+            const display = document.getElementById('oilPriceDisplay');
+            
+            button.disabled = true;
+            display.textContent = '獲取中...';
+
+            // 調整查詢以確保返回純數字
+            const userQuery = "台灣中油 92 無鉛汽油 今日每公升價格，只需要給我數字，不要任何文字、符號或單位。";
+            const apiKey = "" // Leave as-is
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+            };
+            
+            try {
+                let response = null;
+                let result = null;
+                let retries = 0;
+                const maxRetries = 3;
+
+                while (retries < maxRetries) {
+                    const delay = Math.pow(2, retries) * 1000;
+                    if (retries > 0) await new Promise(resolve => setTimeout(resolve, delay));
+
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        result = await response.json();
+                        break;
+                    }
+                    retries++;
+                }
+                
+                if (!response.ok || !result) throw new Error("API 呼叫失敗或結果為空，已達最大重試次數。");
+
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                
+                // 強化解析：提取文本中所有數字和小數點，組成一個數字
+                const priceMatch = text.match(/[\d.]+/g);
+                const price = priceMatch ? parseFloat(priceMatch.join('')) : NaN;
+                
+                if (!isNaN(price) && price > 0) {
+                    currentOilPrice = price;
+                    display.textContent = `$${price.toFixed(2)}/L`;
+                    if (!isInitial) showMessage("油價更新成功！", 'success');
+                } else {
+                    throw new Error("未能從結果中解析出有效價格: " + text);
+                }
+
+            } catch (error) {
+                console.error("獲取油價發生錯誤:", error);
+                display.textContent = `$${currentOilPrice.toFixed(2)}/L (更新失敗，使用此值)`;
+                if (!isInitial) showMessage("油價更新失敗，請查看 Console 錯誤訊息", 'error');
+            } finally {
+                button.disabled = false;
+                liveCalculate(); 
+            }
+        }
+
+        // --- 儲存紀錄 ---
+        window.addRecord = async function() {
+            // 讀取輸入值
+            const date = document.getElementById('entryDate').value;
+            const income = parseFloat(document.getElementById('income').value) || 0;
+            const km = parseFloat(document.getElementById('mileage').value) || 0;
+            const hours = parseFloat(document.getElementById('hours').value) || 0;
+            const minutes = parseFloat(document.getElementById('minutes').value) || 0;
+            const totalHours = hours + (minutes / 60);
+
+            // V8.1 強化驗證：提供更明確的錯誤訊息
+            if (!isAuthReady) {
+                showMessage("⛔ 雲端服務尚未連線完成，請等待 ID 顯示後再試。", 'error');
+                return;
+            }
+            if (!date) {
+                showMessage("⛔ 錯誤：請選擇日期。", 'error');
+                return;
+            }
+            if (km === 0) {
+                showMessage("⛔ 錯誤：騎乘公里數必須大於零。", 'error');
+                return;
+            }
+            if (totalHours === 0) {
+                showMessage("⛔ 錯誤：總工作時數必須大於零。", 'error');
+                return;
+            }
+
+
+            const fuelEff = userConfig.fuelEfficiency;
+            const maintCostPerKm = userConfig.maintCostPerKm;
+            const gasCost = (km / fuelEff) * currentOilPrice;
+            const maintCost = km * maintCostPerKm;
+            const netProfit = income - gasCost - maintCost;
+
+            const record = {
+                date: date,
+                income: income,
+                gasCost: parseFloat(gasCost.toFixed(2)),
+                km: parseFloat(km.toFixed(1)), // 儲存公里數，保留一位小數
+                maintCost: parseFloat(maintCost.toFixed(2)),
+                net: parseFloat(netProfit.toFixed(2)),
+                totalHours: parseFloat(totalHours.toFixed(2)), // 儲存總時數
+                oilPriceUsed: currentOilPrice,
+                configSnapshot: { fuelEff, maintCostPerKm }, 
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                const collectionPath = `artifacts/${appId}/users/${userId}/uber_records`;
+                await addDoc(collection(db, collectionPath), record);
+                
+                // 清空輸入，保留日期
+                document.getElementById('income').value = '';
+                document.getElementById('mileage').value = '';
+                document.getElementById('hours').value = '';
+                document.getElementById('minutes').value = '';
+                liveCalculate(); 
+                
+                const netHourlyRate = netProfit / totalHours;
+                showMessage(`✅ 新增成功！淨利: $${netProfit.toFixed(1)}，時薪: $${netHourlyRate.toFixed(1)}`, 'success');
+
+            } catch (e) {
+                console.error("新增紀錄失敗: ", e);
+                showMessage("❌ 儲存到雲端失敗，請查看 console 錯誤訊息", 'error');
+            }
+        }
+
+        // --- Firestore 資料監聽 ---
+        window.initApp = function() {
+            if (!db || !userId) return;
+
+            const collectionPath = `artifacts/${appId}/users/${userId}/uber_records`;
+            const q = query(collection(db, collectionPath));
+            
+            onSnapshot(q, (querySnapshot) => {
+                const records = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    records.push({ id: doc.id, ...data });
+                });
+                records.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                window.allRecords = records;
+                renderReport(currentReportPeriod, currentViewDate); 
+            }, (error) => {
+                console.error("即時監聽資料失敗:", error);
+                showMessage("連線資料庫失敗，請重整頁面", 'error');
+            });
+
+            document.getElementById('entryDate').valueAsDate = new Date();
+        }
+        
+        // --- 報表導航與渲染 ---
+        
+        function getPeriodBoundary(period, date) {
+            const start = new Date(date);
+            start.setHours(0, 0, 0, 0);
+            
+            let endDate = new Date(start);
+
+            if (period === 'day') {
+                // 開始和結束都是當天
+            } else if (period === 'week') {
+                const day = start.getDay(); 
+                const diff = day === 0 ? -6 : 1 - day; 
+                start.setDate(start.getDate() + diff); 
+                
+                endDate = new Date(start);
+                endDate.setDate(endDate.getDate() + 6); 
+            } else if (period === 'month') {
+                start.setDate(1);
+                
+                endDate = new Date(start.getFullYear(), start.getMonth() + 1, 0); 
+            } else if (period === 'year') {
+                start.setMonth(0, 1);
+                
+                endDate = new Date(start.getFullYear(), 11, 31);
+            }
+
+            endDate.setHours(23, 59, 59, 999);
+            return { start, end: endDate };
+        }
+        
+        // 導航函數 (點擊箭頭)
+        window.navigateReport = function(direction) {
+            const date = currentViewDate;
+            const period = currentReportPeriod;
+
+            let newDate = new Date(date);
+
+            if (period === 'day') {
+                newDate.setDate(date.getDate() + direction);
+            } else if (period === 'week') {
+                newDate.setDate(date.getDate() + (direction * 7));
+            } else if (period === 'month') {
+                newDate.setMonth(date.getMonth() + direction);
+            } else if (period === 'year') {
+                newDate.setFullYear(date.getFullYear() + direction);
+            }
+            
+            currentViewDate = newDate;
+            renderReport(period, newDate);
+        }
+
+        // 頁籤切換邏輯
+        window.switchTab = function(period) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active', 'text-black'));
+            document.getElementById(`tab-${period}`).classList.add('active', 'text-black');
+            currentReportPeriod = period;
+            currentViewDate = new Date(); // 切換時，預設回到今天/本週/本月
+            renderReport(period, currentViewDate);
+        }
+        
+        // 圓餅圖繪製
+        function drawPieChart(totalNet, totalGasCost, totalMaintCost) {
+            const ctx = document.getElementById('netProfitChart');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // 處理負淨利：圓餅圖無法顯示負值，若為負，將淨利視為 0
+            const displayNet = Math.max(0, totalNet); 
+            
+            const totalSum = displayNet + totalGasCost + totalMaintCost;
+            
+            if (totalSum === 0) {
+                 ctx.style.display = 'none';
+                 return;
+            } else {
+                 ctx.style.display = 'block';
+            }
+            
+            const chartData = {
+                labels: ['實領淨利', '油費成本', '耗材成本'],
+                datasets: [{
+                    data: [displayNet, totalGasCost, totalMaintCost],
+                    backgroundColor: ['#10B981', '#3B82F6', '#EF4444'],
+                    hoverOffset: 8
+                }]
+            };
+
+            chartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'pie',
+                data: chartData,
+                plugins: [ChartDataLabels], // 註冊 Datalabels 外掛
+                options: {
+                    responsive: true,
+                    layout: {
+                        padding: 35 // 增加圖表邊距以容納外部引線標籤
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 12 } } },
+                        title: {
+                            display: true,
+                            text: '總收入分配 (金額與 %)',
+                            font: { size: 14, weight: 'bold' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = (value / total * 100).toFixed(1) + '%';
+                                    return `${label}: $${Math.round(value).toLocaleString()} (${percentage})`;
+                                }
+                            }
+                        },
+                        // *** Datalabels Configuration - 修正重疊問題，僅顯示百分比 ***
+                        datalabels: {
+                            color: '#4B5563', // 使用深灰色文字
+                            formatter: (value, context) => {
+                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = (value / total * 100).toFixed(1);
+                                
+                                // 修正重疊問題：僅顯示百分比，完整的金額與百分比在 Tooltip 中顯示
+                                return percentage + '%'; 
+                            },
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            // 啟用 Lines 模式
+                            anchor: 'end', 
+                            align: 'start', // 文本從引線末端開始
+                            offset: 10, // 標籤與引線的距離
+                            // 使用 Clamp 屬性，確保標籤不會超出圖表邊界
+                            clamp: true,
+                            // 設定引線樣式
+                            listeners: {
+                                afterDraw: (context) => {
+                                    const { chart } = context;
+                                    const ctx = chart.ctx;
+                                    
+                                    // 繪製引線 (Line)
+                                    context.line.lineWidth = 1;
+                                    context.line.strokeStyle = '#9CA3AF'; // 灰色引線
+                                    context.line.setContext(ctx);
+                                    context.line.draw();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 核心渲染函數
+        function renderReport(period, date) {
+            const records = window.allRecords || [];
+            const { start, end } = getPeriodBoundary(period, date);
+            
+            let totalIncome = 0;
+            let totalGasCost = 0;
+            let totalMaintCost = 0;
+            let totalNet = 0;
+            let totalKm = 0;
+            let totalHours = 0; // 總工作時數
+            let filteredRecords = [];
+
+            records.forEach(r => {
+                const recordDate = new Date(r.date);
+                if (recordDate >= start && recordDate <= end) {
+                    totalIncome += r.income;
+                    totalGasCost += r.gasCost || 0;
+                    totalMaintCost += r.maintCost || 0;
+                    totalNet += r.net;
+                    totalKm += r.km;
+                    totalHours += r.totalHours || 0; // 累加總時數
+                    filteredRecords.push(r);
+                }
+            });
+            
+            const totalCost = totalGasCost + totalMaintCost;
+            
+            // 計算平均時薪
+            let avgGrossHourlyRate = 0; // <-- 毛利時薪
+            let avgNetHourlyRate = 0;
+            if (totalHours > 0) {
+                avgGrossHourlyRate = totalIncome / totalHours; // 營業額 / 總工時
+                avgNetHourlyRate = totalNet / totalHours;
+            }
+            
+            // 轉換總時數格式
+            const formattedTotalTime = formatHours(totalHours);
+            
+            // 更新導航標題
+            let dateStr;
+            if (period === 'day') {
+                dateStr = start.toLocaleDateString('zh-TW', { year: 'numeric', month: 'numeric', day: 'numeric' });
+            } else if (period === 'week') {
+                const endStr = end.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' });
+                dateStr = `${start.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })} - ${endStr}`;
+            } else if (period === 'month') {
+                dateStr = start.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long' });
+            } else if (period === 'year') {
+                dateStr = start.toLocaleDateString('zh-TW', { year: 'numeric' });
+            }
+            document.getElementById('report-title-text').textContent = dateStr; 
+
+            // 渲染報表 HTML (使用 7 個項目，總里程佔用兩欄)
+            const html = `
+                <!-- 圓餅圖繪製 Canvas -->
+                <div class="mb-6 p-4 border rounded-xl shadow-inner">
+                    <canvas id="netProfitChart" class="max-h-64"></canvas>
+                </div>
+
+                <!-- 總結數據 (4x2 Grid + 1 Spanning Item) -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <!-- 1. 總收入 -->
+                    <div class="p-3 bg-gray-100 rounded-lg shadow-sm">
+                        <p class="text-xs font-medium text-gray-500">總收入 (期間)</p>
+                        <p class="text-xl font-bold mt-1 text-black">$${Math.round(totalIncome).toLocaleString()}</p>
+                    </div>
+
+                    <!-- 2. 實領淨利 -->
+                    <div class="p-3 ${totalNet >= 0 ? 'bg-green-50' : 'bg-red-50'} rounded-lg shadow-sm">
+                        <p class="text-xs font-medium text-gray-500">實領淨利</p>
+                        <p class="text-xl font-bold mt-1 ${totalNet >= 0 ? 'net-profit' : 'cost-val'}">$${Math.round(totalNet).toLocaleString()}</p>
+                    </div>
+                    
+                    <!-- 3. 總花費時間 -->
+                    <div class="p-3 bg-yellow-50 rounded-lg shadow-sm">
+                        <p class="text-xs font-medium text-gray-500">總花費時間</p>
+                        <p class="text-xl font-bold mt-1 text-yellow-700">${formattedTotalTime}</p>
+                    </div>
+
+                    <!-- 4. 總消耗成本 -->
+                    <div class="p-3 bg-red-50 rounded-lg shadow-sm">
+                        <p class="text-xs font-medium text-gray-500">總消耗成本</p>
+                        <p class="text-xl font-bold mt-1 cost-val">$${Math.round(totalCost).toLocaleString()}</p>
+                    </div>
+                    
+                    <!-- 5. 平均時薪 (毛利) -->
+                    <div class="p-3 bg-indigo-50 rounded-lg shadow-sm">
+                        <p class="text-xs font-medium text-gray-500">平均時薪 (毛利)</p>
+                        <p class="text-xl font-bold mt-1 text-indigo-700">$${Math.round(avgGrossHourlyRate).toLocaleString()}/hr</p>
+                    </div>
+
+                    <!-- 6. 平均時薪 (淨利) -->
+                    <div class="p-3 ${avgNetHourlyRate >= 0 ? 'bg-green-50' : 'bg-red-50'} rounded-lg shadow-sm">
+                        <p class="text-xs font-medium text-gray-500">平均時薪 (淨利)</p>
+                        <p class="text-xl font-bold mt-1 ${avgNetHourlyRate >= 0 ? 'net-profit' : 'cost-val'}">$${Math.round(avgNetHourlyRate).toLocaleString()}/hr</p>
+                    </div>
+                    
+                    <!-- 7. 總里程 (佔用兩欄，確保排版整齊) -->
+                    <div class="col-span-2 p-3 bg-gray-100 rounded-lg shadow-sm">
+                        <p class="text-xs font-medium text-gray-500">總里程 (km)</p>
+                        <p class="text-xl font-bold mt-1 text-gray-800">${totalKm.toFixed(1).toLocaleString()}</p>
+                    </div>
+                    
+                </div>
+                
+                <!-- 明細列表 -->
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <p class="text-sm font-semibold mb-2">期間紀錄明細:</p>
+                    <div id="history-list" class="max-h-48 overflow-y-auto space-y-2">
+                        ${filteredRecords.length > 0 ? filteredRecords.map(r => `
+                            <div class="text-xs p-2 border rounded-md bg-gray-50 flex justify-between items-center">
+                                <div class="w-1/3">
+                                    <span class="font-bold">${r.date}</span>
+                                    <span class="text-gray-500 ml-1">(${formatHours(r.totalHours)})</span>
+                                </div>
+                                <div class="text-right w-2/3">
+                                    <span class="font-medium text-gray-500">成本: $${(r.gasCost + r.maintCost).toFixed(0)}</span>
+                                    <span class="font-bold ${r.net >= 0 ? 'net-profit' : 'cost-val'} ml-2">淨利: $${r.net.toFixed(0)}</span>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-center text-gray-500 py-4">此期間尚無紀錄。</p>'}
+                    </div>
+                </div>
+            `;
+            document.getElementById('report-area').innerHTML = html;
+            
+            // 繪製圓餅圖 (必須在 canvas 元素被添加到 DOM 後執行)
+            drawPieChart(totalNet, totalGasCost, totalMaintCost);
+        }
+
+        // --- 日期選擇 Modal 邏輯 ---
+        
+        window.openDateSelector = function() {
+            document.getElementById('date-selector-modal').classList.remove('hidden');
+            const period = currentReportPeriod;
+            // 根據當前報表類型，顯示或隱藏特定的輸入框
+            document.querySelectorAll('.date-modal-input').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`modal-${period}-group`).classList.remove('hidden');
+
+            // 初始化輸入框的值為當前日期
+            const dateStr = currentViewDate.toISOString().substring(0, 10);
+            if (period === 'day' || period === 'week') {
+                document.getElementById(`modal-${period}-input`).value = dateStr;
+            } else if (period === 'month') {
+                document.getElementById('modal-month-input').value = dateStr.substring(0, 7);
+            } else if (period === 'year') {
+                document.getElementById('modal-year-input').value = currentViewDate.getFullYear();
+            }
+        }
+
+        window.closeDateSelector = function() {
+            document.getElementById('date-selector-modal').classList.add('hidden');
+        }
+
+        window.jumpToDate = function() {
+            const period = currentReportPeriod;
+            let newDate = new Date(); // 預設為今天
+
+            try {
+                if (period === 'day' || period === 'week') {
+                    const dateInput = document.getElementById(`modal-${period}-input`).value;
+                    if (dateInput) newDate = new Date(dateInput);
+                } else if (period === 'month') {
+                    const monthYear = document.getElementById('modal-month-input').value; // YYYY-MM
+                    const parts = monthYear.split('-');
+                    if (parts.length === 2) {
+                        newDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                    } else {
+                         throw new Error("月份格式錯誤");
+                    }
+                } else if (period === 'year') {
+                    const year = document.getElementById('modal-year-input').value;
+                    const yearNum = parseInt(year);
+                    if (!isNaN(yearNum)) {
+                         newDate = new Date(yearNum, 0, 1);
+                    } else {
+                         throw new Error("年份格式錯誤");
+                    }
+                }
+            } catch (e) {
+                showMessage("日期輸入格式不正確！", 'error');
+                return;
+            }
+            
+            currentViewDate = newDate;
+            renderReport(period, newDate);
+            closeDateSelector();
+        }
+        
+        // --- 通用 UI 函數 ---
+        
+        function showMessage(msg, type = 'success') {
+            const msgBox = document.getElementById('message-box');
+            msgBox.textContent = msg;
+            msgBox.className = `fixed bottom-5 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg text-white text-sm z-50 transition-opacity duration-300 ${type === 'error' ? 'bg-red-600' : 'bg-green-600'}`;
+            msgBox.classList.remove('opacity-0');
+            setTimeout(() => {
+                msgBox.classList.add('opacity-0');
+            }, 4000); // 延長顯示時間為 4 秒
+        }
+        
+        // 初始載入
+        window.onload = function() {
+            liveCalculate(); 
+            switchTab('day'); 
+        };
+        
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab.active { border-bottom: 3px solid #000; color: #000; }
+        .net-profit { color: #10B981; }
+        .cost-val { color: #EF4444; }
+        /* 隱藏原生日期輸入框的箭頭 (僅對 Chrome/Safari 有效) */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] { -moz-appearance: textfield; }
+        .date-input-group { position: relative; }
+        .date-input-group input { padding-right: 3rem; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-4">
+
+    <!-- 訊息提示框 (取代 alert) -->
+    <div id="message-box" class="opacity-0"></div>
+
+    <!-- 頂部資訊和載入畫面 -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-50 flex flex-col justify-center items-center z-50">
+        <svg class="animate-spin h-8 w-8 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p id="loading-text" class="mt-4 text-sm text-gray-600">連線雲端資料庫與油價中...</p>
+    </div>
+
+    <!-- 日期選擇 Modal -->
+    <div id="date-selector-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-xs mx-4">
+            <h3 class="text-xl font-bold mb-4">🗓️ 跳轉至指定日期</h3>
+
+            <!-- 單日/單週 選擇 -->
+            <div id="modal-day-group" class="date-modal-input hidden mb-4">
+                <label class="text-sm font-medium text-gray-700">選擇日期</label>
+                <input type="date" id="modal-day-input" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+            </div>
+            
+            <div id="modal-week-group" class="date-modal-input hidden mb-4">
+                <label class="text-sm font-medium text-gray-700">選擇日期 (將顯示該週報表)</label>
+                <input type="date" id="modal-week-input" class="w-full mt-1 p-2 border border-gray-300 rounded-lg">
+            </div>
+
+            <!-- 月份選擇 -->
+            <div id="modal-month-group" class="date-modal-input hidden mb-4">
+                <label class="text-sm font-medium text-gray-700">選擇月份</label>
+                <!-- 注意：部分瀏覽器可能不支援 type="month"，這裡使用 text 搭配 pattern -->
+                <input type="month" id="modal-month-input" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" placeholder="YYYY-MM" pattern="\d{4}-\d{2}">
+            </div>
+
+            <!-- 年份選擇 -->
+            <div id="modal-year-group" class="date-modal-input hidden mb-4">
+                <label class="text-sm font-medium text-gray-700">輸入年份</label>
+                <input type="number" id="modal-year-input" class="w-full mt-1 p-2 border border-gray-300 rounded-lg" placeholder="e.g., 2025">
+            </div>
+
+            <div class="flex justify-end space-x-3 mt-5">
+                <button onclick="closeDateSelector()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition duration-200">
+                    取消
+                </button>
+                <button onclick="jumpToDate()" class="px-4 py-2 bg-black text-white font-semibold rounded-lg hover:bg-gray-800 transition duration-200">
+                    確認跳轉
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主體內容 -->
+    <main id="main-content" class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold text-center mb-1">Uber Driver 淨利計算機 V8.1</h1>
+        <p id="user-info" class="text-xs text-gray-500 text-center mb-6">ID: (連線中...)</p>
+
+        <!-- 1. 成本參數設定區 (可收合) -->
+        <details class="bg-white p-5 rounded-xl shadow-md mb-6 transition duration-200">
+            <summary class="text-lg font-semibold border-b pb-2 cursor-pointer">⚙️ 成本參數設定 (雲端儲存)</summary>
+            
+            <div class="mt-4 space-y-3">
+                <!-- 油耗效率設定 -->
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <label for="fuelEfficiencyInput" class="text-sm font-medium text-gray-700">油耗效率 (km/L)</label>
+                    <input type="number" id="fuelEfficiencyInput" onchange="saveConfig()" 
+                           placeholder="42" class="w-20 p-2 text-right border border-gray-300 rounded-lg focus:ring-black focus:border-black text-sm">
+                </div>
+
+                <!-- 每公里耗材支出設定 -->
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <label for="maintCostInput" class="text-sm font-medium text-gray-700">每公里支出耗材 ($/km)</label>
+                    <input type="number" step="0.01" id="maintCostInput" onchange="saveConfig()" 
+                           placeholder="0.60" class="w-20 p-2 text-right border border-gray-300 rounded-lg focus:ring-black focus:border-black text-sm">
+                </div>
+
+                <p class="text-xs text-gray-500 pt-2 text-center">更改後會自動儲存至雲端並套用於所有計算。</p>
+            </div>
+        </details>
+
+        <!-- 2. 新增紀錄區 -->
+        <div class="bg-white p-5 rounded-xl shadow-md mb-6">
+            <h2 class="text-lg font-semibold mb-4 border-b pb-2">✏️ 當日數據輸入</h2>
+            
+            <!-- 油價顯示與更新 -->
+            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center">
+                <div>
+                    <span class="text-xs text-gray-600">中油 92 汽油：</span>
+                    <span id="oilPriceDisplay" class="font-bold text-blue-700">$30.00/L (預設)</span>
+                    <p class="text-xs text-gray-500 mt-1">目前油耗係數：<span id="fuelEfficiencyDisplay">42 km/L</span>，耗材：<span id="maintCostDisplay">$0.60/km</span></p>
+                </div>
+                <button id="fetchOilPriceButton" onclick="fetchOilPrice()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition duration-200">
+                    更新油價
+                </button>
+            </div>
+
+            <div class="mb-3">
+                <label for="entryDate" class="text-sm font-medium text-gray-700">📅 日期</label>
+                <input type="date" id="entryDate" class="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black">
+            </div>
+            
+            <div class="mb-3">
+                <label for="income" class="text-sm font-medium text-gray-700">💰 當日營業額 (實收/未扣)</label>
+                <input type="number" id="income" placeholder="輸入金額" oninput="liveCalculate()" class="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black">
+            </div>
+            
+            <div class="mb-3">
+                <label for="mileage" class="text-sm font-medium text-gray-700">🛵 當日騎乘公里數 (km)</label>
+                <input type="number" step="0.1" id="mileage" placeholder="輸入公里數 (允許小數)" oninput="liveCalculate()" class="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black">
+            </div>
+
+            <!-- 工作時數輸入 (小時/分鐘) -->
+            <div class="mb-5 flex space-x-4">
+                <div class="w-1/2">
+                    <label for="hours" class="text-sm font-medium text-gray-700">🕒 工作時數 (小時)</label>
+                    <input type="number" id="hours" placeholder="0" oninput="liveCalculate()" class="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black">
+                </div>
+                <div class="w-1/2">
+                    <label for="minutes" class="text-sm font-medium text-gray-700">工作時數 (分鐘)</label>
+                    <input type="number" id="minutes" placeholder="0" oninput="liveCalculate()" class="w-full mt-1 p-3 border border-gray-300 rounded-lg focus:ring-black focus:border-black">
+                </div>
+            </div>
+            <!-- /工作時數輸入 -->
+
+
+            <!-- 即時計算顯示區 (優化顯示細節，修復計算不顯示問題) -->
+            <div class="p-4 mb-5 rounded-xl border border-dashed border-gray-300 bg-yellow-50">
+                <h3 class="text-sm font-semibold mb-3">⚡ 即時預估結果</h3>
+                
+                <!-- Row 1: 營業額 vs 總成本 -->
+                <div class="grid grid-cols-2 text-sm gap-2 mb-2 border-b pb-2">
+                    <div class="text-left font-semibold">營業額: <span id="liveGrossIncome" class="font-bold text-black">$0.0</span></div>
+                    <div class="text-right font-semibold">總成本: <span id="liveTotalCost" class="cost-val font-bold">$0.0</span></div>
+                </div>
+                
+                <!-- Row 2: 淨利 vs 成本明細 -->
+                <div class="grid grid-cols-2 text-sm gap-2 mb-3">
+                    <div class="text-left text-lg font-bold">淨利: <span id="liveNetProfit" class="font-bold net-profit cost-val">$0.0</span></div>
+                    <div class="text-right text-xs pt-1">
+                        油費: <span id="liveGasCost" class="font-medium text-blue-700">$0.0</span><br>
+                        耗材費: <span id="liveMaintCost" class="font-medium text-red-700">$0.0</span>
+                    </div>
+                </div>
+
+
+                <!-- Row 3: 時薪計算 -->
+                <div class="grid grid-cols-2 text-sm gap-2 pt-3 border-t border-gray-200">
+                    <div class="text-left font-semibold">時薪 (毛利): <span id="liveGrossHourly" class="font-bold text-yellow-700">$0.0/hr</span></div>
+                    <div class="text-right font-semibold">時薪 (淨利): <span id="liveNetHourly" class="font-bold net-profit cost-val">$0.0/hr</span></div>
+                </div>
+                
+            </div>
+            
+            <button onclick="addRecord()" class="w-full bg-black hover:bg-gray-800 text-white font-bold py-3 rounded-xl transition duration-200 shadow-md">
+                ✅ 儲存到雲端 (正式紀錄)
+            </button>
+        </div>
+
+        <!-- 3. 報表區 -->
+        <div class="bg-white p-5 rounded-xl shadow-md">
+            <h2 class="text-lg font-semibold mb-4 border-b pb-2">📈 淨利報表總覽</h2>
+
+            <!-- 頁籤導航 (名稱已更改) -->
+            <div class="flex justify-around mb-4 border-b border-gray-200">
+                <div id="tab-day" class="tab py-2 px-3 cursor-pointer text-gray-500 font-semibold active" onclick="switchTab('day')">日</div>
+                <div id="tab-week" class="tab py-2 px-3 cursor-pointer text-gray-500 font-semibold" onclick="switchTab('week')">週</div>
+                <div id="tab-month" class="tab py-2 px-3 cursor-pointer text-gray-500 font-semibold" onclick="switchTab('month')">月</div>
+                <div id="tab-year" class="tab py-2 px-3 cursor-pointer text-gray-500 font-semibold" onclick="switchTab('year')">年</div>
+            </div>
+
+            <!-- 報表導航與標題 (點擊標題可跳轉) -->
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="navigateReport(-1)" class="p-2 text-xl font-bold rounded-full bg-gray-100 hover:bg-gray-200 transition duration-150">
+                    &lt;
+                </button>
+                <button onclick="openDateSelector()" class="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition duration-150">
+                    <h3 id="report-title-text" class="text-base font-semibold text-center text-gray-800"></h3>
+                </button>
+                <button onclick="navigateReport(1)" class="p-2 text-xl font-bold rounded-full bg-gray-100 hover:bg-gray-200 transition duration-150">
+                    &gt;
+                </button>
+            </div>
+
+
+            <!-- 報表內容 -->
+            <div id="report-area">
+                <!-- 數據和圓餅圖會動態載入至此 -->
+            </div>
+        </div>
+        
+    </main>
+</body>
+</html>
+
+Add index.html for Github Pages
