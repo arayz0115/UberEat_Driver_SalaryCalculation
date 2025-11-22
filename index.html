@@ -22,7 +22,7 @@
         const DEFAULT_MAINT_COST_PER_KM = 0.60;  
 
         // 1. Firebase 專案配置 (請從您的 Firebase Console 取得)
-        const firebaseConfig = {
+        const FIREBASE_CONFIG = {
             apiKey: "AIzaSyAQiTfbvsIKUVuRBmwaR28448EFMg4F0-w",
             authDomain: "uber-driver-tracker.firebaseapp.com",
             projectId: "uber-driver-tracker",
@@ -31,7 +31,8 @@
             appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
         };
 
-
+        const appId = FIREBASE_CONFIG.appId;
+        
         let db = null;
         let auth = null;
         let userId = null;
@@ -53,7 +54,7 @@
         const configDocPath = (uid) => `artifacts/${appId}/users/${uid}/config/costs`;
 
         try {
-            const app = initializeApp(firebaseConfig);
+            const app = initializeApp(FIREBASE_CONFIG);
             db = getFirestore(app);
             auth = getAuth(app);
             
