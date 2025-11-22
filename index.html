@@ -20,10 +20,16 @@
         const DEFAULT_FUEL_EFFICIENCY_KML = 42;  
         const DEFAULT_MAINT_COST_PER_KM = 0.60;  
 
-        // --- 狀態變數 ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // 1. Firebase 專案配置 (請從您的 Firebase Console 取得)
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAQiTfbvsIKUVuRBmwaR28448EFMg4F0-w",
+            authDomain: "uber-driver-tracker.firebaseapp.com",
+            projectId: "uber-driver-tracker",
+            storageBucket: "uber-driver-tracker.firebasestorage.app",
+            messagingSenderId: "665088105970",
+            appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
+        };
+
 
         let db = null;
         let auth = null;
@@ -193,10 +199,12 @@
             button.disabled = true;
             display.textContent = '獲取中...';
 
-            // 調整查詢以確保返回純數字
-            const userQuery = "台灣中油 92 無鉛汽油 今日每公升價格，只需要給我數字，不要任何文字、符號或單位。";
-            const apiKey = "" // Leave as-is
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+           // ...
+            // 調整查詢以確保返回純數字
+            const userQuery = "台灣中油 92 無鉛汽油 今日每公升價格，只需要給我數字，不要任何文字、符號或單位。";
+            const apiKey = GEMINI_API_KEY // 👈 替換成我們定義的常數
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+// ...
 
             const payload = {
                 contents: [{ parts: [{ text: userQuery }] }],
