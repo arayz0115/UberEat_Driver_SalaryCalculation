@@ -46,14 +46,12 @@
 
 
         // --- Firebase 初始化與認證 (使用 -compat 模式) ---
-        try {
-            // 38: 初始化 Firebase App
+       try {
             const app = firebase.initializeApp(FIREBASE_CONFIG);
-            
-            // 35 & 36: 初始化 db 和 auth 變數 (使用 -compat 全域存取方法)
-            db = app.firestore();
-            auth = app.auth();
-            window.db = db; // 為了讓外部函數也能存取
+            db = app.firestore(); // 使用兼容模式的全域物件
+            auth = app.auth();   // 使用兼容模式的全域物件
+            // ... (後續的認證和資料載入邏輯)
+            } catch (error) {
             
             // 監聽認證狀態
             auth.onAuthStateChanged(async (user) => {
