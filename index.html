@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Uber Driver 夥伴收入計算器</title>
+    <title>Uber Driver 夥伴收入計算器 V8.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .container { max-width: 1000px; }
         .net-profit { color: #10b981; } /* 綠色 */
         .cost-val { color: #f87171; } /* 紅色 */
         .input-group label { font-weight: 600; color: #4b5563; }
-        .report-section { background-color: #ffffff; border-radius: 0.5rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        .card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        
+        /* Loading Overlay Styles */
         #loading-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(255, 255, 255, 0.95); z-index: 1000;
@@ -20,9 +22,83 @@
         .spinner { border: 4px solid rgba(0, 0, 0, 0.1); border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .hidden { display: none !important; }
+
+        /* Message Area Styles */
+        #message-area {
+            position: fixed; top: 1rem; right: 1rem; z-index: 1001;
+            max-width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+        }
+        .alert.info { background-color: #e0f2fe; border-color: #90cdf4; color: #2b6cb0; }
+        .alert.success { background-color: #d1fae5; border-color: #68d391; color: #2f855a; }
+        .alert.error { background-color: #fee2e2; border-color: #fc8181; color: #c53030; }
+
+        /* Icon Styling */
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.5rem;
+            color: currentColor;
+        }
+
+        /* Input Styles */
+        input[type="number"], input[type="date"], input[type="text"] {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        input[type="number"]:focus, input[type="date"]:focus, input[type="text"]:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+        }
+
+        /* Button Styles */
+        button {
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            transform: translateY(-1px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #2563eb; }
+        .btn-secondary { background-color: #6b7280; color: white; }
+        .btn-secondary:hover:not(:disabled) { background-color: #4b5563; }
+        .btn-success { background-color: #10b981; color: white; }
+        .btn-success:hover:not(:disabled) { background-color: #059669; }
+        .btn-warning { background-color: #f59e0b; color: white; }
+        .btn-warning:hover:not(:disabled) { background-color: #d97706; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-100 text-gray-800 font-sans">
 
     <div id="loading-overlay">
         <div class="spinner"></div>
@@ -31,142 +107,157 @@
         <p id="message-area-load" class="mt-4 text-red-600 font-medium"></p>
     </div>
     
-    <div id="app-content" class="container mx-auto p-4 sm:p-8 pt-10 hidden">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-center text-blue-700">Uber Driver 收入與成本計算器</h1>
-            <p class="text-center text-gray-600 mt-2">即時追蹤您的盈虧與時薪。</p>
+    <div id="app-content" class="container mx-auto p-4 sm:p-6 lg:p-8 pt-8 hidden">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-blue-700">Uber Driver 淨利計算機 V8.3</h1>
+            <p id="user-id-display" class="text-sm text-gray-500 mt-2">ID: 加載中...</p>
         </header>
 
-        <div id="message-area" class="fixed top-4 right-4 z-50"></div>
+        <div id="message-area"></div>
 
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="lg:col-span-2 report-section">
-                <h2 class="text-xl font-semibold mb-6 border-b pb-2 text-blue-600">今日收入與里程輸入</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
-                    <div class="input-group">
-                        <label for="income" class="block mb-2">平台總收入 ($)</label>
-                        <input type="number" id="income" value="0" min="0" step="10" 
-                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg" 
-                               oninput="liveCalculate()" placeholder="e.g., 3500">
+        <main class="space-y-6">
+
+            <div class="card">
+                <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+                    <svg class="icon text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    成本參數設定 (雲端儲存)
+                </h2>
+                <div class="space-y-4 mb-4">
+                    <div>
+                        <label for="fuelEfficiencyInput" class="block text-sm font-medium text-gray-700 mb-1">油耗效率 (km/L)</label>
+                        <input type="number" id="fuelEfficiencyInput" min="1" step="0.1" class="w-full">
+                        <p id="fuelEfficiencyDisplay" class="text-xs text-gray-500 mt-1">目前: 42 km/L</p>
                     </div>
-                    
-                    <div class="input-group">
-                        <label for="mileage" class="block mb-2">總里程 (km)</label>
-                        <input type="number" id="mileage" value="0" min="0" step="1" 
-                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg" 
-                               oninput="liveCalculate()" placeholder="e.g., 180">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="hours" class="block mb-2">上線時數 (小時)</label>
-                        <input type="number" id="hours" value="0" min="0" step="1" 
-                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg" 
-                               oninput="liveCalculate()" placeholder="e.g., 8">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="minutes" class="block mb-2">上線時數 (分鐘)</label>
-                        <input type="number" id="minutes" value="0" min="0" step="5" max="59"
-                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg" 
-                               oninput="liveCalculate()" placeholder="e.g., 30">
-                    </div>
-                    
-                </div>
-                
-                <div class="mt-8">
-                    <h3 class="text-xl font-semibold mb-4 text-green-600">即時盈虧分析</h3>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center text-lg border-b pb-2">
-                            <span>平台總收入:</span>
-                            <span id="liveGrossIncome" class="font-bold text-blue-600">$0.0</span>
-                        </div>
-                        <div class="flex justify-between items-center text-lg">
-                            <span>預估油資成本 (根據 <span id="oilPriceDisplay" class="font-medium text-red-500"></span>):</span>
-                            <span id="liveGasCost" class="font-bold cost-val">$0.0</span>
-                        </div>
-                        <div class="flex justify-between items-center text-lg">
-                            <span>預估維護成本 (<span id="maintCostDisplay" class="font-medium text-red-500"></span>):</span>
-                            <span id="liveMaintCost" class="font-bold cost-val">$0.0</span>
-                        </div>
-                        <div class="flex justify-between items-center text-xl font-bold pt-2 border-t mt-4">
-                            <span>總成本:</span>
-                            <span id="liveTotalCost" class="text-red-700">$0.0</span>
-                        </div>
-                        <div class="flex justify-between items-center text-2xl font-extrabold pt-2">
-                            <span>淨利潤:</span>
-                            <span id="liveNetProfit" class="net-profit">$0.0</span>
-                        </div>
+                    <div>
+                        <label for="maintCostInput" class="block text-sm font-medium text-gray-700 mb-1">每公里支出耗材 ($/km)</label>
+                        <input type="number" id="maintCostInput" min="0" step="0.01" class="w-full">
+                        <p id="maintCostDisplay" class="text-xs text-gray-500 mt-1">目前: $0.60/km</p>
                     </div>
                 </div>
-
-                <div class="mt-8 p-4 bg-yellow-50 rounded-lg">
-                    <h3 class="text-xl font-semibold mb-3 text-yellow-700">時薪指標</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="text-center">
-                            <p class="text-sm text-gray-500">毛時薪 (不計成本)</p>
-                            <span id="liveGrossHourly" class="text-2xl font-extrabold text-blue-600">$0.0/hr</span>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-sm text-gray-500">淨時薪 (計入成本)</p>
-                            <span id="liveNetHourly" class="text-2xl font-extrabold net-profit">$0.0/hr</span>
-                        </div>
-                    </div>
-                </div>
-
+                <button onclick="saveConfig()" class="btn-success w-full">儲存設定至雲端</button>
             </div>
-            
-            <div class="report-section flex flex-col space-y-8">
-                
-                <div>
-                    <h2 class="text-xl font-semibold mb-4 text-blue-600">個人化成本參數</h2>
-                    
-                    <div class="space-y-4">
-                        <div class="input-group">
-                            <label for="fuelEfficiencyInput" class="block mb-2">平均油耗 (km/L):</label>
-                            <input type="number" id="fuelEfficiencyInput" min="1" step="0.1" 
-                                   class="w-full p-2 border border-gray-300 rounded-lg">
-                            <p id="fuelEfficiencyDisplay" class="text-sm text-gray-500 mt-1"></p>
-                        </div>
-                        
-                        <div class="input-group">
-                            <label for="maintCostInput" class="block mb-2">每公里維護成本 ($/km):</label>
-                            <input type="number" id="maintCostInput" min="0" step="0.01" 
-                                   class="w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
 
-                        <button onclick="saveConfig()" 
-                                class="w-full bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-150">
-                            儲存配置到雲端
-                        </button>
+            <div class="card">
+                <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+                    <svg class="icon text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                    當日數據輸入
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
+                        <img src="https://www.flaticon.com/svg/static/icons/svg/855/855913.svg" alt="Oil Pump" class="w-6 h-6">
+                        <span id="oilPriceDisplayMain" class="text-lg font-bold text-blue-700">中油 92 汽油: 加載中...</span>
+                        <button id="fetchOilPriceButton" onclick="fetchOilPrice()" class="btn-primary ml-auto text-sm">更新油價</button>
+                    </div>
+
+                    <div>
+                        <label for="recordDate" class="block text-sm font-medium text-gray-700 mb-1">記錄日期</label>
+                        <input type="date" id="recordDate" class="w-full">
+                    </div>
+
+                    <div>
+                        <label for="income" class="block text-sm font-medium text-gray-700 mb-1">當日營業額 (實收/未扣)</label>
+                        <input type="number" id="income" value="0" min="0" step="10" placeholder="輸入金額">
+                    </div>
+
+                    <div>
+                        <label for="mileage" class="block text-sm font-medium text-gray-700 mb-1">當日騎乘公里數 (km)</label>
+                        <input type="number" id="mileage" value="0" min="0" step="1" placeholder="輸入公里數 (允許小數)">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="hours" class="block text-sm font-medium text-gray-700 mb-1">工作時數 (小時)</label>
+                            <input type="number" id="hours" value="0" min="0" step="1" placeholder="0">
+                        </div>
+                        <div>
+                            <label for="minutes" class="block text-sm font-medium text-gray-700 mb-1">工作時數 (分鐘)</label>
+                            <input type="number" id="minutes" value="0" min="0" step="5" max="59" placeholder="0">
+                        </div>
                     </div>
                 </div>
 
-                <div class="border-t pt-6">
-                    <h2 class="text-xl font-semibold mb-4 text-blue-600">油價資訊 (92 無鉛)</h2>
-                    <p class="text-gray-700 mb-4">目前的油價將用於計算您的燃油成本。</p>
-                    <button id="fetchOilPriceButton" onclick="fetchOilPrice()" 
-                            class="w-full bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition duration-150">
-                        點擊獲取今日油價
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 class="text-md font-semibold mb-3 text-gray-700 flex items-center">
+                        <svg class="icon text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        即時預估結果
+                    </h3>
+                    <div class="grid grid-cols-2 gap-y-2 text-sm">
+                        <span class="text-gray-600">營業額:</span> <span id="liveGrossIncome" class="font-bold text-blue-600">$0.0</span>
+                        <span class="text-gray-600">總成本:</span> <span id="liveTotalCost" class="font-bold text-red-700">$0.0</span>
+                        <span class="text-gray-600">淨利:</span> <span id="liveNetProfit" class="font-bold net-profit">$0.0</span>
+                        <span class="text-gray-600">油費:</span> <span id="liveGasCost" class="font-bold cost-val">$0.0</span>
+                        <span class="text-gray-600">時薪 (毛利):</span> <span id="liveGrossHourly" class="font-bold text-blue-600">$0.0/hr</span>
+                        <span class="text-gray-600">耗材:</span> <span id="liveMaintCost" class="font-bold cost-val">$0.0</span>
+                    </div>
+                    <div class="mt-2 text-sm flex justify-between">
+                        <span class="text-gray-600">時薪 (淨利):</span> <span id="liveNetHourly" class="font-bold net-profit">$0.0/hr</span>
+                    </div>
+                </div>
+
+                <button id="saveDailyRecordButton" class="btn-primary w-full mt-6 flex items-center justify-center">
+                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    儲存到雲端 (正式記錄)
+                </button>
+            </div>
+
+            <div class="card">
+                <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
+                    <svg class="icon text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    淨利報表總覽
+                </h2>
+                <div class="flex space-x-2 mb-4">
+                    <button class="btn-secondary w-full" onclick="loadReport('day')">日</button>
+                    <button class="btn-secondary w-full" onclick="loadReport('week')">週</button>
+                    <button class="btn-secondary w-full" onclick="loadReport('month')">月</button>
+                    <button class="btn-secondary w-full" onclick="loadReport('year')">年</button>
+                </div>
+                
+                <div class="flex items-center justify-between mb-4">
+                    <button onclick="changeReportDate(-1)" class="p-2 rounded-full hover:bg-gray-200">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <span id="reportDateRange" class="font-semibold text-lg text-gray-700">2025/11/22</span>
+                    <button onclick="changeReportDate(1)" class="p-2 rounded-full hover:bg-gray-200">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
 
-                <div class="border-t pt-6 flex-grow">
-                    <h2 class="text-xl font-semibold mb-4 text-blue-600">成本比例圓餅圖</h2>
-                    <div class="relative h-64">
-                        <canvas id="costChart"></canvas>
-                    </div>
+                <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+                    <div class="bg-blue-50 p-3 rounded-lg"><span class="block text-gray-600">總收入 (期間)</span><span id="reportTotalIncome" class="font-bold text-blue-700">$0</span></div>
+                    <div class="bg-green-50 p-3 rounded-lg"><span class="block text-gray-600">實領淨利</span><span id="reportNetProfit" class="font-bold text-green-700">$0</span></div>
+                    <div class="bg-yellow-50 p-3 rounded-lg"><span class="block text-gray-600">總花費時間</span><span id="reportTotalHours" class="font-bold text-yellow-700">0 小時 0 分</span></div>
+                    <div class="bg-red-50 p-3 rounded-lg"><span class="block text-gray-600">總消耗成本</span><span id="reportTotalCost" class="font-bold text-red-700">$0</span></div>
+                    <div class="bg-blue-100 p-3 rounded-lg"><span class="block text-gray-600">平均時薪 (毛利)</span><span id="reportGrossHourly" class="font-bold text-blue-800">$0/hr</span></div>
+                    <div class="bg-green-100 p-3 rounded-lg"><span class="block text-gray-600">平均時薪 (淨利)</span><span id="reportNetHourly" class="font-bold text-green-800">$0/hr</span></div>
+                    <div class="bg-gray-50 p-3 rounded-lg col-span-2"><span class="block text-gray-600">總里程 (km)</span><span id="reportTotalMileage" class="font-bold text-gray-800">0.0</span></div>
                 </div>
 
+                <h3 class="font-semibold text-gray-700 mb-2">期間記錄明細:</h3>
+                <div id="reportDetails" class="space-y-2 text-sm text-gray-700">
+                    <p>此期間尚未有記錄。</p>
+                </div>
+
+                <div class="mt-8 relative h-64">
+                    <canvas id="costChart"></canvas>
+                </div>
             </div>
         </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
-
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore-compat.js"></script>
@@ -176,11 +267,11 @@
         const DEFAULT_FUEL_EFFICIENCY_KML = 42;
         const DEFAULT_MAINT_COST_PER_KM = 0.60;
         // ⚠️ 注意: 請務必替換此處的 YOUR_GEMINI_API_KEY
-        const GEMINI_API_KEY = "AIzaSyClygeK6I7cs8KEVCj7pVTALSO5Mng-Gk8"; 
+        const GEMINI_API_KEY = "您的 Gemini API Key"; // <--- 請替換為您從 Google AI Studio 取得的 Key 數值！
 
         // 1. Firebase 專案配置 (請從您的 Firebase Console 取得)
         const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 請檢查此 Key 是否正確
+            apiKey: "AIzaSyDr9X3uH8s6W7V4c2B1a0F5E9D8C7B6A5", // 請替換為您的正確 API Key (這個是範例 Key)
             authDomain: "uber-driver-tracker.firebaseapp.com",
             projectId: "uber-driver-tracker",
             storageBucket: "uber-driver-tracker.firebasestorage.app",
@@ -200,19 +291,19 @@
             fuelEfficiency: DEFAULT_FUEL_EFFICIENCY_KML,
             maintCostPerKm: DEFAULT_MAINT_COST_PER_KM
         };
+        let currentReportDate = new Date(); // 報表目前的日期
+        let currentReportType = 'day'; // 報表目前的類型 (day, week, month, year)
+
 
         // 工具函數
         const configDocPath = (uid) => `artifacts/${appId}/users/${uid}/config/costs`;
+        const recordsCollectionPath = (uid) => `artifacts/${appId}/users/${uid}/records`;
 
-        /** 顯示應用程式訊息 (成功/錯誤) */
+        /** 顯示應用程式訊息 (成功/錯誤/資訊) */
         function showMessage(text, type = 'info') {
             const area = document.getElementById('message-area');
-            const color = type === 'success' ? 'bg-green-100 border-green-400 text-green-700'
-                        : type === 'error' ? 'bg-red-100 border-red-400 text-red-700'
-                        : 'bg-blue-100 border-blue-400 text-blue-700';
-            
             const alertDiv = document.createElement('div');
-            alertDiv.className = `p-3 mb-2 border ${color} rounded-lg shadow-md`;
+            alertDiv.className = `alert ${type}`;
             alertDiv.textContent = text;
             area.appendChild(alertDiv);
             
@@ -221,40 +312,44 @@
             }, 5000);
         }
 
+        /** 將日期格式化為 YYYY-MM-DD */
+        function formatDate(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        /** 解析 YYYY-MM-DD 字串為 Date 物件 */
+        function parseDate(dateString) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
         // --- Firebase 初始化與認證 (使用 -compat 模式) ---
         function initFirebase() {
             try {
-                // 1. 初始化 Firebase App
                 const app = firebase.initializeApp(FIREBASE_CONFIG);
-                
-                // 2. 初始化 db 和 auth 變數 (使用 -compat 全域存取方法)
                 db = app.firestore();
                 auth = app.auth();
-                window.db = db; // 為了讓外部函數也能存取
                 
-                // 3. 監聽認證狀態
                 auth.onAuthStateChanged(async (user) => {
                     if (user) {
-                        // 已經登入 (或匿名登入成功)
                         userId = user.uid;
                         isAuthReady = true;
+                        document.getElementById('user-id-display').textContent = `ID: ${userId}`;
                         
-                        // 隱藏載入畫面並顯示主要內容
                         document.getElementById('loading-overlay').classList.add('hidden');
                         document.getElementById('app-content').classList.remove('hidden');
-                        document.getElementById('user-info').textContent = `ID: ${userId}`;
-                        window.userId = userId;
 
-                        // 載入用戶配置和油價
                         await loadConfig();
                         await fetchOilPrice(true); 
-                        initApp(); // 啟動應用程式核心邏輯
+                        initApp();
                         
                     } else if (!isAuthReady) {
-                        // 尚未登入，執行匿名登入
                         console.log("嘗試匿名登入...");
                         await auth.signInAnonymously(); 
-                        // 登入成功後，會再次觸發 onAuthStateChanged
                     }
                 });
 
@@ -275,7 +370,20 @@
             document.getElementById('mileage').addEventListener('input', liveCalculate);
             document.getElementById('hours').addEventListener('input', liveCalculate);
             document.getElementById('minutes').addEventListener('input', liveCalculate);
+            document.getElementById('fuelEfficiencyInput').addEventListener('input', liveCalculate);
+            document.getElementById('maintCostInput').addEventListener('input', liveCalculate);
             
+            // 日期選擇器初始化
+            const today = new Date();
+            document.getElementById('recordDate').value = formatDate(today);
+            document.getElementById('recordDate').addEventListener('change', liveCalculate); // 日期改變也觸發計算
+
+            // 儲存按鈕事件
+            document.getElementById('saveDailyRecordButton').addEventListener('click', saveDailyRecord);
+
+            // 初始化報表
+            loadReport(currentReportType);
+
             // 確保首次計算和繪圖
             liveCalculate();
             updateChart(); 
@@ -283,232 +391,4 @@
 
 
         // --- 設定檔讀寫 ---
-        async function loadConfig() {
-            if (!db || !userId) return;
-
-            // 監聽配置檔變動
-            db.doc(configDocPath(userId)).onSnapshot((docSnap) => {
-                if (docSnap.exists) {
-                    const data = docSnap.data();
-                    userConfig.fuelEfficiency = data.fuelEfficiency || DEFAULT_FUEL_EFFICIENCY_KML;
-                    userConfig.maintCostPerKm = data.maintCostPerKm || DEFAULT_MAINT_COST_PER_KM;
-                }
-                updateConfigUI();
-                liveCalculate();
-                updateChart();
-            }, (error) => {
-                console.error("載入配置失敗:", error);
-                // 即使失敗也要更新 UI 和計算，確保應用程式不會崩潰
-                updateConfigUI();
-                liveCalculate();
-                updateChart();
-            });
-        }
-
-        window.saveConfig = async function() {
-            if (!db || !userId) {
-                showMessage("雲端尚未連線或認證失敗。", 'error');
-                return;
-            }
-            
-            const fuel = parseFloat(document.getElementById('fuelEfficiencyInput').value);
-            const maint = parseFloat(document.getElementById('maintCostInput').value);
-
-            if (isNaN(fuel) || isNaN(maint) || fuel <= 0 || maint < 0) {
-                showMessage("請輸入有效的參數值。", 'error');
-                updateConfigUI();
-                return;
-            }
-
-            userConfig.fuelEfficiency = fuel;
-            userConfig.maintCostPerKm = maint;
-
-            try {
-                await db.doc(configDocPath(userId)).set(userConfig, { merge: true });
-                showMessage("設定已儲存到雲端！", 'success');
-            } catch (e) {
-                console.error("儲存配置失敗:", e);
-                showMessage("儲存設定到雲端失敗", 'error');
-            }
-        }
-
-        function updateConfigUI() {
-            document.getElementById('fuelEfficiencyInput').value = userConfig.fuelEfficiency;
-            document.getElementById('maintCostInput').value = userConfig.maintCostPerKm;
-            document.getElementById('fuelEfficiencyDisplay').textContent = `${userConfig.fuelEfficiency} km/L`;
-            document.getElementById('maintCostDisplay').textContent = `$${userConfig.maintCostPerKm.toFixed(2)}/km`;
-        }
-        
-        // --- 即時計算功能 ---
-        window.liveCalculate = function() {
-            // 讀取輸入值
-            const income = parseFloat(document.getElementById('income').value) || 0;
-            const km = parseFloat(document.getElementById('mileage').value) || 0;
-            const hours = parseFloat(document.getElementById('hours').value) || 0;
-            const minutes = parseFloat(document.getElementById('minutes').value) || 0;
-            const totalHours = hours + (minutes / 60);
-
-            const fuelEff = userConfig.fuelEfficiency || DEFAULT_FUEL_EFFICIENCY_KML;
-            const maintCostPerKm = userConfig.maintCostPerKm || DEFAULT_MAINT_COST_PER_KM;
-
-            // 成本計算
-            const gasCost = (km / fuelEff) * currentOilPrice;
-            const maintCost = km * maintCostPerKm;
-            const totalCost = gasCost + maintCost;
-            const netProfit = income - totalCost;
-
-            // 時薪計算
-            let grossHourlyRate = 0;
-            let netHourlyRate = 0;
-            if (totalHours > 0) {
-                grossHourlyRate = income / totalHours;
-                netHourlyRate = netProfit / totalHours;
-            }
-
-            // 更新 UI 數值
-            document.getElementById('liveGrossIncome').textContent = `$${income.toFixed(1)}`;
-            document.getElementById('liveGasCost').textContent = `$${gasCost.toFixed(1)}`;
-            document.getElementById('liveMaintCost').textContent = `$${maintCost.toFixed(1)}`;
-            document.getElementById('liveNetProfit').textContent = `$${netProfit.toFixed(1)}`;
-            document.getElementById('liveTotalCost').textContent = `$${totalCost.toFixed(1)}`;
-
-            // 時薪顯示
-            document.getElementById('liveGrossHourly').textContent = `$${grossHourlyRate.toFixed(1)}/hr`;
-            document.getElementById('liveNetHourly').textContent = `$${netHourlyRate.toFixed(1)}/hr`;
-
-            // 調整淨利顏色
-            document.getElementById('liveNetProfit').classList.toggle('net-profit', netProfit >= 0);
-            document.getElementById('liveNetProfit').classList.toggle('cost-val', netProfit < 0);
-            document.getElementById('liveNetHourly').classList.toggle('net-profit', netHourlyRate >= 0);
-            document.getElementById('liveNetHourly').classList.toggle('cost-val', netHourlyRate < 0);
-            
-            // 更新圓餅圖
-            updateChart(gasCost, maintCost, netProfit);
-        }
-
-        // --- 圓餅圖繪製 ---
-        function updateChart(gasCost = 0, maintCost = 0, netProfit = 0) {
-            const data = {
-                labels: ['油資成本', '維護成本', '淨利潤'],
-                datasets: [{
-                    data: [Math.max(0, gasCost), Math.max(0, maintCost), Math.max(0, netProfit)], // 負值設為 0，避免圓餅圖出錯
-                    backgroundColor: ['#f87171', '#fbbf24', '#10b981'], // 紅、黃、綠
-                    hoverOffset: 4
-                }]
-            };
-
-            const config = {
-                type: 'doughnut',
-                data: data,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.label || '';
-                                    if (label) { label += ': '; }
-                                    if (context.parsed !== null) { label += '$' + context.parsed.toFixed(1); }
-                                    return label;
-                                }
-                            }
-                        },
-                        datalabels: {
-                            color: '#fff',
-                            formatter: (value, context) => {
-                                if (value <= 0) return '';
-                                // 僅顯示非零數據的百分比
-                                const total = context.chart.data.datasets[0].data.reduce((sum, val) => sum + val, 0);
-                                const percentage = (value / total * 100).toFixed(1) + '%';
-                                return percentage;
-                            }
-                        }
-                    },
-                    // 如果淨利為負，我們仍希望顯示成本比例
-                    cutout: '70%', 
-                },
-                plugins: [ChartDataLabels]
-            };
-
-            const ctx = document.getElementById('costChart').getContext('2d');
-
-            if (chartInstance) {
-                chartInstance.data = data;
-                chartInstance.update();
-            } else {
-                chartInstance = new Chart(ctx, config);
-            }
-        }
-
-
-        // --- 動態油價獲取 (使用 Google Search) ---
-        window.fetchOilPrice = async function(isInitial = false) {
-            const button = document.getElementById('fetchOilPriceButton');
-            const display = document.getElementById('oilPriceDisplay');
-            
-            if (GEMINI_API_KEY === "YOUR_GEMINI_API_KEY") {
-                // 如果 API Key 遺失，使用預設值
-                display.textContent = `$${currentOilPrice.toFixed(2)}/L (API Key 遺失)`;
-                if (!isInitial) showMessage("❌ Gemini API Key 遺失，請修正程式碼。", 'error');
-                liveCalculate();
-                return;
-            }
-
-            button.disabled = true;
-            display.textContent = '獲取中...';
-
-            const userQuery = "台灣中油 92 無鉛汽油 今日每公升價格，只需要給我數字，不要任何文字、符號或單位。";
-            const apiKey = GEMINI_API_KEY; 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`; // 推薦使用 gemini-2.5-flash
-
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                tools: [{ "google_search": {} }],
-            };
-            
-            try {
-                // 這裡我們省略了重試邏輯，直接嘗試一次呼叫
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) throw new Error(`API 呼叫失敗: ${response.statusText}`);
-
-                const result = await response.json();
-                
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                
-                // 強化解析：提取文本中所有數字和小數點，組成一個數字
-                const priceMatch = text.match(/[\d.]+/g);
-                const price = priceMatch ? parseFloat(priceMatch.join('')) : NaN;
-                
-                if (!isNaN(price) && price > 0) {
-                    currentOilPrice = price;
-                    display.textContent = `$${currentOilPrice.toFixed(2)}/L`;
-                    if (!isInitial) showMessage("油價獲取成功！", 'success');
-                } else {
-                    throw new Error("無法從 API 回應中解析出有效的油價。");
-                }
-            } catch (e) {
-                console.error("獲取油價失敗:", e);
-                if (!isInitial) showMessage(`獲取油價失敗: ${e.message}`, 'error');
-                display.textContent = `$${currentOilPrice.toFixed(2)}/L (使用預設或上次值)`;
-            } finally {
-                button.disabled = false;
-                liveCalculate();
-            }
-        }
-        
-        // --- 應用程式入口點 ---
-        document.addEventListener('DOMContentLoaded', () => {
-            initFirebase();
-            // 在 loading-overlay 隱藏後，initApp() 和 fetchOilPrice(true) 會被呼叫
-        });
-
-    </script>
-</body>
-</html>
+        async function
