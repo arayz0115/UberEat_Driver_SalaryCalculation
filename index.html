@@ -1,147 +1,682 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-tw">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Uber Driver 計算器（最終版）</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/base.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/components.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/utilities.min.css">
-<style>
-input, button { outline: none; }
-.card { @apply bg-white shadow-md rounded-xl p-5 mb-5; }
-.btn-main { @apply bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 transition w-full; }
-.btn-sub { @apply bg-gray-200 text-gray-700 rounded-lg px-4 py-2 hover:bg-gray-300 transition; }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Uber Driver 計算器（最終版）</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .container { max-width: 1000px; }
+        .net-profit { color: #10b981; } /* 綠色 */
+        .cost-val { color: #ef4444; } /* 紅色 */
+        .card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 8px 20px rgba(2,6,23,0.08); }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index:1000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+        .spinner { border:4px solid rgba(0,0,0,0.06); border-top:4px solid #3b82f6; border-radius:50%; width:44px; height:44px; animation:spin 0.9s linear infinite; }
+        @keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+        .hidden { display:none !important; }
+        #message-area { position: fixed; top: 1rem; right: 1rem; z-index:1001; max-width:360px; display:flex; flex-direction:column; gap:0.5rem; }
+        .alert { padding:0.75rem 1rem; border-radius:0.5rem; box-shadow:0 6px 18px rgba(2,6,23,0.08); font-size:0.9rem; display:flex; align-items:center; gap:0.5rem; }
+        .alert.info { background-color:#eff6ff; color:#1e3a8a; }
+        .alert.success { background-color:#ecfdf5; color:#065f46; }
+        .alert.error { background-color:#fff1f2; color:#7f1d1d; }
+        input[type="number"], input[type="date"], input[type="text"] { border:1px solid #e6e9ee; padding:0.7rem 0.9rem; border-radius:0.5rem; width:100%; font-size:1rem; outline:none; transition: border-color .12s, box-shadow .12s; background:#fbfdff; }
+        input:focus { border-color:#60a5fa; box-shadow:0 6px 20px rgba(59,130,246,0.12); }
+        .btn { padding:0.6rem 1rem; border-radius:12px; font-weight:700; transition: transform .08s ease, box-shadow .08s ease; cursor:pointer; display:inline-flex; align-items:center; gap:0.5rem; }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background: linear-gradient(90deg,#2563eb,#3b82f6); color:white; box-shadow: 0 8px 20px rgba(59,130,246,0.18); }
+        .btn-ghost { background:transparent; border: 1px solid #e6eefc; color:#1f2937; }
+        .btn-danger { background: linear-gradient(90deg,#ef4444,#fb7185); color:white; box-shadow: 0 8px 18px rgba(239,68,68,0.12); }
+        .small-btn { padding:0.35rem 0.6rem; border-radius:8px; font-weight:600; font-size:0.85rem; }
+        .muted { color:#6b7280; font-size:0.95rem; }
+        .record-row { display:flex; justify-content:space-between; gap:0.5rem; align-items:center; padding:0.5rem 0; }
+        .record-actions { display:flex; gap:0.5rem; }
+        .card-compact { padding:1rem; }
+        @media (max-width:640px){ .container { padding: 0 1rem; } }
+    </style>
 </head>
-<body class="bg-gray-100 p-4">
-<h1 class="text-2xl font-bold text-center mb-4">Uber Driver 計算器（最終版）</h1>
-<div id="oilPriceDisplayMain" class="text-center text-blue-600 font-semibold mb-4">讀取中...</div>
+<body class="bg-slate-50 text-slate-800 font-sans">
 
-<!-- 成本設定區 -->
-<div class="card">
-<h2 class="text-xl font-semibold mb-3">成本設定（雲端儲存）</h2>
-<label>油耗設定 (km/L)</label>
-<input id="fuelRate" class="w-full border p-2 rounded mb-3" />
-<label>每公里耗材成本 ($/km)</label>
-<input id="maintCost" class="w-full border p-2 rounded mb-3" />
-<button class="btn-main" onclick="saveSettings()">儲存設定</button>
-</div>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text" class="mt-4 text-lg text-slate-600">連線雲端與油價中...</p>
+        <p id="message-area-load" class="mt-4 text-red-600 font-medium"></p>
+    </div>
 
-<!-- 當日數據輸入 -->
-<div class="card">
-<h2 class="text-xl font-semibold mb-3">當日數據輸入</h2>
-<label>記錄日期</label>
-<input id="recordDate" type="date" class="w-full border p-2 rounded mb-3" />
-<label>當日營業額</label>
-<input id="dayIncome" class="w-full border p-2 rounded mb-3" />
-<label>當日實際公里數</label>
-<input id="dayDistance" class="w-full border p-2 rounded mb-3" />
-<label>工作時數</label>
-<input id="workHours" class="w-full border p-2 rounded mb-3" />
-<button class="btn-main" onclick="saveRecord()">儲存紀錄</button>
-</div>
+    <div id="app-content" class="container mx-auto p-6 hidden">
+        <header class="mb-6 text-center">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-sky-700">Uber Driver 計算器（最終版）</h1>
+            <p id="user-id-display" class="muted mt-1">ID: 加載中...</p>
+        </header>
 
-<!-- 當日計算結果 -->
-<div class="card">
-<h2 class="text-xl font-semibold mb-3">即時預估</h2>
-<div id="previewResult" class="text-gray-800">尚無資料</div>
-</div>
+        <div id="message-area"></div>
 
-<!-- 歷史紀錄 -->
-<div class="card">
-<h2 class="text-xl font-semibold mb-3">歷史紀錄</h2>
-<div id="historyList" class="space-y-3"></div>
-</div>
+        <main class="space-y-6">
+            <!-- Config -->
+            <section class="card card-compact">
+                <div class="flex justify-between items-start mb-3">
+                    <h2 class="text-lg font-semibold">成本參數</h2>
+                    <div class="muted text-sm">雲端儲存</div>
+                </div>
 
-<script>
-const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev";
-let globalOilPrice = 27.1;
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="muted">油耗效率 (km/L)</label>
+                        <input id="fuelEfficiencyInput" type="number" min="1" step="0.1" placeholder="例如 42">
+                        <div id="fuelEfficiencyDisplay" class="muted mt-1">目前: 42 km/L</div>
+                    </div>
+                    <div>
+                        <label class="muted">每公里耗材 ($/km)</label>
+                        <input id="maintCostInput" type="number" min="0" step="0.01" placeholder="例如 0.6">
+                        <div id="maintCostDisplay" class="muted mt-1">目前: $0.60/km</div>
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button class="btn btn-primary" onclick="saveConfig()">儲存設定</button>
+                    <button class="btn btn-ghost" onclick="restoreDefaults()">還原預設</button>
+                </div>
+            </section>
 
-async function fetchOilPrice() {
-    try {
-        const res = await fetch(workerAPI);
-        const data = await res.json();
-        globalOilPrice = data.price;
-        document.getElementById('oilPriceDisplayMain').textContent = `中油 92 汽油：$${data.price}/L`;
-    } catch (err) {
-        document.getElementById('oilPriceDisplayMain').textContent = `油價讀取失敗，使用預設 $${globalOilPrice}/L`;
-    }
-}
+            <!-- Daily entry -->
+            <section class="card">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold">當日數據輸入</h2>
+                    <div class="muted">油價擷取: <span id="oilPriceDisplayMain">加載中...</span></div>
+                </div>
 
-function saveSettings() {
-    const fuelRate = document.getElementById('fuelRate').value;
-    const maint = document.getElementById('maintCost').value;
-    localStorage.setItem('fuelRate', fuelRate);
-    localStorage.setItem('maintCost', maint);
-    alert('設定已儲存');
-}
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                    <div>
+                        <label class="muted">記錄日期</label>
+                        <input id="recordDate" type="date">
+                    </div>
+                    <div>
+                        <label class="muted">當日營業額</label>
+                        <input id="income" type="number" min="0" step="10" value="0" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="muted">騎乘公里數 (km)</label>
+                        <input id="mileage" type="number" min="0" step="0.1" value="0" placeholder="0">
+                    </div>
+                </div>
 
-function loadSettings() {
-    document.getElementById('fuelRate').value = localStorage.getItem('fuelRate') || 40;
-    document.getElementById('maintCost').value = localStorage.getItem('maintCost') || 0.6;
-}
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                        <label class="muted">工作時 (小時)</label>
+                        <input id="hours" type="number" min="0" step="1" value="0">
+                    </div>
+                    <div>
+                        <label class="muted">工作時 (分鐘)</label>
+                        <input id="minutes" type="number" min="0" step="5" max="59" value="0">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="fetchOilPriceButton" class="btn btn-primary small-btn" onclick="fetchOilPrice()">更新油價</button>
+                    </div>
+                    <div class="flex items-end justify-end">
+                        <button id="saveDailyRecordButton" class="btn btn-primary" onclick="handleSaveRecord()">儲存記錄</button>
+                    </div>
+                </div>
 
-function saveRecord() {
-    const record = {
-        date: document.getElementById('recordDate').value,
-        income: parseFloat(document.getElementById('dayIncome').value || 0),
-        km: parseFloat(document.getElementById('dayDistance').value || 0),
-        hours: parseFloat(document.getElementById('workHours').value || 0)
+                <div class="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <h3 class="font-semibold mb-2">即時預估</h3>
+                    <div class="grid grid-cols-2 gap-y-2 text-sm">
+                        <div class="muted">營業額:</div> <div id="liveGrossIncome" class="font-bold">$0.0</div>
+                        <div class="muted">總成本:</div> <div id="liveTotalCost" class="font-bold cost-val">$0.0</div>
+                        <div class="muted">淨利:</div> <div id="liveNetProfit" class="font-bold net-profit">$0.0</div>
+                        <div class="muted">油費:</div> <div id="liveGasCost" class="font-bold cost-val">$0.0</div>
+                        <div class="muted">時薪 (毛利):</div> <div id="liveGrossHourly" class="font-bold">$0.0/hr</div>
+                        <div class="muted">耗材:</div> <div id="liveMaintCost" class="font-bold cost-val">$0.0</div>
+                    </div>
+                    <div class="mt-2 text-sm flex justify-between">
+                        <div class="muted">時薪 (淨利):</div> <div id="liveNetHourly" class="font-bold net-profit">$0.0/hr</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Report / list -->
+            <section class="card">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold">淨利報表總覽</h2>
+                    <div class="flex gap-2">
+                        <button class="btn small-btn btn-ghost" onclick="loadReport('day')">日</button>
+                        <button class="btn small-btn btn-ghost" onclick="loadReport('week')">週</button>
+                        <button class="btn small-btn btn-ghost" onclick="loadReport('month')">月</button>
+                        <button class="btn small-btn btn-ghost" onclick="loadReport('year')">年</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mb-3">
+                    <button class="btn small-btn btn-ghost" onclick="changeReportDate(-1)">‹</button>
+                    <div id="reportDateRange" class="font-semibold">--</div>
+                    <button class="btn small-btn btn-ghost" onclick="changeReportDate(1)">›</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-sm mb-4">
+                    <div class="bg-sky-50 p-3 rounded-lg"><div class="muted">總收入</div><div id="reportTotalIncome" class="font-bold text-sky-700">$0</div></div>
+                    <div class="bg-green-50 p-3 rounded-lg"><div class="muted">實領淨利</div><div id="reportNetProfit" class="font-bold text-green-700">$0</div></div>
+                    <div class="bg-yellow-50 p-3 rounded-lg"><div class="muted">總花費時間</div><div id="reportTotalHours" class="font-bold text-yellow-700">0 小時 0 分</div></div>
+                    <div class="bg-red-50 p-3 rounded-lg"><div class="muted">總消耗成本</div><div id="reportTotalCost" class="font-bold text-rose-600">$0</div></div>
+                    <div class="bg-slate-50 p-3 rounded-lg"><div class="muted">平均時薪 (毛利)</div><div id="reportGrossHourly" class="font-bold">$0/hr</div></div>
+                    <div class="bg-slate-50 p-3 rounded-lg"><div class="muted">平均時薪 (淨利)</div><div id="reportNetHourly" class="font-bold">$0/hr</div></div>
+                    <div class="col-span-2 bg-white p-3 rounded-lg border"><div class="muted">期間記錄明細</div>
+                        <div id="reportDetails" class="mt-2 text-sm">
+                            <p class="muted">此期間尚未有記錄。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <canvas id="costChart" height="160"></canvas>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+    <!-- Firebase compat -->
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore-compat.js"></script>
+
+    <script>
+    /**************************************************************
+     * CONFIG - 可上 Github，但上線請把敏感金鑰移到後端或安全環境
+     **************************************************************/
+    const DEFAULT_FUEL_EFFICIENCY_KML = 42;
+    const DEFAULT_MAINT_COST_PER_KM = 0.60;
+
+    // 你提供的 Cloudflare Worker endpoint（我已把它放這裡）
+    const OIL_WORKER_URL = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
+
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
+        authDomain: "uber-driver-tracker.firebaseapp.com",
+        projectId: "uber-driver-tracker",
+        storageBucket: "uber-driver-tracker.firebasestorage.app",
+        messagingSenderId: "665088105970",
+        appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
     };
 
-    const all = JSON.parse(localStorage.getItem('history') || '[]');
-    all.push(record);
-    localStorage.setItem('history', JSON.stringify(all));
+    /**************************************************************
+     * App state
+     **************************************************************/
+    let db = null;
+    let auth = null;
+    let userId = null;
+    let currentOilPrice = 27.1;
+    let chartInstance = null;
+    let userConfig = { fuelEfficiency: DEFAULT_FUEL_EFFICIENCY_KML, maintCostPerKm: DEFAULT_MAINT_COST_PER_KM };
+    let currentReportDate = new Date();
+    let currentReportType = 'day';
+    let isEditingDate = null;
 
-    alert('紀錄已儲存');
-    loadHistory();
-}
+    const appId = FIREBASE_CONFIG.appId;
+    const configDocPath = (uid) => `artifacts/${appId}/users/${uid}/config/costs`;
+    const recordsCollectionPath = (uid) => `artifacts/${appId}/users/${uid}/records`;
 
-function loadHistory() {
-    const list = document.getElementById('historyList');
-    list.innerHTML = "";
-
-    const all = JSON.parse(localStorage.getItem('history') || '[]');
-
-    all.forEach((r, idx) => {
+    /**************************************************************
+     * UI helpers
+     **************************************************************/
+    function showMessage(text, type='info', timeout=4500) {
+        const area = document.getElementById('message-area');
         const div = document.createElement('div');
-        div.className = "border p-3 rounded-lg bg-gray-50";
-        div.innerHTML = `
-            <div>📅 ${r.date}</div>
-            <div>營業額：$${r.income}</div>
-            <div>公里數：${r.km} km</div>
-            <div>時數：${r.hours} 小時</div>
-            <div class='flex space-x-2 mt-2'>
-                <button class='btn-sub' onclick='editRecord(${idx})'>編輯</button>
-                <button class='btn-sub' onclick='deleteRecord(${idx})'>刪除</button>
-            </div>`;
-        list.appendChild(div);
+        div.className = `alert ${type}`;
+        div.textContent = text;
+        area.appendChild(div);
+        setTimeout(()=> div.remove(), timeout);
+    }
+
+    function formatDateToInput(date) {
+        const d = new Date(date);
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const day = String(d.getDate()).padStart(2,'0');
+        return `${y}-${m}-${day}`;
+    }
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('zh-TW',{ style:'currency', currency:'TWD', minimumFractionDigits:0 }).format(Math.round(amount));
+    }
+
+    function formatDuration(totalMinutes) {
+        const hours = Math.floor(totalMinutes/60);
+        const minutes = Math.round(totalMinutes % 60);
+        return `${hours} 小時 ${minutes} 分`;
+    }
+
+    /**************************************************************
+     * Firebase init & auth
+     **************************************************************/
+    function initFirebase() {
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
+                auth = firebase.auth();
+            } else {
+                const app = firebase.app();
+                db = app.firestore();
+                auth = app.auth();
+            }
+
+            auth.onAuthStateChanged(async (u) => {
+                if (u) {
+                    userId = u.uid;
+                    document.getElementById('user-id-display').textContent = `ID: ${userId}`;
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                    document.getElementById('app-content').classList.remove('hidden');
+                    await loadConfig();
+                    await fetchOilPrice(true);
+                    initAppEvents();
+                } else {
+                    try { await auth.signInAnonymously(); } catch (e){ console.error(e); document.getElementById('message-area-load').textContent = e.message; }
+                }
+            });
+
+        } catch (err) {
+            console.error("Firebase 初始化失敗:", err);
+            document.getElementById('loading-text').textContent = "雲端初始化失敗，請檢查設定。";
+        }
+    }
+
+    /**************************************************************
+     * Config load/save
+     **************************************************************/
+    async function loadConfig() {
+        try {
+            const docRef = db.doc(configDocPath(userId));
+            const doc = await docRef.get();
+            if (doc.exists) {
+                const data = doc.data();
+                userConfig.fuelEfficiency = parseFloat(data.fuelEfficiency) || DEFAULT_FUEL_EFFICIENCY_KML;
+                userConfig.maintCostPerKm = parseFloat(data.maintCostPerKm) || DEFAULT_MAINT_COST_PER_KM;
+            } else {
+                await saveConfig(true);
+            }
+        } catch (e) {
+            console.error("載入設定失敗:", e);
+            showMessage("載入設定失敗，使用預設值。", 'error');
+        }
+
+        document.getElementById('fuelEfficiencyInput').value = userConfig.fuelEfficiency;
+        document.getElementById('fuelEfficiencyDisplay').textContent = `目前: ${Number(userConfig.fuelEfficiency).toFixed(2)} km/L`;
+        document.getElementById('maintCostInput').value = userConfig.maintCostPerKm;
+        document.getElementById('maintCostDisplay').textContent = `目前: $${Number(userConfig.maintCostPerKm).toFixed(2)}/km`;
+    }
+
+    async function saveConfig(isInitial=false) {
+        try {
+            userConfig.fuelEfficiency = parseFloat(document.getElementById('fuelEfficiencyInput').value) || DEFAULT_FUEL_EFFICIENCY_KML;
+            userConfig.maintCostPerKm = parseFloat(document.getElementById('maintCostInput').value) || DEFAULT_MAINT_COST_PER_KM;
+            await db.doc(configDocPath(userId)).set({
+                fuelEfficiency: userConfig.fuelEfficiency,
+                maintCostPerKm: userConfig.maintCostPerKm
+            }, { merge: true });
+            document.getElementById('fuelEfficiencyDisplay').textContent = `目前: ${userConfig.fuelEfficiency.toFixed(2)} km/L`;
+            document.getElementById('maintCostDisplay').textContent = `目前: $${userConfig.maintCostPerKm.toFixed(2)}/km`;
+            if (!isInitial) showMessage("設定已儲存。", 'success');
+            liveCalculate();
+        } catch (e) {
+            console.error("儲存設定失敗:", e);
+            showMessage("儲存設定失敗，請檢查網路或權限。", 'error');
+        }
+    }
+
+    function restoreDefaults() {
+        document.getElementById('fuelEfficiencyInput').value = DEFAULT_FUEL_EFFICIENCY_KML;
+        document.getElementById('maintCostInput').value = DEFAULT_MAINT_COST_PER_KM;
+        saveConfig();
+    }
+
+    /**************************************************************
+     * fetchOilPrice via your Worker (robust parsing)
+     **************************************************************/
+    async function fetchOilPrice(isInitialLoad=false) {
+        if (!isInitialLoad) {
+            document.getElementById('fetchOilPriceButton').disabled = true;
+            document.getElementById('oilPriceDisplayMain').textContent = "更新中...";
+        }
+        try {
+            const res = await fetch(OIL_WORKER_URL, { cache: "no-cache" });
+            if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+            const data = await res.json().catch(()=> null);
+
+            // Try to find plausible price in response
+            let price = NaN;
+            if (data === null) {
+                // try text
+                const txt = await res.text().catch(()=> '');
+                const m = txt.match(/(\d+(\.\d+)?)/);
+                if (m) price = parseFloat(m[0]);
+            } else {
+                // Several expected shapes:
+                // { price: 27.1 } OR { result: {...} } OR array with objects that have price/參考牌價
+                if (typeof data === 'number') price = data;
+                else if (data.price) price = parseFloat(data.price);
+                else if (data.result && data.result.price) price = parseFloat(data.result.price);
+                else if (Array.isArray(data)) {
+                    // search for properties with keywords
+                    for (const it of data) {
+                        if (!it) continue;
+                        if (it.price) { price = parseFloat(it.price); break; }
+                        if (it["參考牌價"]) { price = parseFloat(String(it["參考牌價"]).replace(/[^\d\.]/g,'')); break; }
+                        if (it["牌價"]) { price = parseFloat(String(it["牌價"]).replace(/[^\d\.]/g,'')); break; }
+                    }
+                } else {
+                    // maybe nested
+                    const jsonStr = JSON.stringify(data);
+                    const m = jsonStr.match(/(\d+\.\d{1,2})/);
+                    if (m) price = parseFloat(m[0]);
+                }
+            }
+
+            if (isNaN(price) || price <= 0) throw new Error("無法解析油價");
+
+            currentOilPrice = price;
+            document.getElementById('oilPriceDisplayMain').textContent = `$${currentOilPrice.toFixed(2)}/L`;
+            if (!isInitialLoad) showMessage(`油價已更新 $${currentOilPrice.toFixed(2)}/L`, 'success');
+            else document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
+            liveCalculate();
+        } catch (err) {
+            console.error("fetchOilPrice error:", err);
+            const errMsg = `油價獲取失敗，使用預設值 $${currentOilPrice.toFixed(2)}/L。(${err.message})`;
+            document.getElementById('oilPriceDisplayMain').textContent = errMsg;
+            showMessage(errMsg, 'error');
+            if (isInitialLoad) document.getElementById('message-area-load').textContent = err.message;
+        } finally {
+            if (!isInitialLoad) document.getElementById('fetchOilPriceButton').disabled = false;
+        }
+    }
+
+    /**************************************************************
+     * Live calculate & chart
+     **************************************************************/
+    function liveCalculate() {
+        const income = parseFloat(document.getElementById('income').value) || 0;
+        const mileage = parseFloat(document.getElementById('mileage').value) || 0;
+        const hours = parseFloat(document.getElementById('hours').value) || 0;
+        const minutes = parseFloat(document.getElementById('minutes').value) || 0;
+        const fuelEfficiency = parseFloat(document.getElementById('fuelEfficiencyInput').value) || DEFAULT_FUEL_EFFICIENCY_KML;
+        const maintCostPerKm = parseFloat(document.getElementById('maintCostInput').value) || DEFAULT_MAINT_COST_PER_KM;
+
+        const gasCostPerKm = currentOilPrice / fuelEfficiency;
+        const gasTotalCost = gasCostPerKm * mileage;
+        const maintTotalCost = maintCostPerKm * mileage;
+        const totalCost = gasTotalCost + maintTotalCost;
+        const netProfit = income - totalCost;
+        const totalHours = hours + (minutes/60);
+        const netHourlyRate = totalHours > 0 ? netProfit / totalHours : 0;
+        const grossHourlyRate = totalHours > 0 ? income / totalHours : 0;
+
+        document.getElementById('liveGrossIncome').textContent = `$${income.toFixed(1)}`;
+        document.getElementById('liveTotalCost').textContent = `$${totalCost.toFixed(1)}`;
+        document.getElementById('liveNetProfit').textContent = `$${netProfit.toFixed(1)}`;
+        document.getElementById('liveGasCost').textContent = `$${gasTotalCost.toFixed(1)}`;
+        document.getElementById('liveMaintCost').textContent = `$${maintTotalCost.toFixed(1)}`;
+        document.getElementById('liveGrossHourly').textContent = `$${grossHourlyRate.toFixed(1)}/hr`;
+        document.getElementById('liveNetHourly').textContent = `$${netHourlyRate.toFixed(1)}/hr`;
+
+        updateChart(netProfit, gasTotalCost, maintTotalCost, income);
+    }
+
+    function updateChart(netProfit=0, gasTotalCost=0, maintTotalCost=0, income=0) {
+        const ctx = document.getElementById('costChart').getContext('2d');
+        if (income <= 0 && gasTotalCost <= 0 && maintTotalCost <= 0) {
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+            return;
+        }
+        const dataValues = [ netProfit > 0 ? netProfit : 0.1, gasTotalCost, maintTotalCost ];
+        const data = {
+            labels: ['淨利','油費成本','耗材成本'],
+            datasets: [{ data: dataValues }]
+        };
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+                datalabels: {
+                    color: '#fff',
+                    formatter: (value, ctx) => {
+                        const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                        const pct = total > 0 ? (value/total*100).toFixed(1) : 0;
+                        return pct > 5 ? `${pct}%` : '';
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a,b)=>a+b,0);
+                            const pct = total>0 ? (value/total*100).toFixed(1) : 0;
+                            return `${context.label}: ${formatCurrency(value)} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        };
+
+        if (chartInstance) {
+            chartInstance.data = data;
+            chartInstance.options = options;
+            chartInstance.update();
+        } else {
+            chartInstance = new Chart(ctx, { type:'doughnut', data, options, plugins: [ChartDataLabels] });
+        }
+    }
+
+    /**************************************************************
+     * Save / Edit / Delete records
+     **************************************************************/
+    async function handleSaveRecord() {
+        if (isEditingDate) {
+            await saveDailyRecord(isEditingDate);
+            isEditingDate = null;
+            document.getElementById('saveDailyRecordButton').textContent = "儲存記錄";
+        } else {
+            await saveDailyRecord();
+        }
+    }
+
+    async function saveDailyRecord(editDate=null) {
+        if (!userId) { showMessage("User not ready", 'error'); return; }
+        const recordDate = document.getElementById('recordDate').value;
+        const income = parseFloat(document.getElementById('income').value) || 0;
+        const mileage = parseFloat(document.getElementById('mileage').value) || 0;
+        const hours = parseFloat(document.getElementById('hours').value) || 0;
+        const minutes = parseFloat(document.getElementById('minutes').value) || 0;
+
+        if (!recordDate || income <= 0 || mileage <= 0) { showMessage("請輸入有效日期/營業額/公里數", 'error'); return; }
+
+        const totalMinutes = hours*60 + minutes;
+        const totalHours = totalMinutes / 60;
+        const gasCostPerKm = currentOilPrice / (userConfig.fuelEfficiency || DEFAULT_FUEL_EFFICIENCY_KML);
+        const gasTotalCost = gasCostPerKm * mileage;
+        const maintTotalCost = (userConfig.maintCostPerKm || DEFAULT_MAINT_COST_PER_KM) * mileage;
+        const totalCost = gasTotalCost + maintTotalCost;
+        const netProfit = income - totalCost;
+
+        const recordData = {
+            date: recordDate,
+            income, mileage, totalMinutes,
+            gasCost: gasTotalCost, maintCost: maintTotalCost, totalCost, netProfit,
+            grossHourly: totalHours>0 ? income/totalHours : 0,
+            netHourly: totalHours>0 ? netProfit/totalHours : 0,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        const docId = editDate || recordDate;
+        try {
+            await db.collection(recordsCollectionPath(userId)).doc(docId).set(recordData);
+            showMessage(`${editDate ? '更新' : '儲存'}成功: ${docId}`, 'success');
+            if (editDate) {
+                isEditingDate = null;
+                document.getElementById('saveDailyRecordButton').textContent = "儲存記錄";
+            }
+            loadReport(currentReportType);
+        } catch (e) {
+            console.error("儲存記錄失敗:", e);
+            showMessage("儲存失敗，檢查權限或網路", 'error');
+        }
+    }
+
+    async function deleteRecord(dateStr) {
+        if (!confirm(`確認刪除 ${dateStr} 的記錄？`)) return;
+        try {
+            await db.collection(recordsCollectionPath(userId)).doc(dateStr).delete();
+            showMessage(`已刪除 ${dateStr}`, 'success');
+            loadReport(currentReportType);
+        } catch (e) {
+            console.error("刪除失敗:", e);
+            showMessage("刪除失敗，請檢查權限", 'error');
+        }
+    }
+
+    async function editRecord(dateStr) {
+        try {
+            const doc = await db.collection(recordsCollectionPath(userId)).doc(dateStr).get();
+            if (!doc.exists) { showMessage("找不到該記錄", 'error'); return; }
+            const d = doc.data();
+            document.getElementById('recordDate').value = d.date;
+            document.getElementById('income').value = d.income || 0;
+            document.getElementById('mileage').value = d.mileage || 0;
+            const mins = d.totalMinutes || 0;
+            document.getElementById('hours').value = Math.floor(mins/60);
+            document.getElementById('minutes').value = Math.round(mins % 60);
+            isEditingDate = dateStr;
+            document.getElementById('saveDailyRecordButton').textContent = "更新記錄";
+            window.scrollTo({top:0, behavior:'smooth'});
+        } catch (e) {
+            console.error("編輯讀取失敗:", e);
+            showMessage("讀取記錄失敗", 'error');
+        }
+    }
+
+    /**************************************************************
+     * Report load & render
+     **************************************************************/
+    function getStartAndEndDate(date, type) {
+        const start = new Date(date);
+        const end = new Date(date);
+        start.setUTCHours(0,0,0,0);
+        end.setUTCHours(23,59,59,999);
+        switch(type) {
+            case 'week':
+                const dow = (start.getUTCDay()===0?6:start.getUTCDay()-1);
+                start.setUTCDate(start.getUTCDate()-dow);
+                end.setUTCDate(start.getUTCDate()+6);
+                end.setUTCHours(23,59,59,999);
+                break;
+            case 'month':
+                start.setUTCDate(1);
+                end.setUTCMonth(end.getUTCMonth()+1,0);
+                end.setUTCHours(23,59,59,999);
+                break;
+            case 'year':
+                start.setUTCMonth(0,1);
+                end.setUTCMonth(11,31);
+                end.setUTCHours(23,59,59,999);
+                break;
+        }
+        return { start: formatDateToInput(start), end: formatDateToInput(end) };
+    }
+
+    async function loadReport(type='day') {
+        currentReportType = type;
+        const { start, end } = getStartAndEndDate(currentReportDate, type);
+        document.getElementById('reportDateRange').textContent = type==='day' ? start.replace(/-/g,'/') : `${start.replace(/-/g,'/')} ~ ${end.replace(/-/g,'/')}`;
+
+        const recordsRef = db.collection(recordsCollectionPath(userId));
+        try {
+            const snapshot = await recordsRef.where('date','>=',start).where('date','<=',end).orderBy('date','asc').get();
+            let totalIncome=0, totalNetProfit=0, totalMinutes=0, totalCost=0, totalMileage=0;
+            let html = '';
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                totalIncome += d.income || 0;
+                totalNetProfit += d.netProfit || 0;
+                totalMinutes += d.totalMinutes || 0;
+                totalCost += d.totalCost || 0;
+                totalMileage += d.mileage || 0;
+                const statusClass = (d.netProfit >= 0) ? 'text-green-600' : 'text-red-600';
+                html += `
+                    <div class="record-row border-b">
+                        <div>
+                            <div class="font-medium">${d.date.replace(/-/g,'/')}</div>
+                            <div class="muted text-xs">${formatDuration(d.totalMinutes || 0)} • ${formatCurrency(d.income || 0)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="${statusClass} font-semibold">${formatCurrency(d.netProfit || 0)}</div>
+                            <div class="record-actions mt-1">
+                                <button class="small-btn btn-ghost" onclick="editRecord('${d.date}')">編輯</button>
+                                <button class="small-btn btn-danger" onclick="deleteRecord('${d.date}')">刪除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('reportDetails').innerHTML = html || '<p class="muted">此期間尚未有記錄。</p>';
+
+            const totalHours = totalMinutes / 60;
+            const avgNetHourly = totalHours > 0 ? totalNetProfit / totalHours : 0;
+            const avgGrossHourly = totalHours > 0 ? totalIncome / totalHours : 0;
+
+            document.getElementById('reportTotalIncome').textContent = formatCurrency(totalIncome);
+            document.getElementById('reportNetProfit').textContent = formatCurrency(totalNetProfit);
+            document.getElementById('reportTotalHours').textContent = formatDuration(totalMinutes);
+            document.getElementById('reportTotalCost').textContent = formatCurrency(totalCost);
+            document.getElementById('reportTotalMileage')?.textContent = totalMileage.toFixed(1);
+            document.getElementById('reportNetHourly').textContent = `${formatCurrency(avgNetHourly)}/hr`;
+            document.getElementById('reportGrossHourly').textContent = `${formatCurrency(avgGrossHourly)}/hr`;
+
+        } catch (e) {
+            console.error("載入報表失敗:", e);
+            showMessage("載入報表失敗，請檢查權限與網路。", 'error');
+        }
+    }
+
+    function changeReportDate(delta) {
+        const t = new Date(currentReportDate);
+        switch(currentReportType){
+            case 'day': t.setDate(t.getDate()+delta); break;
+            case 'week': t.setDate(t.getDate()+ delta*7); break;
+            case 'month': t.setMonth(t.getMonth()+delta); break;
+            case 'year': t.setFullYear(t.getFullYear()+delta); break;
+        }
+        currentReportDate = t;
+        loadReport(currentReportType);
+    }
+
+    /**************************************************************
+     * Init & events
+     **************************************************************/
+    function initAppEvents() {
+        Chart.register(ChartDataLabels);
+        ['income','mileage','hours','minutes','fuelEfficiencyInput','maintCostInput'].forEach(id=>{
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => { liveCalculate(); if (id.startsWith('fuel')||id.startsWith('maint')) saveConfig(); });
+        });
+        document.getElementById('recordDate').value = formatDateToInput(new Date());
+        loadReport(currentReportType);
+        liveCalculate();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initFirebase();
     });
-}
 
-function editRecord(i) {
-    const all = JSON.parse(localStorage.getItem('history') || '[]');
-    const r = all[i];
-    document.getElementById('recordDate').value = r.date;
-    document.getElementById('dayIncome').value = r.income;
-    document.getElementById('dayDistance').value = r.km;
-    document.getElementById('workHours').value = r.hours;
-    alert('已載入至輸入欄位，可修改後重新儲存。');
-}
+    // expose to markup
+    window.fetchOilPrice = fetchOilPrice;
+    window.loadReport = loadReport;
+    window.changeReportDate = changeReportDate;
+    window.saveConfig = saveConfig;
+    window.saveDailyRecord = saveDailyRecord;
+    window.handleSaveRecord = handleSaveRecord;
+    window.editRecord = editRecord;
+    window.deleteRecord = deleteRecord;
 
-function deleteRecord(i) {
-    const all = JSON.parse(localStorage.getItem('history') || '[]');
-    all.splice(i, 1);
-    localStorage.setItem('history', JSON.stringify(all));
-    loadHistory();
-}
-
-window.onload = () => {
-    fetchOilPrice();
-    loadSettings();
-    loadHistory();
-};
-</script>
+    </script>
 </body>
 </html>
