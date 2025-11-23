@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Uber Driver 失敗版本產生器</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@google/generative-ai/dist/browser.bundle.min.js"></script>
     <style>
         .container { max-width: 1000px; }
         .net-profit { color: #10b981; } /* 綠色 */
@@ -322,183 +323,16 @@
             }
         }
 
-        // =========================
-        // callGemini (強化版)
-        // - 會 list models (v1, v1beta)
-        // - 選 model（並標準化 modelId）
-        // - 嘗試多種 endpoint + payload 格式，直到成功
-        // =========================
         async function callGemini(promptText) {
-            const KEY = GEMINI_API_KEY;
-            if (!KEY) throw new Error("沒有設定 GEMINI_API_KEY。請在程式中放入你的 key。");
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-            // 1) 列出 models
-            const tryListModels = async (version) => {
-                try {
-                    const url = `https://generativelanguage.googleapis.com/${version}/models?key=${KEY}`;
-                    const res = await fetch(url);
-                    if (!res.ok) {
-                        // 回傳失敗 -> 回 null，讓呼叫端試其它版本
-                        return null;
-                    }
-                    const json = await res.json();
-                    return json.models || [];
-                } catch (e) {
-                    return null;
-                }
-            };
+    const result = await model.generateContent(promptText);
+    return {
+        text: result.response.text()
+    };
+}
 
-            const pickModel = (models) => {
-                if (!models || !models.length) return null;
-                // 優先找 gemini 名稱且支援 generateContent / generateText 的
-                for (const m of models) {
-                    const name = m.name || m.model || "";
-                    const methods = m.supportedMethods || m.supported_generation_methods || [];
-                    if (/gemini/i.test(name) && methods && methods.length) return name;
-                }
-                // 再找任何支援 generateContent/generateText 的
-                for (const m of models) {
-                    const name = m.name || m.model || "";
-                    const methods = m.supportedMethods || m.supported_generation_methods || [];
-                    if (methods && methods.length) return name;
-                }
-                // fallback: 返回第一個 name
-                if (models[0] && (models[0].name || models[0].model)) return models[0].name || models[0].model;
-                return null;
-            };
-
-            let modelName = null;
-            let usedVersion = null;
-            let models = await tryListModels('v1');
-            modelName = pickModel(models);
-            if (modelName) usedVersion = 'v1';
-            else {
-                models = await tryListModels('v1beta');
-                modelName = pickModel(models);
-                if (modelName) usedVersion = 'v1beta';
-            }
-
-            if (!modelName) throw new Error("找不到可用的 model（ListModels 回傳無結果，請確認 API Key/權限與 API 是否啟用）。");
-
-            // modelName 有可能是 "models/gemini-1.5-flash" 或 "gemini-1.5-flash"
-            let modelId = modelName;
-            if (typeof modelName === 'string' && modelName.includes('/')) {
-                // 取最後一段
-                modelId = modelName.split('/').pop();
-            }
-
-            // 建立要嘗試的 endpoint + payload 組合（依序嘗試）
-            const attempts = [];
-
-            // 方案 A: generateContent（v1/v1beta），body 用 snake_case generation_config
-            attempts.push({
-                version: usedVersion || 'v1',
-                url: (ver) => `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelId)}:generateContent?key=${KEY}`,
-                body: {
-                    contents: [{ parts: [{ text: promptText }] }],
-                    generation_config: { temperature: 0.1, max_output_tokens: 200 }
-                }
-            });
-
-            // 方案 B: generateText（有些版本使用 generateText，並接受 input text）
-            attempts.push({
-                version: usedVersion || 'v1beta',
-                url: (ver) => `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelId)}:generateText?key=${KEY}`,
-                body: {
-                    input: { text: promptText },
-                    temperature: 0.1,
-                    maxOutputTokens: 200
-                }
-            });
-
-            // 方案 C: 另一種 generateContent body（camelCase），有些舊範例使用 contents + generationConfig (保守再試)
-            attempts.push({
-                version: usedVersion || 'v1',
-                url: (ver) => `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelId)}:generateContent?key=${KEY}`,
-                body: {
-                    contents: [{ parts: [{ text: promptText }] }],
-                    generationConfig: { temperature: 0.1, maxOutputTokens: 200 }
-                }
-            });
-
-            // 方案 D: 直接 /v1/models/{model}:generate?（某些 edge 狀況）
-            attempts.push({
-                version: usedVersion || 'v1',
-                url: (ver) => `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelId)}:generate?key=${KEY}`,
-                body: {
-                    input: { text: promptText },
-                    temperature: 0.1,
-                    maxOutputTokens: 200
-                }
-            });
-
-            // 逐一嘗試
-            let lastError = null;
-            for (const a of attempts) {
-                const endpoint = a.url(a.version);
-                try {
-                    const res = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(a.body)
-                    });
-                    const text = await res.text().catch(()=> '');
-                    if (!res.ok) {
-                        // 嘗試解析 JSON 錯誤以供 debug
-                        let parsed = null;
-                        try { parsed = JSON.parse(text || '{}'); } catch(e) { parsed = null; }
-                        const shortMsg = parsed && parsed.error && parsed.error.message ? parsed.error.message : `${res.status} ${res.statusText} ${text}`;
-                        lastError = `呼叫 ${endpoint} 失敗: ${shortMsg}`;
-                        // 若是某些 "unknown field 'temperature'" 類型錯誤，就改嘗試下一組 payload
-                        continue;
-                    }
-                    // 成功
-                    let data = null;
-                    try { data = JSON.parse(text); } catch(e) { data = { rawText: text }; }
-                    // 嘗試解析常見回傳結構
-                    let outputText = null;
-                    if (data) {
-                        // 常見：data.candidates[0].content.parts[0].text
-                        outputText = data?.candidates?.[0]?.content?.parts?.[0]?.text
-                                  || data?.candidates?.[0]?.output?.[0]?.content?.parts?.[0]?.text
-                                  || data?.output?.[0]?.content?.text
-                                  || data?.output?.[0]?.content?.[0]?.text
-                                  || data?.output?.[0]?.text
-                                  || data?.output_text
-                                  || data?.result?.[0]?.output;
-                        // 有些回傳會把文字放在 data.candidates[0].content[0].text
-                        if (!outputText && data?.candidates?.[0]?.content) {
-                            try {
-                                const c = data.candidates[0].content;
-                                // 若 content 是陣列或物件，嘗試合併裡面的 parts
-                                if (Array.isArray(c)) {
-                                    for (const item of c) {
-                                        if (item.parts) {
-                                            for (const p of item.parts) {
-                                                if (p.text) outputText = (outputText ? outputText + '\n' : '') + p.text;
-                                            }
-                                        } else if (item.text) {
-                                            outputText = (outputText ? outputText + '\n' : '') + item.text;
-                                        }
-                                    }
-                                } else if (c.parts) {
-                                    for (const p of c.parts) {
-                                        if (p.text) outputText = (outputText ? outputText + '\n' : '') + p.text;
-                                    }
-                                }
-                            } catch(e){}
-                        }
-                    }
-                    return { raw: data, text: outputText || (typeof data === 'string' ? data : JSON.stringify(data)) };
-                } catch (err) {
-                    lastError = `嘗試 ${endpoint} 時發生例外: ${err.message}`;
-                    continue;
-                }
-            } // end for attempts
-
-            // 若全部失敗，丟出最後一個錯誤，含 model 資訊
-            throw new Error(`找不到可用的 model 或所有請求方法均失敗。modelId=${modelId}。最後錯誤：${lastError}`);
-        }
 
         // fetchOilPrice 使用 callGemini
         async function fetchOilPrice(isInitialLoad = false) {
@@ -511,6 +345,7 @@
             try {
                 const result = await callGemini(prompt);
                 const responseText = (result && result.text) ? result.text : JSON.stringify(result.raw || "");
+                console.log("Gemini 回傳內容：", responseText);
                 let price = NaN;
                 const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
                 if (jsonMatch) {
