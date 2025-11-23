@@ -487,111 +487,107 @@
 
 
         // --- 獲取油價 (使用 Gemini API) ---
-        async function fetchOilPrice(isInitialLoad = false) {
-            if (!isInitialLoad) {
-                document.getElementById('fetchOilPriceButton').disabled = true;
-                document.getElementById('oilPriceDisplayMain').textContent = "中油 92 汽油: 獲取中...";
+      // --- 最終修正後的 fetchOilPrice 函數 ---
+async function fetchOilPrice(isInitialLoad = false) {
+    if (!isInitialLoad) {
+        document.getElementById('fetchOilPriceButton').disabled = true;
+        document.getElementById('oilPriceDisplayMain').textContent = "中油 92 汽油: 獲取中...";
+    }
+    
+    // 修正點 1: 確保模型名稱使用穩定且支援 generateContent 的模型 (例如 gemini-pro 或 gemini-2.5-flash)
+    // 修正為 gemini-pro
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+    
+    const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
+    格式範例: {"price": 27.1, "unit": "NTD/L"}`;
+    
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [
+                    { parts: [{ text: prompt }] }
+                ],
+                // 修正點 2: 確保使用正確的鍵名 generationConfig (已在之前修正)
+                generationConfig: {
+                    temperature: 0.1,
+                }
+            })
+        });
+
+        // 檢查 API 狀態碼，並嘗試提取錯誤細節
+        if (!response.ok) {
+            let errorDetail = `API 錯誤：${response.status} (${response.statusText})`;
+            
+            try {
+                const clonedResponse = response.clone();
+                const errorData = await clonedResponse.json();
+                if (errorData.error && errorData.error.message) {
+                    errorDetail += ` - 詳細錯誤: ${errorData.error.message}`;
+                } 
+            } catch (e) {
+                errorDetail += ` - 回應無法解析。`;
             }
             
-            // 移除 responseSchema 和 responseMimeType，讓 API 返回純文字
-            const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
-            格式範例: {"price": 27.1, "unit": "NTD/L"}`;
-            
-            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            throw new Error(errorDetail);
+        }
 
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        // 正確的 Request Body 結構
-                        contents: [
-                            { parts: [{ text: prompt }] }
-                        ],
-                        // 修正：將 config 改為 generationConfig 以符合 Gemini API 要求
-                        generationConfig: {
-                            temperature: 0.1,
-                        }
-                    })
-                });
+        // 正常處理 API 回應
+        const data = await response.json();
+        let price = 0;
 
-                // 🚨 關鍵除錯步驟：檢查 API 狀態碼，並嘗試提取錯誤細節
-                if (!response.ok) {
-                    let errorDetail = `API 錯誤：${response.status} (${response.statusText})`;
-                    
-                    // 嘗試讀取 API 服務返回的具體錯誤訊息
-                    try {
-                        // 複製 response 以供多次讀取
-                        const clonedResponse = response.clone();
-                        const errorData = await clonedResponse.json();
-                        if (errorData.error && errorData.error.message) {
-                            // 提取 Google API 錯誤的詳細訊息
-                            errorDetail += ` - 詳細錯誤: ${errorData.error.message}`;
-                        } else {
-                            errorDetail += ` - 無法解析具體錯誤訊息。`;
-                        }
-                    } catch (e) {
-                        // 如果連回應都不能解析成 JSON，則忽略
-                        errorDetail += ` - 回應非 JSON 格式或無主體。`;
-                    }
-                    
-                    // 拋出包含詳細錯誤訊息的錯誤
-                    throw new Error(errorDetail);
-                }
-
-                // 正常處理 API 回應
-                const data = await response.json();
-                let price = 0;
-
-                // 解析 Gemini 的回應 (JSON 優先，純文字備用)
-                try {
-                    const responseText = data.candidates[0].content.parts[0].text;
-                    // 嘗試 JSON 解析
-                    const jsonObject = JSON.parse(responseText.trim());
-                    price = parseFloat(jsonObject.price);
-                } catch (e) {
-                    // 如果 JSON 解析失敗，執行純文字提取邏輯
-                    console.warn("API 回應解析失敗，嘗試從純文字提取油價...");
-                    const responseText = data.candidates[0].content.parts[0].text;
-                    const textMatch = responseText.match(/(\d+\.?\d*)/); // 提取第一個找到的數字
-                    if (textMatch) {
-                        price = parseFloat(textMatch[0]);
-                    } else {
-                        throw new Error("無法從 API 回應中提取油價數值，請檢查模型輸出。");
-                    }
-                }
-                
-                if (isNaN(price) || price <= 0) throw new Error("獲取到無效的油價數值。");
-                
-                currentOilPrice = price;
-                
-                // 更新 UI
-                const display = `中油 92 汽油: $${currentOilPrice.toFixed(2)}/L`;
-                document.getElementById('oilPriceDisplayMain').textContent = display;
-                if (!isInitialLoad) {
-                    showMessage(`油價更新成功: ${currentOilPrice.toFixed(2)} NTD/L`, 'success');
-                } else {
-                    document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
-                }
-                liveCalculate(); // 油價更新後重新計算
-
-            } catch (error) {
-                const errorMessage = `油價獲取失敗：使用預設值 $${currentOilPrice.toFixed(2)}/L。(${error.message || '網路連線錯誤'})`;
-                document.getElementById('oilPriceDisplayMain').textContent = errorMessage;
-                showMessage(errorMessage, 'error');
-                console.error("油價獲取失敗:", error);
-                
-                // 如果是初始載入階段的錯誤，將錯誤訊息顯示在載入畫面上
-                if (isInitialLoad) {
-                     document.getElementById('message-area-load').textContent = error.message;
-                }
-
-            } finally {
-                if (!isInitialLoad) {
-                    document.getElementById('fetchOilPriceButton').disabled = false;
-                }
+        try {
+            const responseText = data.candidates[0].content.parts[0].text;
+            // 嘗試 JSON 解析
+            const jsonMatch = responseText.match(/\{[^}]*\}/); // 尋找第一個 {} 結構
+            if (!jsonMatch) {
+                throw new Error("無法在 API 回應中找到有效的 JSON 結構。");
+            }
+            const jsonObject = JSON.parse(jsonMatch[0]);
+            price = parseFloat(jsonObject.price);
+        } catch (e) {
+            // 如果 JSON 解析失敗，執行純文字提取邏輯
+            console.warn("API 回應解析失敗，嘗試從純文字提取油價:", e);
+            const responseText = data.candidates[0].content.parts[0].text;
+            const textMatch = responseText.match(/(\d+\.?\d*)/); // 提取第一個找到的數字
+            if (textMatch) {
+                price = parseFloat(textMatch[0]);
+            } else {
+                throw new Error("無法從 API 回應中提取油價數值，請檢查模型輸出。");
             }
         }
+        
+        if (isNaN(price) || price <= 0) throw new Error("獲取到無效的油價數值。");
+        
+        currentOilPrice = price;
+        
+        // 更新 UI
+        const display = `中油 92 汽油: $${currentOilPrice.toFixed(2)}/L`;
+        document.getElementById('oilPriceDisplayMain').textContent = display;
+        if (!isInitialLoad) {
+            showMessage(`油價更新成功: ${currentOilPrice.toFixed(2)} NTD/L`, 'success');
+        } else {
+            document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
+        }
+        liveCalculate();
+
+    } catch (error) {
+        const errorMessage = `油價獲取失敗：使用預設值 $${currentOilPrice.toFixed(2)}/L。(${error.message || '網路連線錯誤'})`;
+        document.getElementById('oilPriceDisplayMain').textContent = errorMessage;
+        showMessage(errorMessage, 'error');
+        console.error("油價獲取失敗:", error);
+        
+        if (isInitialLoad) {
+             document.getElementById('message-area-load').textContent = error.message;
+        }
+
+    } finally {
+        if (!isInitialLoad) {
+            document.getElementById('fetchOilPriceButton').disabled = false;
+        }
+    }
+}
 
 
         // --- 即時計算邏輯 ---
