@@ -268,12 +268,13 @@
         const DEFAULT_FUEL_EFFICIENCY_KML = 42;
         const DEFAULT_MAINT_COST_PER_KM = 0.60;
         
-        // ⚠️ 注意: 此處已修正末尾的 O 為數字 0
-        const GEMINI_API_KEY = "AIzaSyBJ0mQy-pr1KLYFWjG2KHNnToRNXkDAN-s";
+        // ⚠️ 替換您的 Gemini API 金鑰
+        // 這是您堅持有效的金鑰，若仍報錯 400，請務必查看其詳細錯誤訊息
+        const GEMINI_API_KEY = "AIzaSyBJ0mQy-pr1KLYFWjG2KHNnToRNXkDAN-s"; 
 
         const FIREBASE_CONFIG = {
-            // ⚠️ 注意: 此處已修正末尾的 O 為數字 0
-            apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
+            // ⚠️ 替換您的 Firebase API 金鑰
+            apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 請替換為您的 Firebase 金鑰
             authDomain: "uber-driver-tracker.firebaseapp.com",
             projectId: "uber-driver-tracker",
             storageBucket: "uber-driver-tracker.firebasestorage.app",
@@ -493,12 +494,12 @@
                 document.getElementById('oilPriceDisplayMain').textContent = "中油 92 汽油: 獲取中...";
             }
             
+            // 移除 responseSchema 和 responseMimeType，讓 API 返回純文字
             const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
             格式範例: {"price": 27.1, "unit": "NTD/L"}`;
             
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-          // 替換後的程式碼：
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -506,34 +507,56 @@
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }],
                         config: {
-                         temperature: 0.1,
-                        // responseMimeType 和 responseSchema 已被移除
+                            temperature: 0.1,
+                            // responseMimeType 和 responseSchema 已被移除
                         }
                     })
                 });
 
-    if (!response.ok) throw new Error(`API 錯誤：${response.status}`);
-// ... 函數的其餘部分保持不變
+                // 🚨 關鍵除錯步驟：檢查 API 狀態碼，並嘗試提取錯誤細節
+                if (!response.ok) {
+                    let errorDetail = `API 錯誤：${response.status} (${response.statusText})`;
+                    
+                    // 嘗試讀取 API 服務返回的具體錯誤訊息
+                    try {
+                        // 複製 response 以供多次讀取
+                        const clonedResponse = response.clone();
+                        const errorData = await clonedResponse.json();
+                        if (errorData.error && errorData.error.message) {
+                            // 提取 Google API 錯誤的詳細訊息
+                            errorDetail += ` - 詳細錯誤: ${errorData.error.message}`;
+                        } else {
+                            errorDetail += ` - 無法解析具體錯誤訊息。`;
+                        }
+                    } catch (e) {
+                        // 如果連回應都不能解析成 JSON，則忽略
+                        errorDetail += ` - 回應非 JSON 格式或無主體。`;
+                    }
+                    
+                    // 拋出包含詳細錯誤訊息的錯誤
+                    throw new Error(errorDetail);
+                }
 
-                if (!response.ok) throw new Error(`API 錯誤：${response.status}`);
-
+                // 正常處理 API 回應
                 const data = await response.json();
                 let price = 0;
 
-                // 解析 Gemini 的回應
+                // 解析 Gemini 的回應 (JSON 優先，純文字備用)
                 try {
                     const responseText = data.candidates[0].content.parts[0].text;
+                    // 嘗試 JSON 解析
                     const jsonObject = JSON.parse(responseText.trim());
                     price = parseFloat(jsonObject.price);
                 } catch (e) {
-                     // 如果 JSON 解析失敗，嘗試從純文字回應中提取數字 (備用邏輯)
-                     console.warn("JSON解析失敗，嘗試從純文字提取...");
-                     const textMatch = data.candidates[0].content.parts[0].text.match(/(\d+\.?\d*)/);
-                     if (textMatch) {
-                         price = parseFloat(textMatch[0]);
-                     } else {
-                         throw new Error("無法從 API 回應中提取油價數值。");
-                     }
+                    // 如果 JSON 解析失敗，執行純文字提取邏輯
+                    console.warn("API 回應解析失敗，嘗試從純文字提取油價...");
+                    const responseText = data.candidates[0].content.parts[0].text;
+                    const textMatch = responseText.match(/(\d+\.?\d*)/); // 提取第一個找到的數字
+                    if (textMatch) {
+                        price = parseFloat(textMatch[0]);
+                    } else {
+                        throw new Error("無法從 API 回應中提取油價數值，請檢查模型輸出。");
+                    }
                 }
                 
                 if (isNaN(price) || price <= 0) throw new Error("獲取到無效的油價數值。");
@@ -546,15 +569,21 @@
                 if (!isInitialLoad) {
                     showMessage(`油價更新成功: ${currentOilPrice.toFixed(2)} NTD/L`, 'success');
                 } else {
-                     document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
+                    document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
                 }
                 liveCalculate(); // 油價更新後重新計算
 
             } catch (error) {
-                const errorMessage = `油價獲取失敗：使用預設值 $${currentOilPrice.toFixed(2)}/L。(${error.message || '網路/API 錯誤'})`;
+                const errorMessage = `油價獲取失敗：使用預設值 $${currentOilPrice.toFixed(2)}/L。(${error.message || '網路連線錯誤'})`;
                 document.getElementById('oilPriceDisplayMain').textContent = errorMessage;
                 showMessage(errorMessage, 'error');
                 console.error("油價獲取失敗:", error);
+                
+                // 如果是初始載入階段的錯誤，將錯誤訊息顯示在載入畫面上
+                if (isInitialLoad) {
+                     document.getElementById('message-area-load').textContent = error.message;
+                }
+
             } finally {
                 if (!isInitialLoad) {
                     document.getElementById('fetchOilPriceButton').disabled = false;
@@ -628,327 +657,250 @@
                     data: dataValues, 
                     backgroundColor: ['#10b981', '#f59e0b', '#f87171'], // 綠色, 黃色, 紅色
                     hoverBackgroundColor: ['#059669', '#d97706', '#ef4444'],
-                    borderWidth: 0
                 }]
             };
 
-            const ctx = document.getElementById('costChart').getContext('2d');
+            const options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                                return `${label}${formatCurrency(value)} (${percentage}%)`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        color: '#fff',
+                        formatter: (value, context) => {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
+                            return percentage > 5 ? `${percentage}%` : ''; // 只顯示大於 5% 的標籤
+                        },
+                        font: {
+                            weight: 'bold'
+                        }
+                    }
+                }
+            };
 
+            const ctx = document.getElementById('costChart').getContext('2d');
+            
             if (chartInstance) {
                 chartInstance.data = data;
-                chartInstance.options.plugins.tooltip.callbacks.label = function(context) {
-                    const label = context.label || '';
-                    if (label) {
-                        // 使用原始計算值 for 淨利
-                        const value = (label === '淨利' && netProfit < 0) ? netProfit : context.parsed;
-                        // 計算佔總收入的百分比
-                        const percentage = (value / income) * 100;
-                        return `${label}: $${value.toFixed(1)} (${percentage.toFixed(1)}%)`;
-                    }
-                    return null;
-                };
+                chartInstance.options = options;
                 chartInstance.update();
             } else {
                 chartInstance = new Chart(ctx, {
                     type: 'doughnut',
                     data: data,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        if (label) {
-                                            // 使用原始計算值 for 淨利
-                                            const value = (label === '淨利' && netProfit < 0) ? netProfit : context.parsed;
-                                            // 計算佔總收入的百分比
-                                            const percentage = (value / income) * 100;
-                                            return `${label}: $${value.toFixed(1)} (${percentage.toFixed(1)}%)`;
-                                        }
-                                        return null;
-                                    }
-                                }
-                            },
-                            datalabels: {
-                                formatter: (value, context) => {
-                                     // 計算佔總收入的百分比 (使用原始收入當分母)
-                                     if (income > 0) {
-                                        // 對於負淨利或極小的淨利，顯示其佔比，否則使用圖表值
-                                        const actualValue = (context.label === '淨利' && netProfit < 0) ? netProfit : value;
-                                        return (actualValue / income * 100).toFixed(1) + '%';
-                                     }
-                                     return '';
-                                },
-                                color: '#fff',
-                                font: {
-                                    weight: 'bold'
-                                }
-                            }
-                        }
-                    }
+                    options: options,
                 });
             }
         }
 
-
-        // --- 每日記錄儲存 (新功能) ---
+        // --- 記錄保存 ---
         async function saveDailyRecord() {
-            document.getElementById('saveDailyRecordButton').disabled = true;
-            const btnText = document.getElementById('saveDailyRecordButton').textContent;
-            document.getElementById('saveDailyRecordButton').textContent = "儲存中...";
+            if (!userId) {
+                showMessage("用戶 ID 未載入，請稍候或重試。", 'error');
+                return;
+            }
 
+            const recordDate = document.getElementById('recordDate').value;
             const income = parseFloat(document.getElementById('income').value) || 0;
             const mileage = parseFloat(document.getElementById('mileage').value) || 0;
             const hours = parseFloat(document.getElementById('hours').value) || 0;
             const minutes = parseFloat(document.getElementById('minutes').value) || 0;
-            const recordDateString = document.getElementById('recordDate').value;
-            const recordDate = parseDate(recordDateString);
             
-            // 檢查基本數據
-            if (income <= 0 && mileage <= 0 && (hours <= 0 && minutes <= 0)) {
-                showMessage("請至少輸入營業額、里程或工作時數其中一項。", 'warning');
-                document.getElementById('saveDailyRecordButton').disabled = false;
-                document.getElementById('saveDailyRecordButton').textContent = btnText;
-                return;
-            }
-            if (!recordDateString) {
-                showMessage("請選擇記錄日期。", 'warning');
-                document.getElementById('saveDailyRecordButton').disabled = false;
-                document.getElementById('saveDailyRecordButton').textContent = btnText;
+            if (!recordDate || income <= 0 || mileage <= 0) {
+                showMessage("請輸入有效的日期、營業額和公里數。", 'warning');
                 return;
             }
 
-            // 重新計算以獲取成本細項
-            const fuelEfficiency = parseFloat(document.getElementById('fuelEfficiencyInput').value) || DEFAULT_FUEL_EFFICIENCY_KML;
-            const maintCostPerKm = parseFloat(document.getElementById('maintCostInput').value) || DEFAULT_MAINT_COST_PER_KM;
-            const gasCostPerKm = currentOilPrice / fuelEfficiency;
+            const totalMinutes = hours * 60 + minutes;
+            const totalHours = totalMinutes / 60;
+
+            const gasCostPerKm = currentOilPrice / userConfig.fuelEfficiency; 
             const gasTotalCost = gasCostPerKm * mileage;
-            const maintTotalCost = maintCostPerKm * mileage;
+            const maintTotalCost = userConfig.maintCostPerKm * mileage; 
             const totalCost = gasTotalCost + maintTotalCost;
             const netProfit = income - totalCost;
-            const totalMinutes = (hours * 60) + minutes;
 
             const recordData = {
-                date: recordDate,
+                date: recordDate, // YYYY-MM-DD 格式字串
                 income: income,
                 mileage: mileage,
                 totalMinutes: totalMinutes,
-                netProfit: netProfit,
-                totalCost: totalCost,
                 gasCost: gasTotalCost,
                 maintCost: maintTotalCost,
-                oilPrice: currentOilPrice,
-                fuelEfficiency: fuelEfficiency,
-                maintCostPerKm: maintCostPerKm,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp() // 記錄伺服器時間戳
+                totalCost: totalCost,
+                netProfit: netProfit,
+                grossHourly: totalHours > 0 ? income / totalHours : 0,
+                netHourly: totalHours > 0 ? netProfit / totalHours : 0,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // 使用日期字串作為 Document ID，確保唯一性且方便查詢
-            const docId = formatDate(recordDate);
-            const docRef = db.collection(recordsCollectionPath(userId)).doc(docId);
+            const docRef = db.collection(recordsCollectionPath(userId)).doc(recordDate);
 
             try {
-                await docRef.set(recordData, { merge: true }); // 使用 merge 以允許更新
-                showMessage(`記錄日期 ${docId} 已成功儲存/更新到雲端！`, 'success');
-                
-                // 儲存成功後，重新載入報表以顯示最新數據
-                loadReport(currentReportType, recordDate);
-
+                await docRef.set(recordData);
+                showMessage(`成功儲存 ${recordDate} 的記錄！`, 'success');
+                loadReport(currentReportType); // 重新載入報表
             } catch (error) {
-                console.error("儲存每日記錄失敗:", error);
-                showMessage(`儲存每日記錄失敗：${error.message}`, 'error');
-            } finally {
-                document.getElementById('saveDailyRecordButton').disabled = false;
-                document.getElementById('saveDailyRecordButton').textContent = btnText;
+                console.error("儲存記錄失敗:", error);
+                showMessage("儲存記錄失敗，請檢查錯誤訊息。", 'error');
             }
         }
 
+        // --- 報表邏輯 ---
+        function getStartAndEndDate(date, type) {
+            const start = new Date(date);
+            const end = new Date(date);
+            
+            // 重置時間到當天的 00:00:00 (使用 UTC 以確保全球一致性)
+            start.setUTCHours(0, 0, 0, 0);
+            end.setUTCHours(23, 59, 59, 999);
 
-        // --- 報表數據載入與顯示 (新功能) ---
-
-        /**
-         * 載入報表數據
-         * @param {string} type - 報表類型: 'day', 'week', 'month', 'year'
-         * @param {Date} [initialDate=currentReportDate] - 初始日期，用於強制設定報表起始日
-         */
-        window.loadReport = async function(type, initialDate = currentReportDate) {
-            if (!userId) return;
-
-            document.getElementById('reportDateRange').textContent = '載入中...';
-            currentReportType = type;
-            currentReportDate = initialDate;
-
-            let startDate;
-            let endDate = new Date(currentReportDate);
-            endDate.setUTCHours(23, 59, 59, 999); // 確保包含結束日當天
-
-            // 確定報表區間
             switch (type) {
                 case 'day':
-                    startDate = new Date(currentReportDate);
-                    startDate.setUTCHours(0, 0, 0, 0);
-                    endDate = startDate; // 當日報表只查一天
+                    // 已經設置為當日開始和結束
                     break;
                 case 'week':
-                    // 週一為一週的開始
-                    const day = currentReportDate.getUTCDay(); // 0=週日, 1=週一...
-                    const diff = currentReportDate.getUTCDate() - day + (day === 0 ? -6 : 1); // 調整為週一
-                    startDate = new Date(currentReportDate.setUTCDate(diff));
-                    startDate.setUTCHours(0, 0, 0, 0);
-                    endDate = new Date(startDate);
-                    endDate.setUTCDate(startDate.getUTCDate() + 6);
-                    endDate.setUTCHours(23, 59, 59, 999);
+                    // 星期一為第一天 (台灣習慣)
+                    const dayOfWeek = (start.getUTCDay() === 0 ? 6 : start.getUTCDay() - 1); // 0=日, 1=一...
+                    start.setUTCDate(start.getUTCDate() - dayOfWeek);
+                    end.setUTCDate(start.getUTCDate() + 6);
+                    end.setUTCHours(23, 59, 59, 999);
                     break;
                 case 'month':
-                    startDate = new Date(Date.UTC(currentReportDate.getUTCFullYear(), currentReportDate.getUTCMonth(), 1));
-                    endDate = new Date(Date.UTC(currentReportDate.getUTCFullYear(), currentReportDate.getUTCMonth() + 1, 0));
-                    endDate.setUTCHours(23, 59, 59, 999);
+                    start.setUTCDate(1);
+                    end.setUTCMonth(end.getUTCMonth() + 1, 0); // 設定為下個月的第 0 天 (即本月最後一天)
+                    end.setUTCHours(23, 59, 59, 999);
                     break;
                 case 'year':
-                    startDate = new Date(Date.UTC(currentReportDate.getUTCFullYear(), 0, 1));
-                    endDate = new Date(Date.UTC(currentReportDate.getUTCFullYear(), 11, 31));
-                    endDate.setUTCHours(23, 59, 59, 999);
+                    start.setUTCMonth(0, 1);
+                    end.setUTCMonth(11, 31);
+                    end.setUTCHours(23, 59, 59, 999);
                     break;
             }
-            // 重新校正 currentReportDate 為區間內的日期，例如單日報表就是當日
+            
+            // 由於 Firestore 查詢是基於字串 (YYYY-MM-DD)，我們需要將 Date 物件轉換為字串
+            const startDateString = formatDate(start);
+            const endDateString = formatDate(end);
+            
+            return {
+                start: startDateString,
+                end: endDateString
+            };
+        }
+        
+        function getReportRangeDisplay(startDateString, endDateString, type) {
             if (type === 'day') {
-                currentReportDate = startDate;
+                return startDateString.replace(/-/g, '/');
             }
-
-            // 查詢 Firestore
+            return `${startDateString.replace(/-/g, '/')} ~ ${endDateString.replace(/-/g, '/')}`;
+        }
+        
+        async function loadReport(type) {
+            currentReportType = type;
+            const { start, end } = getStartAndEndDate(currentReportDate, type);
+            
+            document.getElementById('reportDateRange').textContent = getReportRangeDisplay(start, end, type);
+            
+            const recordsRef = db.collection(recordsCollectionPath(userId));
+            
             try {
-                const snapshot = await db.collection(recordsCollectionPath(userId))
-                    .where('date', '>=', startDate)
-                    .where('date', '<=', endDate)
-                    .orderBy('date', 'desc')
+                // 使用 date 字串進行範圍查詢
+                const snapshot = await recordsRef
+                    .where('date', '>=', start)
+                    .where('date', '<=', end)
+                    .orderBy('date', 'asc')
                     .get();
 
-                const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                displayReport(records, type, startDate, endDate);
+                let totalIncome = 0;
+                let totalNetProfit = 0;
+                let totalMinutes = 0;
+                let totalCost = 0;
+                let totalMileage = 0;
+                let reportDetailsHtml = '';
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    totalIncome += data.income;
+                    totalNetProfit += data.netProfit;
+                    totalMinutes += data.totalMinutes;
+                    totalCost += data.totalCost;
+                    totalMileage += data.mileage;
+                    
+                    const statusClass = data.netProfit >= 0 ? 'text-green-600' : 'text-red-600';
+                    reportDetailsHtml += `
+                        <div class="flex justify-between items-center border-b pb-1">
+                            <span class="font-medium">${data.date} (${formatDuration(data.totalMinutes)})</span>
+                            <span class="${statusClass} font-bold">${formatCurrency(data.netProfit)}</span>
+                        </div>
+                    `;
+                });
+
+                const totalHours = totalMinutes / 60;
+                const avgNetHourly = totalHours > 0 ? totalNetProfit / totalHours : 0;
+                const avgGrossHourly = totalHours > 0 ? totalIncome / totalHours : 0;
+                
+                document.getElementById('reportTotalIncome').textContent = formatCurrency(totalIncome);
+                document.getElementById('reportNetProfit').textContent = formatCurrency(totalNetProfit);
+                document.getElementById('reportTotalHours').textContent = formatDuration(totalMinutes);
+                document.getElementById('reportTotalCost').textContent = formatCurrency(totalCost);
+                document.getElementById('reportTotalMileage').textContent = totalMileage.toFixed(1);
+                document.getElementById('reportNetHourly').textContent = `${formatCurrency(avgNetHourly)}/hr`;
+                document.getElementById('reportGrossHourly').textContent = `${formatCurrency(avgGrossHourly)}/hr`;
+                document.getElementById('reportDetails').innerHTML = reportDetailsHtml || '<p>此期間尚未有記錄。</p>';
 
             } catch (error) {
                 console.error("載入報表失敗:", error);
-                showMessage(`載入報表數據失敗: ${error.message}`, 'error');
+                showMessage("載入報表失敗，請檢查網路或權限。", 'error');
             }
         }
-
-        /** 顯示報表結果 */
-        function displayReport(records, type, startDate, endDate) {
-            let totalIncome = 0;
-            let totalNetProfit = 0;
-            let totalCost = 0;
-            let totalMinutes = 0;
-            let totalMileage = 0;
-
-            const detailsElement = document.getElementById('reportDetails');
-            detailsElement.innerHTML = '';
-
-            records.forEach(record => {
-                totalIncome += record.income;
-                totalNetProfit += record.netProfit;
-                totalCost += record.totalCost;
-                totalMinutes += record.totalMinutes;
-                totalMileage += record.mileage;
-
-                // 顯示明細
-                const netHourly = record.totalMinutes > 0 ? (record.netProfit / (record.totalMinutes / 60)) : 0;
-                const detailItem = document.createElement('div');
-                detailItem.className = 'flex justify-between items-center p-2 border-b border-gray-200 hover:bg-gray-50';
-                detailItem.innerHTML = `
-                    <span class="font-medium">${record.id}</span>
-                    <span class="text-xs text-gray-500">${formatDuration(record.totalMinutes)} / ${record.mileage.toFixed(1)} km</span>
-                    <span class="${record.netProfit >= 0 ? 'text-green-600' : 'text-red-600'} font-bold">
-                        淨利: ${formatCurrency(record.netProfit)} (時薪: $${netHourly.toFixed(1)}/hr)
-                    </span>
-                    <button onclick="deleteRecord('${record.id}')" class="text-red-400 hover:text-red-600 ml-2">❌</button>
-                `;
-                detailsElement.appendChild(detailItem);
-            });
-
-            // 更新報表標題
-            let dateRangeText;
-            if (type === 'day') {
-                dateRangeText = formatDisplayDate(startDate);
-            } else if (type === 'week') {
-                dateRangeText = `${formatDisplayDate(startDate)} ~ ${formatDisplayDate(endDate)}`;
-            } else if (type === 'month') {
-                dateRangeText = `${startDate.getUTCFullYear()} 年 ${startDate.getUTCMonth() + 1} 月`;
-            } else if (type === 'year') {
-                dateRangeText = `${startDate.getUTCFullYear()} 年`;
-            }
-
-            document.getElementById('reportDateRange').textContent = dateRangeText;
-
-            // 彙總數據計算
-            const totalHours = totalMinutes / 60;
-            const avgGrossHourly = totalHours > 0 ? totalIncome / totalHours : 0;
-            const avgNetHourly = totalHours > 0 ? totalNetProfit / totalHours : 0;
+        
+        function changeReportDate(delta) {
+            const tempDate = new Date(currentReportDate);
             
-            // 更新報表數值
-            document.getElementById('reportTotalIncome').textContent = formatCurrency(totalIncome);
-            document.getElementById('reportNetProfit').textContent = formatCurrency(totalNetProfit);
-            document.getElementById('reportTotalHours').textContent = formatDuration(totalMinutes);
-            document.getElementById('reportTotalCost').textContent = formatCurrency(totalCost);
-            document.getElementById('reportTotalMileage').textContent = `${totalMileage.toFixed(1)} km`;
-            document.getElementById('reportGrossHourly').textContent = `$${avgGrossHourly.toFixed(1)}/hr`;
-            document.getElementById('reportNetHourly').textContent = `$${avgNetHourly.toFixed(1)}/hr`;
-
-            if (records.length === 0) {
-                detailsElement.innerHTML = `<p class="text-center text-gray-500 p-4">此期間沒有記錄。</p>`;
+            switch (currentReportType) {
+                case 'day':
+                    tempDate.setDate(tempDate.getDate() + delta);
+                    break;
+                case 'week':
+                    tempDate.setDate(tempDate.getDate() + (delta * 7));
+                    break;
+                case 'month':
+                    tempDate.setMonth(tempDate.getMonth() + delta);
+                    break;
+                case 'year':
+                    tempDate.setFullYear(tempDate.getFullYear() + delta);
+                    break;
             }
-        }
-
-
-        /**
-         * 更改報表日期範圍
-         * @param {number} direction - -1 (前一天/週/月/年) 或 1 (後一天/週/月/年)
-         */
-        window.changeReportDate = function(direction) {
-            let newDate = new Date(currentReportDate);
-            let diff = direction;
-
-            if (currentReportType === 'day') {
-                newDate.setUTCDate(newDate.getUTCDate() + diff);
-            } else if (currentReportType === 'week') {
-                newDate.setUTCDate(newDate.getUTCDate() + (diff * 7));
-            } else if (currentReportType === 'month') {
-                newDate.setUTCMonth(newDate.getUTCMonth() + diff);
-            } else if (currentReportType === 'year') {
-                newDate.setUTCFullYear(newDate.getUTCFullYear() + diff);
-            }
-
-            // 校正時區，確保日期正確
-            currentReportDate = new Date(newDate.getTime());
+            
+            currentReportDate = tempDate;
             loadReport(currentReportType);
         }
+        
+        window.loadReport = loadReport; // 暴露給 HTML 按鈕
+        window.changeReportDate = changeReportDate; // 暴露給 HTML 按鈕
+        window.saveDailyRecord = saveDailyRecord; // 暴露給 HTML 按鈕
+        window.saveConfig = saveConfig; // 暴露給 HTML 按鈕
+        window.fetchOilPrice = fetchOilPrice; // 暴露給 HTML 按鈕
 
-        /**
-         * 刪除單筆記錄
-         * @param {string} docId - 要刪除的記錄的 ID (即日期字串 YYYY-MM-DD)
-         */
-        window.deleteRecord = async function(docId) {
-            if (!confirm(`確定要刪除日期為 ${docId} 的記錄嗎？此操作無法恢復。`)) {
-                return;
-            }
-
-            try {
-                const docRef = db.collection(recordsCollectionPath(userId)).doc(docId);
-                await docRef.delete();
-                showMessage(`記錄 ${docId} 已成功刪除。`, 'success');
-                loadReport(currentReportType); // 重新載入報表
-            } catch (error) {
-                console.error("刪除記錄失敗:", error);
-                showMessage(`刪除記錄失敗: ${error.message}`, 'error');
-            }
-        }
-
-        // 應用程式啟動入口
-        initFirebase();
+        // 啟動應用程式
+        document.addEventListener('DOMContentLoaded', initFirebase);
     </script>
 </body>
 </html>
