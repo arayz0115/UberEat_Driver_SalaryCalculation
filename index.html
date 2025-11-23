@@ -488,15 +488,16 @@
 
         // --- 獲取油價 (使用 Gemini API) ---
       // --- 最終修正後的 fetchOilPrice 函數 ---
+// --- 最終解決方案 (選項一：匹配 GAIS 金鑰與 GAIS 網域) ---
 async function fetchOilPrice(isInitialLoad = false) {
     if (!isInitialLoad) {
         document.getElementById('fetchOilPriceButton').disabled = true;
         document.getElementById('oilPriceDisplayMain').textContent = "中油 92 汽油: 獲取中...";
     }
     
-    // 修正點 1: 確保模型名稱使用穩定且支援 generateContent 的模型 (例如 gemini-pro 或 gemini-2.5-flash)
-    // 修正為 gemini-pro
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/text-bison-001:generateContent?key=${GEMINI_API_KEY}`;
+    // 🌟 最終修正：匹配您的 GAIS 金鑰與 GAIS 網域
+    // 使用 generativelanguage 網域和 gemini-pro 模型 (先前已確認 JSON 結構正確)
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
     
     const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
     格式範例: {"price": 27.1, "unit": "NTD/L"}`;
@@ -509,14 +510,14 @@ async function fetchOilPrice(isInitialLoad = false) {
                 contents: [
                     { parts: [{ text: prompt }] }
                 ],
-                // 修正點 2: 確保使用正確的鍵名 generationConfig (已在之前修正)
+                // generationConfig (已驗證結構正確)
                 generationConfig: {
                     temperature: 0.1,
                 }
             })
         });
 
-        // 檢查 API 狀態碼，並嘗試提取錯誤細節
+        // ... (API 錯誤處理與解析邏輯保持不變) ...
         if (!response.ok) {
             let errorDetail = `API 錯誤：${response.status} (${response.statusText})`;
             
@@ -533,24 +534,22 @@ async function fetchOilPrice(isInitialLoad = false) {
             throw new Error(errorDetail);
         }
 
-        // 正常處理 API 回應
         const data = await response.json();
         let price = 0;
+        // ... (油價解析邏輯保持不變) ...
 
         try {
             const responseText = data.candidates[0].content.parts[0].text;
-            // 嘗試 JSON 解析
-            const jsonMatch = responseText.match(/\{[^}]*\}/); // 尋找第一個 {} 結構
+            const jsonMatch = responseText.match(/\{[^}]*\}/); 
             if (!jsonMatch) {
                 throw new Error("無法在 API 回應中找到有效的 JSON 結構。");
             }
             const jsonObject = JSON.parse(jsonMatch[0]);
             price = parseFloat(jsonObject.price);
         } catch (e) {
-            // 如果 JSON 解析失敗，執行純文字提取邏輯
             console.warn("API 回應解析失敗，嘗試從純文字提取油價:", e);
             const responseText = data.candidates[0].content.parts[0].text;
-            const textMatch = responseText.match(/(\d+\.?\d*)/); // 提取第一個找到的數字
+            const textMatch = responseText.match(/(\d+\.?\d*)/); 
             if (textMatch) {
                 price = parseFloat(textMatch[0]);
             } else {
