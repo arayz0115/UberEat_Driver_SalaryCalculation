@@ -197,42 +197,18 @@
        取得油價 (使用公開資料)
        來源: data.gov.tw dataset (若失效會 fallback)
        -------------------------- */
-    async function fetchOilPrice(isManual=false) {
-        const display = document.getElementById('oilPriceDisplayMain');
-        if (isManual) document.getElementById('fetchOilPriceButton').disabled = true;
-        display.textContent = '中油 92 汽油: 讀取中...';
-        try {
-            // 這個 endpoint 目前可取得牌價 JSON（若未來變動需更新）
-            const res = await fetch('https://quality.data.gov.tw/dq_download_json.php?nid=14067&md5_url=');
-            if (!res.ok) throw new Error('無法取得油價資料');
-            const data = await res.json();
-            // 找到包含「92」或「無鉛92」的油品
-            let item = data.find(i => {
-                const name = (i['油品名稱']||'').toString();
-                return /92/.test(name) && /無鉛|RON/.test(name) || (/92/.test(name) && !/98|95/.test(name));
-            });
-            if (!item) {
-                // fallback: 嘗試任何包含 92 的
-                item = data.find(i => (i['油品名稱']||'').toString().includes('92'));
-            }
-            const priceStr = item ? (item['參考牌價'] || item['牌價'] || item['參考價格'] || '') : '';
-            const price = parseFloat(String(priceStr).replace(/[^\d.]/g,''));
-            if (!isNaN(price) && price > 0) {
-                currentOilPrice = price;
-                display.textContent = `中油 92 汽油: $${currentOilPrice.toFixed(2)}/L`;
-                if (isManual) showMessage('油價更新成功', 'success');
-            } else {
-                throw new Error('解析油價失敗，使用預設值');
-            }
-        } catch (e) {
-            display.textContent = `油價獲取失敗：使用預設值 $${currentOilPrice.toFixed(2)}/L`;
-            if (isManual) showMessage('油價更新失敗：使用預設值', 'error');
-            console.error('fetchOilPrice error', e);
-        } finally {
-            if (isManual) document.getElementById('fetchOilPriceButton').disabled = false;
-            liveCalculate();
-        }
+    async function fetchOilPrice() {
+    try {
+        const res = await fetch('https://ubereat-oil-proxy.leo3026772.workers.dev');
+        const data = await res.json();
+        document.getElementById('oilPriceDisplayMain').textContent =
+            `中油 92 汽油: $${data.price}/L`;
+    } catch (e) {
+        document.getElementById('oilPriceDisplayMain').textContent =
+            '油價獲取失敗，請稍後重試';
     }
+}
+
 
     /* --------------------------
        Firebase init + 匿名登入
