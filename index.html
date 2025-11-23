@@ -269,11 +269,10 @@
         const DEFAULT_MAINT_COST_PER_KM = 0.60;
         
         // ⚠️ 替換您的 Gemini API 金鑰
-        // 這是您堅持有效的金鑰，若仍報錯 400，請務必查看其詳細錯誤訊息
         const GEMINI_API_KEY = "AIzaSyBJ0mQy-pr1KLYFWjG2KHNnToRNXkDAN-s"; 
 
         const FIREBASE_CONFIG = {
-            // ⚠️ 替換您的 Firebase API 金鑰
+            // ⚠️ 請替換為您的 Firebase API 金鑰
             apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 請替換為您的 Firebase 金鑰
             authDomain: "uber-driver-tracker.firebaseapp.com",
             projectId: "uber-driver-tracker",
@@ -505,10 +504,13 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        config: {
+                        // 正確的 Request Body 結構
+                        contents: [
+                            { parts: [{ text: prompt }] }
+                        ],
+                        // 修正：將 config 改為 generationConfig 以符合 Gemini API 要求
+                        generationConfig: {
                             temperature: 0.1,
-                            // responseMimeType 和 responseSchema 已被移除
                         }
                     })
                 });
