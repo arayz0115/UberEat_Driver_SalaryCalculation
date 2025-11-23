@@ -498,6 +498,7 @@
             
             const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
+          // 替換後的程式碼：
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -505,18 +506,14 @@
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: prompt }] }],
                         config: {
-                            temperature: 0.1,
-                            responseMimeType: "application/json",
-                            responseSchema: {
-                                type: "object",
-                                properties: {
-                                    price: { type: "number", description: "最新的 92 無鉛汽油價格" },
-                                    unit: { type: "string", description: "價格單位，如 NTD/L" }
-                                }
-                            }
+                         temperature: 0.1,
+                        // responseMimeType 和 responseSchema 已被移除
                         }
                     })
                 });
+
+    if (!response.ok) throw new Error(`API 錯誤：${response.status}`);
+// ... 函數的其餘部分保持不變
 
                 if (!response.ok) throw new Error(`API 錯誤：${response.status}`);
 
