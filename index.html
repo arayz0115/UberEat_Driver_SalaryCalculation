@@ -489,15 +489,15 @@
         // --- 獲取油價 (使用 Gemini API) ---
       // --- 最終修正後的 fetchOilPrice 函數 ---
 // --- 最終解決方案 (選項一：匹配 GAIS 金鑰與 GAIS 網域) ---
+// --- 最終修正方案：匹配 GAIS 金鑰 + GAIS 網域 + 正確的 API 版本 (v1) ---
 async function fetchOilPrice(isInitialLoad = false) {
     if (!isInitialLoad) {
         document.getElementById('fetchOilPriceButton').disabled = true;
         document.getElementById('oilPriceDisplayMain').textContent = "中油 92 汽油: 獲取中...";
     }
     
-    // 🌟 最終修正：匹配您的 GAIS 金鑰與 GAIS 網域
-    // 使用 generativelanguage 網域和 gemini-pro 模型 (先前已確認 JSON 結構正確)
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+    // 🌟 最終修正：使用 GAIS 網域，並將版本從 v1beta 換成 v1，以確保 gemini-pro 模型可以找到。
+    const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
     
     const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
     格式範例: {"price": 27.1, "unit": "NTD/L"}`;
@@ -510,14 +510,14 @@ async function fetchOilPrice(isInitialLoad = false) {
                 contents: [
                     { parts: [{ text: prompt }] }
                 ],
-                // generationConfig (已驗證結構正確)
+                // 保持 generationConfig 不變
                 generationConfig: {
                     temperature: 0.1,
                 }
             })
         });
 
-        // ... (API 錯誤處理與解析邏輯保持不變) ...
+        // --- 錯誤處理與解析邏輯 (保持不變) ---
         if (!response.ok) {
             let errorDetail = `API 錯誤：${response.status} (${response.statusText})`;
             
@@ -536,10 +536,10 @@ async function fetchOilPrice(isInitialLoad = false) {
 
         const data = await response.json();
         let price = 0;
-        // ... (油價解析邏輯保持不變) ...
 
         try {
             const responseText = data.candidates[0].content.parts[0].text;
+            // 由於模型會輸出 JSON，我們使用正規表達式精確抓取 JSON 內容
             const jsonMatch = responseText.match(/\{[^}]*\}/); 
             if (!jsonMatch) {
                 throw new Error("無法在 API 回應中找到有效的 JSON 結構。");
