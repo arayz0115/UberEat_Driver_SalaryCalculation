@@ -3,562 +3,804 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Uber Driver 失敗版本產生器</title>
+    <title>Uber Driver 計算器（改良版）</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@google/generative-ai/dist/browser.bundle.min.js"></script>
     <style>
         .container { max-width: 1000px; }
         .net-profit { color: #10b981; } /* 綠色 */
-        .cost-val { color: #f87171; } /* 紅色 */
-        .input-group label { font-weight: 600; color: #4b5563; }
-        .card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        .cost-val { color: #ef4444; } /* 紅色 */
+        .card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 8px 20px rgba(2,6,23,0.08); }
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index:1000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
-        .spinner { border:4px solid rgba(0,0,0,0.1); border-top:4px solid #3b82f6; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
+        .spinner { border:4px solid rgba(0,0,0,0.06); border-top:4px solid #3b82f6; border-radius:50%; width:44px; height:44px; animation:spin 0.9s linear infinite; }
         @keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
         .hidden { display:none !important; }
-        #message-area { position: fixed; top: 1rem; right: 1rem; z-index:1001; max-width:90%; display:flex; flex-direction:column; gap:0.5rem; }
-        .alert { padding:0.75rem 1rem; border-radius:0.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.1); font-size:0.9rem; }
-        .alert.info { background-color:#e0f2fe; border-color:#90cdf4; color:#2b6cb0; }
-        .alert.success { background-color:#d1fae5; border-color:#68d391; color:#2f855a; }
-        .alert.error { background-color:#fee2e2; border-color:#fc8181; color:#c53030; }
-        .icon { display:inline-flex; align-items:center; justify-content:center; width:1.25rem; height:1.25rem; margin-right:0.5rem; color:currentColor; }
-        input[type="number"], input[type="date"], input[type="text"] { border:1px solid #d1d5db; padding:0.75rem 1rem; border-radius:0.5rem; width:100%; font-size:1rem; outline:none; transition: border-color .15s, box-shadow .15s; }
-        input[type="number"]:focus, input[type="date"]:focus, input[type="text"]:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.25); }
-        button { padding:0.75rem 1.25rem; border-radius:0.5rem; font-weight:600; transition: background-color .15s, transform .1s; cursor:pointer; border:none; }
-        button:hover { transform: translateY(-1px); }
-        button:active { transform: translateY(0); }
-        button:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
-        .btn-primary { background-color:#3b82f6; color:white; }
-        .btn-secondary { background-color:#6b7280; color:white; }
-        .btn-success { background-color:#10b981; color:white; }
-        .btn-warning { background-color:#f59e0b; color:white; }
+        #message-area { position: fixed; top: 1rem; right: 1rem; z-index:1001; max-width:360px; display:flex; flex-direction:column; gap:0.5rem; }
+        .alert { padding:0.75rem 1rem; border-radius:0.5rem; box-shadow:0 6px 18px rgba(2,6,23,0.08); font-size:0.9rem; display:flex; align-items:center; gap:0.5rem; }
+        .alert.info { background-color:#eff6ff; color:#1e3a8a; }
+        .alert.success { background-color:#ecfdf5; color:#065f46; }
+        .alert.error { background-color:#fff1f2; color:#7f1d1d; }
+        input[type="number"], input[type="date"], input[type="text"] { border:1px solid #e6e9ee; padding:0.7rem 0.9rem; border-radius:0.5rem; width:100%; font-size:1rem; outline:none; transition: border-color .12s, box-shadow .12s; background:#fbfdff; }
+        input:focus { border-color:#60a5fa; box-shadow:0 6px 20px rgba(59,130,246,0.12); }
+        .btn { padding:0.6rem 1rem; border-radius:12px; font-weight:700; transition: transform .08s ease, box-shadow .08s ease; cursor:pointer; display:inline-flex; align-items:center; gap:0.5rem; }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { background: linear-gradient(90deg,#2563eb,#3b82f6); color:white; box-shadow: 0 8px 20px rgba(59,130,246,0.18); }
+        .btn-ghost { background:transparent; border: 1px solid #e6eefc; color:#1f2937; }
+        .btn-danger { background: linear-gradient(90deg,#ef4444,#fb7185); color:white; box-shadow: 0 8px 18px rgba(239,68,68,0.12); }
+        .small-btn { padding:0.35rem 0.6rem; border-radius:8px; font-weight:600; font-size:0.85rem; }
+        .muted { color:#6b7280; font-size:0.95rem; }
+        .record-row { display:flex; justify-content:space-between; gap:0.5rem; align-items:center; padding:0.5rem 0; }
+        .record-actions { display:flex; gap:0.5rem; }
+        .card-compact { padding:1rem; }
+        /* responsive */
+        @media (max-width:640px){ .container { padding: 0 1rem; } }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-slate-50 text-slate-800 font-inter">
+
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <p id="loading-text" class="mt-4 text-lg text-gray-600">連線雲端資料庫與油價中...</p>
-        <p id="user-info" class="mt-2 text-sm text-gray-500"></p>
+        <p id="loading-text" class="mt-4 text-lg text-slate-600">連線雲端與油價中...</p>
         <p id="message-area-load" class="mt-4 text-red-600 font-medium"></p>
     </div>
 
-    <div id="app-content" class="container mx-auto p-4 sm:p-6 lg:p-8 pt-8 hidden">
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-blue-700">Uber Driver 阿瑞失敗產生器 V1.0</h1>
-            <p id="user-id-display" class="text-sm text-gray-500 mt-2">ID: 加載中...</p>
+    <div id="app-content" class="container mx-auto p-6 hidden">
+        <header class="mb-6 text-center">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-sky-700">Uber Driver 計算器（改良）</h1>
+            <p id="user-id-display" class="muted mt-1">ID: 加載中...</p>
         </header>
 
         <div id="message-area"></div>
 
         <main class="space-y-6">
-            <div class="card">
-                <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                    <svg class="icon text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    成本參數設定 (雲端儲存)
-                </h2>
-                <div class="space-y-4 mb-4">
+            <!-- Config card -->
+            <section class="card card-compact">
+                <div class="flex justify-between items-start mb-3">
+                    <h2 class="text-lg font-semibold">成本參數</h2>
+                    <div class="muted text-sm">雲端儲存</div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="fuelEfficiencyInput" class="block text-sm font-medium text-gray-700 mb-1">油耗效率 (km/L)</label>
-                        <input type="number" id="fuelEfficiencyInput" min="1" step="0.1" class="w-full">
-                        <p id="fuelEfficiencyDisplay" class="text-xs text-gray-500 mt-1">目前: 42 km/L</p>
+                        <label class="muted">油耗效率 (km/L)</label>
+                        <input id="fuelEfficiencyInput" type="number" min="1" step="0.1" placeholder="例如 42">
+                        <div id="fuelEfficiencyDisplay" class="muted mt-1">目前: 42 km/L</div>
                     </div>
                     <div>
-                        <label for="maintCostInput" class="block text-sm font-medium text-gray-700 mb-1">每公里支出耗材 ($/km)</label>
-                        <input type="number" id="maintCostInput" min="0" step="0.01" class="w-full">
-                        <p id="maintCostDisplay" class="text-xs text-gray-500 mt-1">目前: $0.60/km</p>
+                        <label class="muted">每公里耗材 ($/km)</label>
+                        <input id="maintCostInput" type="number" min="0" step="0.01" placeholder="例如 0.6">
+                        <div id="maintCostDisplay" class="muted mt-1">目前: $0.60/km</div>
                     </div>
                 </div>
-                <button onclick="saveConfig()" class="btn-success w-full">儲存設定至雲端</button>
-            </div>
+                <div class="mt-4 flex gap-2">
+                    <button class="btn btn-primary" onclick="saveConfig()">儲存設定</button>
+                    <button class="btn btn-ghost" onclick="restoreDefaults()">還原預設</button>
+                </div>
+            </section>
 
-            <div class="card">
-                <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                    <svg class="icon text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                    當日數據輸入
-                </h2>
+            <!-- Daily entry -->
+            <section class="card">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold">當日數據輸入</h2>
+                    <div class="muted">油價擷取: <span id="oilPriceDisplayMain">加載中...</span></div>
+                </div>
 
-                <div class="space-y-4">
-                    <div class="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
-                        <svg class="w-6 h-6 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        <span id="oilPriceDisplayMain" class="text-lg font-bold text-blue-700">中油 92 汽油: 加載中...</span>
-                        <button id="fetchOilPriceButton" onclick="fetchOilPrice()" class="btn-primary ml-auto text-sm">更新油價</button>
-                    </div>
-
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                     <div>
-                        <label for="recordDate" class="block text-sm font-medium text-gray-700 mb-1">記錄日期</label>
-                        <input type="date" id="recordDate" class="w-full">
+                        <label class="muted">記錄日期</label>
+                        <input id="recordDate" type="date">
                     </div>
-
                     <div>
-                        <label for="income" class="block text-sm font-medium text-gray-700 mb-1">當日營業額 (實收/未扣)</label>
-                        <input type="number" id="income" value="0" min="0" step="10" placeholder="輸入金額">
+                        <label class="muted">當日營業額</label>
+                        <input id="income" type="number" min="0" step="10" value="0" placeholder="0">
                     </div>
-
                     <div>
-                        <label for="mileage" class="block text-sm font-medium text-gray-700 mb-1">當日騎乘公里數 (km)</label>
-                        <input type="number" id="mileage" value="0" min="0" step="1" placeholder="輸入公里數 (允許小數)">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="hours" class="block text-sm font-medium text-gray-700 mb-1">工作時數 (小時)</label>
-                            <input type="number" id="hours" value="0" min="0" step="1" placeholder="0">
-                        </div>
-                        <div>
-                            <label for="minutes" class="block text-sm font-medium text-gray-700 mb-1">工作時數 (分鐘)</label>
-                            <input type="number" id="minutes" value="0" min="0" step="5" max="59" placeholder="0">
-                        </div>
+                        <label class="muted">騎乘公里數 (km)</label>
+                        <input id="mileage" type="number" min="0" step="0.1" value="0" placeholder="0">
                     </div>
                 </div>
 
-                <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 class="text-md font-semibold mb-3 text-gray-700 flex items-center">
-                        <svg class="icon text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        即時預估結果
-                    </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                        <label class="muted">工作時 (小時)</label>
+                        <input id="hours" type="number" min="0" step="1" value="0">
+                    </div>
+                    <div>
+                        <label class="muted">工作時 (分鐘)</label>
+                        <input id="minutes" type="number" min="0" step="5" max="59" value="0">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="fetchOilPriceButton" class="btn btn-primary small-btn" onclick="fetchOilPrice()">更新油價</button>
+                    </div>
+                    <div class="flex items-end justify-end">
+                        <button id="saveDailyRecordButton" class="btn btn-primary" onclick="handleSaveRecord()">儲存記錄</button>
+                    </div>
+                </div>
+
+                <div class="mt-4 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    <h3 class="font-semibold mb-2">即時預估</h3>
                     <div class="grid grid-cols-2 gap-y-2 text-sm">
-                        <span class="text-gray-600">營業額:</span> <span id="liveGrossIncome" class="font-bold text-blue-600">$0.0</span>
-                        <span class="text-gray-600">總成本:</span> <span id="liveTotalCost" class="font-bold text-red-700">$0.0</span>
-                        <span class="text-gray-600">淨利:</span> <span id="liveNetProfit" class="font-bold net-profit">$0.0</span>
-                        <span class="text-gray-600">油費:</span> <span id="liveGasCost" class="font-bold cost-val">$0.0</span>
-                        <span class="text-gray-600">時薪 (毛利):</span> <span id="liveGrossHourly" class="font-bold text-blue-600">$0.0/hr</span>
-                        <span class="text-gray-600">耗材:</span> <span id="liveMaintCost" class="font-bold cost-val">$0.0</span>
+                        <div class="muted">營業額:</div> <div id="liveGrossIncome" class="font-bold">$0.0</div>
+                        <div class="muted">總成本:</div> <div id="liveTotalCost" class="font-bold cost-val">$0.0</div>
+                        <div class="muted">淨利:</div> <div id="liveNetProfit" class="font-bold net-profit">$0.0</div>
+                        <div class="muted">油費:</div> <div id="liveGasCost" class="font-bold cost-val">$0.0</div>
+                        <div class="muted">時薪 (毛利):</div> <div id="liveGrossHourly" class="font-bold">$0.0/hr</div>
+                        <div class="muted">耗材:</div> <div id="liveMaintCost" class="font-bold cost-val">$0.0</div>
                     </div>
                     <div class="mt-2 text-sm flex justify-between">
-                        <span class="text-gray-600">時薪 (淨利):</span> <span id="liveNetHourly" class="font-bold net-profit">$0.0/hr</span>
+                        <div class="muted">時薪 (淨利):</div> <div id="liveNetHourly" class="font-bold net-profit">$0.0/hr</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Report / list -->
+            <section class="card">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-semibold">淨利報表總覽</h2>
+                    <div class="flex gap-2">
+                        <button class="btn small-btn btn-ghost" onclick="loadReport('day')">日</button>
+                        <button class="btn small-btn btn-ghost" onclick="loadReport('week')">週</button>
+                        <button class="btn small-btn btn-ghost" onclick="loadReport('month')">月</button>
+                        <button class="btn small-btn btn-ghost" onclick="loadReport('year')">年</button>
                     </div>
                 </div>
 
-                <button id="saveDailyRecordButton" class="btn-primary w-full mt-6 flex items-center justify-center">
-                    <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                    儲存到雲端 (正式記錄)
-                </button>
-            </div>
-
-            <div class="card">
-                <h2 class="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                    <svg class="icon text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    淨利報表總覽
-                </h2>
-                <div class="flex space-x-2 mb-4">
-                    <button class="btn-secondary w-full" onclick="loadReport('day')">日</button>
-                    <button class="btn-secondary w-full" onclick="loadReport('week')">週</button>
-                    <button class="btn-secondary w-full" onclick="loadReport('month')">月</button>
-                    <button class="btn-secondary w-full" onclick="loadReport('year')">年</button>
-                </div>
-
-                <div class="flex items-center justify-between mb-4">
-                    <button onclick="changeReportDate(-1)" class="p-2 rounded-full hover:bg-gray-200">
-                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-                    <span id="reportDateRange" class="font-semibold text-lg text-gray-700">2025/11/22</span>
-                    <button onclick="changeReportDate(1)" class="p-2 rounded-full hover:bg-gray-200">
-                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                    </button>
+                <div class="flex items-center justify-between mb-3">
+                    <button class="btn small-btn btn-ghost" onclick="changeReportDate(-1)">‹</button>
+                    <div id="reportDateRange" class="font-semibold">--</div>
+                    <button class="btn small-btn btn-ghost" onclick="changeReportDate(1)">›</button>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 text-sm mb-4">
-                    <div class="bg-blue-50 p-3 rounded-lg"><span class="block text-gray-600">總收入 (期間)</span><span id="reportTotalIncome" class="font-bold text-blue-700">$0</span></div>
-                    <div class="bg-green-50 p-3 rounded-lg"><span class="block text-gray-600">實領淨利</span><span id="reportNetProfit" class="font-bold text-green-700">$0</span></div>
-                    <div class="bg-yellow-50 p-3 rounded-lg"><span class="block text-gray-600">總花費時間</span><span id="reportTotalHours" class="font-bold text-yellow-700">0 小時 0 分</span></div>
-                    <div class="bg-red-50 p-3 rounded-lg"><span class="block text-gray-600">總消耗成本</span><span id="reportTotalCost" class="font-bold text-red-700">$0</span></div>
-                    <div class="bg-blue-100 p-3 rounded-lg"><span class="block text-gray-600">平均時薪 (毛利)</span><span id="reportGrossHourly" class="font-bold text-blue-800">$0/hr</span></div>
-                    <div class="bg-green-100 p-3 rounded-lg"><span class="block text-gray-600">平均時薪 (淨利)</span><span id="reportNetHourly" class="font-bold text-green-800">$0/hr</span></div>
-                    <div class="bg-gray-50 p-3 rounded-lg col-span-2"><span class="block text-gray-600">總里程 (km)</span><span id="reportTotalMileage" class="font-bold text-gray-800">0.0</span></div>
+                    <div class="bg-sky-50 p-3 rounded-lg"><div class="muted">總收入</div><div id="reportTotalIncome" class="font-bold text-sky-700">$0</div></div>
+                    <div class="bg-green-50 p-3 rounded-lg"><div class="muted">實領淨利</div><div id="reportNetProfit" class="font-bold text-green-700">$0</div></div>
+                    <div class="bg-yellow-50 p-3 rounded-lg"><div class="muted">總花費時間</div><div id="reportTotalHours" class="font-bold text-yellow-700">0 小時 0 分</div></div>
+                    <div class="bg-red-50 p-3 rounded-lg"><div class="muted">總消耗成本</div><div id="reportTotalCost" class="font-bold text-rose-600">$0</div></div>
+                    <div class="bg-slate-50 p-3 rounded-lg"><div class="muted">平均時薪 (毛利)</div><div id="reportGrossHourly" class="font-bold">$0/hr</div></div>
+                    <div class="bg-slate-50 p-3 rounded-lg"><div class="muted">平均時薪 (淨利)</div><div id="reportNetHourly" class="font-bold">$0/hr</div></div>
+                    <div class="col-span-2 bg-white p-3 rounded-lg border"><div class="muted">期間記錄明細</div>
+                        <div id="reportDetails" class="mt-2 text-sm">
+                            <p class="muted">此期間尚未有記錄。</p>
+                        </div>
+                    </div>
                 </div>
 
-                <h3 class="font-semibold text-gray-700 mb-2">期間記錄明細:</h3>
-                <div id="reportDetails" class="space-y-2 text-sm text-gray-700">
-                    <p>此期間尚未有記錄。</p>
+                <div class="mt-2">
+                    <canvas id="costChart" height="160"></canvas>
                 </div>
+            </section>
 
-                <div class="mt-8 relative h-64">
-                    <canvas id="costChart"></canvas>
-                </div>
-            </div>
         </main>
     </div>
 
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
+    <!-- Firebase compat (you already used compat in original) -->
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // --- 常數 ---
-        const DEFAULT_FUEL_EFFICIENCY_KML = 42;
-        const DEFAULT_MAINT_COST_PER_KM = 0.60;
-        // ⚠️ 在此放你的 Gemini / Google API key（示意）
-        const GEMINI_API_KEY = "AIzaSyBJ0mQy-pr1KLYFWjG2KHNnToRNXkDAN-s";
+    // ----------------------------
+    // CONFIG: 請填入你的 KEY（測試專用 — 上線請移至後端）
+    // ----------------------------
+    const GEMINI_API_KEY = "AIzaSyBJ0mQy-pr1KLYFWjG2KHNnToRNXkDAN-s"; // <-- 放你的金鑰
+    const DEFAULT_FUEL_EFFICIENCY_KML = 42;
+    const DEFAULT_MAINT_COST_PER_KM = 0.60;
 
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
-            authDomain: "uber-driver-tracker.firebaseapp.com",
-            projectId: "uber-driver-tracker",
-            storageBucket: "uber-driver-tracker.firebasestorage.app",
-            messagingSenderId: "665088105970",
-            appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
-        };
-        const appId = FIREBASE_CONFIG.appId;
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
+        authDomain: "uber-driver-tracker.firebaseapp.com",
+        projectId: "uber-driver-tracker",
+        storageBucket: "uber-driver-tracker.firebasestorage.app",
+        messagingSenderId: "665088105970",
+        appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
+    };
 
-        let db = null;
-        let auth = null;
-        let userId = null;
-        let isAuthReady = false;
-        let currentOilPrice = 27.1;
-        let chartInstance = null;
-        let userConfig = { fuelEfficiency: DEFAULT_FUEL_EFFICIENCY_KML, maintCostPerKm: DEFAULT_MAINT_COST_PER_KM };
-        let currentReportDate = new Date();
-        let currentReportType = 'day';
+    // ----------------------------
+    // App state
+    // ----------------------------
+    let db = null;
+    let auth = null;
+    let userId = null;
+    let currentOilPrice = 27.1;
+    let chartInstance = null;
+    let userConfig = { fuelEfficiency: DEFAULT_FUEL_EFFICIENCY_KML, maintCostPerKm: DEFAULT_MAINT_COST_PER_KM };
+    let currentReportDate = new Date();
+    let currentReportType = 'day';
+    let isEditingDate = null; // 若為要編輯的日期（YYYY-MM-DD），則儲存到這裡
 
-        const configDocPath = (uid) => `artifacts/${appId}/users/${uid}/config/costs`;
-        const recordsCollectionPath = (uid) => `artifacts/${appId}/users/${uid}/records`;
+    // helper paths (same structure as你原本的)
+    const appId = FIREBASE_CONFIG.appId;
+    const configDocPath = (uid) => `artifacts/${appId}/users/${uid}/config/costs`;
+    const recordsCollectionPath = (uid) => `artifacts/${appId}/users/${uid}/records`;
 
-        function showMessage(text, type = 'info') {
-            const area = document.getElementById('message-area');
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert ${type}`;
-            alertDiv.innerHTML = `<span class="icon">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>${text}`;
-            area.appendChild(alertDiv);
-            setTimeout(() => alertDiv.remove(), 5000);
-        }
+    // ----------------------------
+    // UI helpers
+    // ----------------------------
+    function showMessage(text, type='info', timeout=4500) {
+        const area = document.getElementById('message-area');
+        const div = document.createElement('div');
+        div.className = `alert ${type}`;
+        div.textContent = text;
+        area.appendChild(div);
+        setTimeout(()=> div.remove(), timeout);
+    }
 
-        function formatDate(date) {
-            const d = new Date(date);
-            const year = d.getFullYear();
-            const month = String(d.getMonth()+1).padStart(2,'0');
-            const day = String(d.getDate()).padStart(2,'0');
-            return `${year}-${month}-${day}`;
-        }
-        function formatDuration(totalMinutes) {
-            const hours = Math.floor(totalMinutes / 60);
-            const minutes = Math.round(totalMinutes % 60);
-            return `${hours} 小時 ${minutes} 分`;
-        }
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('zh-TW',{ style:'currency', currency:'TWD', minimumFractionDigits:0, maximumFractionDigits:0 }).format(amount);
-        }
+    function formatDateToInput(date) {
+        const d = new Date(date);
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,'0');
+        const day = String(d.getDate()).padStart(2,'0');
+        return `${y}-${m}-${day}`;
+    }
 
-        function initFirebase() {
-            try {
-                if (firebase.apps.length === 0) {
-                    const app = firebase.initializeApp(FIREBASE_CONFIG);
-                    db = app.firestore();
-                    auth = app.auth();
-                } else {
-                    const app = firebase.app();
-                    db = app.firestore();
-                    auth = app.auth();
-                }
+    function formatDisplayDate(dateStr) {
+        return dateStr.replace(/-/g,'/');
+    }
 
-                auth.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        isAuthReady = true;
-                        document.getElementById('user-id-display').textContent = `ID: ${userId}`;
-                        document.getElementById('loading-overlay').classList.add('hidden');
-                        document.getElementById('app-content').classList.remove('hidden');
-                        await loadConfig();
-                        await fetchOilPrice(true);
-                        initApp();
-                    } else if (!isAuthReady) {
-                        console.log("嘗試匿名登入...");
-                        try { await auth.signInAnonymously(); } catch(e) { console.error(e); document.getElementById('message-area-load').textContent = e.message; }
-                    }
-                });
-            } catch (error) {
-                console.error("Firebase 初始化失敗:", error);
-                document.getElementById('loading-text').textContent = "雲端初始化失敗，請檢查設定。";
-                document.getElementById('message-area-load').textContent = "錯誤: " + error.message;
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('zh-TW',{ style:'currency', currency:'TWD', minimumFractionDigits:0 }).format(Math.round(amount));
+    }
+
+    function formatDuration(totalMinutes) {
+        const hours = Math.floor(totalMinutes/60);
+        const minutes = Math.round(totalMinutes % 60);
+        return `${hours} 小時 ${minutes} 分`;
+    }
+
+    // ----------------------------
+    // Firebase init & auth
+    // ----------------------------
+    function initFirebase() {
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                db = firebase.firestore();
+                auth = firebase.auth();
+            } else {
+                const app = firebase.app();
+                db = app.firestore();
+                auth = app.auth();
             }
-        }
 
-        window.initApp = function() {
-            Chart.register(ChartDataLabels);
-            ['income','mileage','hours','minutes','fuelEfficiencyInput','maintCostInput'].forEach(id=>{
-                const el=document.getElementById(id);
-                if(el) el.addEventListener('input', liveCalculate);
+            auth.onAuthStateChanged(async (u) => {
+                if (u) {
+                    userId = u.uid;
+                    document.getElementById('user-id-display').textContent = `ID: ${userId}`;
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                    document.getElementById('app-content').classList.remove('hidden');
+                    await loadConfig();
+                    await fetchOilPrice(true);
+                    initAppEvents();
+                } else {
+                    try { await auth.signInAnonymously(); } catch (e){ console.error(e); document.getElementById('message-area-load').textContent = e.message; }
+                }
             });
-            document.getElementById('recordDate').value = formatDate(new Date());
-            document.getElementById('saveDailyRecordButton').addEventListener('click', saveDailyRecord);
-            loadReport(currentReportType);
-            liveCalculate();
+
+        } catch (err) {
+            console.error("Firebase 初始化失敗:", err);
+            document.getElementById('loading-text').textContent = "雲端初始化失敗，請檢查設定。";
+        }
+    }
+
+    // ----------------------------
+    // Config load/save
+    // ----------------------------
+    async function loadConfig() {
+        try {
+            const docRef = db.doc(configDocPath(userId));
+            const doc = await docRef.get();
+            if (doc.exists) {
+                const data = doc.data();
+                userConfig.fuelEfficiency = parseFloat(data.fuelEfficiency) || DEFAULT_FUEL_EFFICIENCY_KML;
+                userConfig.maintCostPerKm = parseFloat(data.maintCostPerKm) || DEFAULT_MAINT_COST_PER_KM;
+            } else {
+                await saveConfig(true);
+            }
+        } catch (e) {
+            console.error("載入設定失敗:", e);
+            showMessage("載入設定失敗，使用預設值。", 'error');
         }
 
-        async function loadConfig() {
-            const docRef = db.doc(configDocPath(userId));
-            try {
-                const doc = await docRef.get();
-                if (doc.exists) {
-                    const data = doc.data();
-                    userConfig.fuelEfficiency = parseFloat(data.fuelEfficiency) || DEFAULT_FUEL_EFFICIENCY_KML;
-                    userConfig.maintCostPerKm = parseFloat(data.maintCostPerKm) || DEFAULT_MAINT_COST_PER_KM;
-                } else {
-                    await saveConfig(true);
-                }
-                document.getElementById('fuelEfficiencyInput').value = userConfig.fuelEfficiency;
-                document.getElementById('fuelEfficiencyDisplay').textContent = `目前: ${userConfig.fuelEfficiency.toFixed(2)} km/L`;
-                document.getElementById('maintCostInput').value = userConfig.maintCostPerKm;
-                document.getElementById('maintCostDisplay').textContent = `目前: $${userConfig.maintCostPerKm.toFixed(2)}/km`;
-            } catch (error) {
-                console.error("載入設定檔失敗:", error);
-                showMessage("載入設定檔失敗，使用預設值。", 'error');
-            }
-        }
-        async function saveConfig(isInitial=false) {
-            const docRef = db.doc(configDocPath(userId));
+        document.getElementById('fuelEfficiencyInput').value = userConfig.fuelEfficiency;
+        document.getElementById('fuelEfficiencyDisplay').textContent = `目前: ${Number(userConfig.fuelEfficiency).toFixed(2)} km/L`;
+        document.getElementById('maintCostInput').value = userConfig.maintCostPerKm;
+        document.getElementById('maintCostDisplay').textContent = `目前: $${Number(userConfig.maintCostPerKm).toFixed(2)}/km`;
+    }
+
+    async function saveConfig(isInitial=false) {
+        try {
             userConfig.fuelEfficiency = parseFloat(document.getElementById('fuelEfficiencyInput').value) || DEFAULT_FUEL_EFFICIENCY_KML;
             userConfig.maintCostPerKm = parseFloat(document.getElementById('maintCostInput').value) || DEFAULT_MAINT_COST_PER_KM;
-            try {
-                await docRef.set({ fuelEfficiency: userConfig.fuelEfficiency, maintCostPerKm: userConfig.maintCostPerKm }, { merge: true });
-                document.getElementById('fuelEfficiencyDisplay').textContent = `目前: ${userConfig.fuelEfficiency.toFixed(2)} km/L`;
-                document.getElementById('maintCostDisplay').textContent = `目前: $${userConfig.maintCostPerKm.toFixed(2)}/km`;
-                if (!isInitial) showMessage("個人化成本設定已成功儲存到雲端。",'success');
-                liveCalculate();
-            } catch(e) {
-                console.error(e);
-                showMessage("儲存設定檔失敗，請檢查網路。",'error');
-            }
+            await db.doc(configDocPath(userId)).set({
+                fuelEfficiency: userConfig.fuelEfficiency,
+                maintCostPerKm: userConfig.maintCostPerKm
+            }, { merge: true });
+            document.getElementById('fuelEfficiencyDisplay').textContent = `目前: ${userConfig.fuelEfficiency.toFixed(2)} km/L`;
+            document.getElementById('maintCostDisplay').textContent = `目前: $${userConfig.maintCostPerKm.toFixed(2)}/km`;
+            if (!isInitial) showMessage("設定已儲存。", 'success');
+            liveCalculate();
+        } catch (e) {
+            console.error("儲存設定失敗:", e);
+            showMessage("儲存設定失敗，請檢查網路或權限。", 'error');
         }
+    }
 
-        async function callGemini(promptText) {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    function restoreDefaults() {
+        document.getElementById('fuelEfficiencyInput').value = DEFAULT_FUEL_EFFICIENCY_KML;
+        document.getElementById('maintCostInput').value = DEFAULT_MAINT_COST_PER_KM;
+        saveConfig();
+    }
 
-    const result = await model.generateContent(promptText);
-    return {
-        text: result.response.text()
-    };
-}
+    // ----------------------------
+    // Gemini call wrapper (robust attempts)
+    // Note: Browser requests may hit CORS or policy restrictions. If so, use a backend proxy.
+    // ----------------------------
+    async function callGemini(promptText) {
+        if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY 尚未設定。");
 
-
-        // fetchOilPrice 使用 callGemini
-        async function fetchOilPrice(isInitialLoad = false) {
-            if (!isInitialLoad) {
-                document.getElementById('fetchOilPriceButton').disabled = true;
-                document.getElementById('oilPriceDisplayMain').textContent = "中油 92 汽油: 獲取中...";
-            }
-            const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。格式範例: {"price": 27.1, "unit": "NTD/L"}`;
-
+        // 1) 列出 models (v1 -> v1beta)
+        async function tryList(version) {
             try {
-                const result = await callGemini(prompt);
-                const responseText = (result && result.text) ? result.text : JSON.stringify(result.raw || "");
-                console.log("Gemini 回傳內容：", responseText);
-                let price = NaN;
-                const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
-                if (jsonMatch) {
-                    try {
-                        const obj = JSON.parse(jsonMatch[0]);
-                        if (obj && (obj.price !== undefined)) price = parseFloat(obj.price);
-                    } catch (e) {
-                        const txtNum = jsonMatch[0].match(/(\d+(\.\d+)?)/);
-                        if (txtNum) price = parseFloat(txtNum[0]);
-                    }
-                } else {
-                    const numMatch = responseText.match(/(\d+(\.\d+)?)/);
-                    if (numMatch) price = parseFloat(numMatch[0]);
+                const url = `https://generativelanguage.googleapis.com/${version}/models?key=${GEMINI_API_KEY}`;
+                const r = await fetch(url);
+                if (!r.ok) {
+                    const txt = await r.text().catch(()=> '');
+                    console.warn(`ListModels ${version} failed:`, r.status, txt);
+                    return null;
                 }
-
-                if (isNaN(price) || price <= 0) throw new Error("解析到的油價無效。");
-                currentOilPrice = price;
-                document.getElementById('oilPriceDisplayMain').textContent = `中油 92 汽油: $${currentOilPrice.toFixed(2)}/L`;
-                if (!isInitialLoad) showMessage(`油價更新成功: ${currentOilPrice.toFixed(2)} NTD/L`, 'success');
-                else document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
-                liveCalculate();
-            } catch (error) {
-                console.error("油價獲取失敗:", error);
-                const errMsg = `油價獲取失敗：使用預設值 $${currentOilPrice.toFixed(2)}/L。(${error.message})`;
-                document.getElementById('oilPriceDisplayMain').textContent = errMsg;
-                showMessage(errMsg, 'error');
-                if (isInitialLoad) document.getElementById('message-area-load').textContent = error.message;
-            } finally {
-                if (!isInitialLoad) document.getElementById('fetchOilPriceButton').disabled = false;
+                const j = await r.json();
+                return j.models || [];
+            } catch (e) {
+                console.warn("ListModels exception:", e);
+                return null;
             }
         }
 
-        // 其餘現有邏輯保持不變 (計算/圖表/報表/存檔)
-        function liveCalculate() {
-            const income = parseFloat(document.getElementById('income').value) || 0;
-            const mileage = parseFloat(document.getElementById('mileage').value) || 0;
-            const hours = parseFloat(document.getElementById('hours').value) || 0;
-            const minutes = parseFloat(document.getElementById('minutes').value) || 0;
-            const fuelEfficiency = parseFloat(document.getElementById('fuelEfficiencyInput').value) || DEFAULT_FUEL_EFFICIENCY_KML;
-            const maintCostPerKm = parseFloat(document.getElementById('maintCostInput').value) || DEFAULT_MAINT_COST_PER_KM;
-            const gasCostPerKm = currentOilPrice / fuelEfficiency;
-            const gasTotalCost = gasCostPerKm * mileage;
-            const maintTotalCost = maintCostPerKm * mileage;
-            const totalCost = gasTotalCost + maintTotalCost;
-            const netProfit = income - totalCost;
-            const totalHours = hours + (minutes / 60);
-            const netHourlyRate = totalHours > 0 ? netProfit / totalHours : 0;
-            const grossHourlyRate = totalHours > 0 ? income / totalHours : 0;
-            document.getElementById('liveGrossIncome').textContent = `$${income.toFixed(1)}`;
-            document.getElementById('liveTotalCost').textContent = `$${totalCost.toFixed(1)}`;
-            document.getElementById('liveNetProfit').textContent = `$${netProfit.toFixed(1)}`;
-            document.getElementById('liveGasCost').textContent = `$${gasTotalCost.toFixed(1)}`;
-            document.getElementById('liveMaintCost').textContent = `$${maintTotalCost.toFixed(1)}`;
-            document.getElementById('liveGrossHourly').textContent = `$${grossHourlyRate.toFixed(1)}/hr`;
-            document.getElementById('liveNetHourly').textContent = `$${netHourlyRate.toFixed(1)}/hr`;
-            updateChart(netProfit, gasTotalCost, maintTotalCost, income);
-        }
-
-        function updateChart(netProfit = 0, gasTotalCost = 0, maintTotalCost = 0, income = 0) {
-            if (income <= 0 && gasTotalCost <= 0 && maintTotalCost <= 0) {
-                if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
-                return;
+        function pickModel(models) {
+            if (!models || !models.length) return null;
+            for (const m of models) {
+                const name = m.name || m.model || "";
+                const methods = m.supportedMethods || m.supported_generation_methods || [];
+                if (/gemini/i.test(name) && methods && methods.length) return name;
             }
-            const dataValues = [ netProfit > 0 ? netProfit : 0.1, gasTotalCost, maintTotalCost ];
-            const data = { labels: ['淨利','油費成本','耗材成本'], datasets:[{ data: dataValues, backgroundColor:['#10b981','#f59e0b','#f87171'], hoverBackgroundColor:['#059669','#d97706','#ef4444'] }]};
-            const options = {
-                responsive:true, maintainAspectRatio:false,
-                plugins: {
-                    legend: { position:'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) label += ': ';
-                                const value = context.parsed;
-                                const total = context.dataset.data.reduce((a,b)=>a+b,0);
-                                const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
-                                return `${label}${formatCurrency(value)} (${percentage}%)`;
-                            }
-                        }
-                    },
-                    datalabels: {
-                        color: '#fff',
-                        formatter: (value, context) => {
-                            const total = context.dataset.data.reduce((a,b)=>a+b,0);
-                            const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
-                            return percentage > 5 ? `${percentage}%` : '';
-                        },
-                        font: { weight: 'bold' }
-                    }
-                }
-            };
-            const ctx = document.getElementById('costChart').getContext('2d');
-            if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
-            else { chartInstance = new Chart(ctx, { type:'doughnut', data, options }); }
+            for (const m of models) {
+                const name = m.name || m.model || "";
+                const methods = m.supportedMethods || m.supported_generation_methods || [];
+                if (methods && methods.length) return name;
+            }
+            if (models[0]) return models[0].name || models[0].model || null;
+            return null;
         }
 
-        async function saveDailyRecord() {
-            if (!userId) { showMessage("用戶 ID 未載入，請稍候或重試。",'error'); return; }
-            const recordDate = document.getElementById('recordDate').value;
-            const income = parseFloat(document.getElementById('income').value) || 0;
-            const mileage = parseFloat(document.getElementById('mileage').value) || 0;
-            const hours = parseFloat(document.getElementById('hours').value) || 0;
-            const minutes = parseFloat(document.getElementById('minutes').value) || 0;
-            if (!recordDate || income <= 0 || mileage <= 0) { showMessage("請輸入有效的日期、營業額和公里數。",'warning'); return; }
-            const totalMinutes = hours * 60 + minutes;
-            const totalHours = totalMinutes / 60;
-            const gasCostPerKm = currentOilPrice / userConfig.fuelEfficiency;
-            const gasTotalCost = gasCostPerKm * mileage;
-            const maintTotalCost = userConfig.maintCostPerKm * mileage;
-            const totalCost = gasTotalCost + maintTotalCost;
-            const netProfit = income - totalCost;
-            const recordData = {
-                date: recordDate, income, mileage, totalMinutes,
-                gasCost: gasTotalCost, maintCost: maintTotalCost, totalCost, netProfit,
-                grossHourly: totalHours > 0 ? income / totalHours : 0,
-                netHourly: totalHours > 0 ? netProfit / totalHours : 0,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            const docRef = db.collection(recordsCollectionPath(userId)).doc(recordDate);
+        let usedVersion = null;
+        let modelName = null;
+        let models = await tryList('v1');
+        modelName = pickModel(models);
+        if (modelName) usedVersion = 'v1';
+        else {
+            models = await tryList('v1beta');
+            modelName = pickModel(models);
+            if (modelName) usedVersion = 'v1beta';
+        }
+
+        if (!modelName) throw new Error("找不到可用模型 (ListModels 無結果)。請確認 API Key 權限與 API 已啟用。");
+
+        // Normalize model id (take last segment)
+        let modelId = modelName;
+        if (typeof modelName === 'string' && modelName.includes('/')) modelId = modelName.split('/').pop();
+
+        // Build candidate attempts (different endpoints / payload shapes)
+        const attempts = [
+            {
+                desc: 'generateContent (generation_config snake_case)',
+                url: (v) => `https://generativelanguage.googleapis.com/${v}/models/${encodeURIComponent(modelId)}:generateContent?key=${GEMINI_API_KEY}`,
+                body: { contents: [{ parts: [{ text: promptText }] }], generation_config: { temperature: 0.1, max_output_tokens: 200 } }
+            },
+            {
+                desc: 'generateContent (generationConfig camelCase)',
+                url: (v) => `https://generativelanguage.googleapis.com/${v}/models/${encodeURIComponent(modelId)}:generateContent?key=${GEMINI_API_KEY}`,
+                body: { contents: [{ parts: [{ text: promptText }] }], generationConfig: { temperature: 0.1, maxOutputTokens: 200 } }
+            },
+            {
+                desc: 'generateText (input.text)',
+                url: (v) => `https://generativelanguage.googleapis.com/${v}/models/${encodeURIComponent(modelId)}:generateText?key=${GEMINI_API_KEY}`,
+                body: { input: { text: promptText }, temperature: 0.1, maxOutputTokens: 200 }
+            },
+            {
+                desc: 'generate (input.text)',
+                url: (v) => `https://generativelanguage.googleapis.com/${v}/models/${encodeURIComponent(modelId)}:generate?key=${GEMINI_API_KEY}`,
+                body: { input: { text: promptText }, temperature: 0.1, maxOutputTokens: 200 }
+            }
+        ];
+
+        let lastErr = null;
+        for (const a of attempts) {
+            const endpoint = a.url(usedVersion || 'v1');
             try {
-                await docRef.set(recordData);
-                showMessage(`成功儲存 ${recordDate} 的記錄！`, 'success');
-                loadReport(currentReportType);
-            } catch (error) {
-                console.error("儲存記錄失敗:", error);
-                showMessage("儲存記錄失敗，請檢查錯誤訊息。", 'error');
-            }
-        }
-
-        function getStartAndEndDate(date, type) {
-            const start = new Date(date), end = new Date(date);
-            start.setUTCHours(0,0,0,0); end.setUTCHours(23,59,59,999);
-            switch(type) {
-                case 'week':
-                    const dayOfWeek = (start.getUTCDay()===0 ? 6 : start.getUTCDay()-1);
-                    start.setUTCDate(start.getUTCDate() - dayOfWeek);
-                    end.setUTCDate(start.getUTCDate() + 6);
-                    end.setUTCHours(23,59,59,999);
-                    break;
-                case 'month':
-                    start.setUTCDate(1);
-                    end.setUTCMonth(end.getUTCMonth()+1,0);
-                    end.setUTCHours(23,59,59,999);
-                    break;
-                case 'year':
-                    start.setUTCMonth(0,1);
-                    end.setUTCMonth(11,31);
-                    end.setUTCHours(23,59,59,999);
-                    break;
-            }
-            return { start: formatDate(start), end: formatDate(end) };
-        }
-
-        function getReportRangeDisplay(startDateString, endDateString, type) {
-            if (type === 'day') return startDateString.replace(/-/g,'/');
-            return `${startDateString.replace(/-/g,'/')} ~ ${endDateString.replace(/-/g,'/')}`;
-        }
-
-        async function loadReport(type) {
-            currentReportType = type;
-            const { start, end } = getStartAndEndDate(currentReportDate, type);
-            document.getElementById('reportDateRange').textContent = getReportRangeDisplay(start,end,type);
-            const recordsRef = db.collection(recordsCollectionPath(userId));
-            try {
-                const snapshot = await recordsRef.where('date','>=',start).where('date','<=',end).orderBy('date','asc').get();
-                let totalIncome=0,totalNetProfit=0,totalMinutes=0,totalCost=0,totalMileage=0, reportDetailsHtml='';
-                snapshot.forEach(doc=>{
-                    const data = doc.data();
-                    totalIncome += data.income || 0;
-                    totalNetProfit += data.netProfit || 0;
-                    totalMinutes += data.totalMinutes || 0;
-                    totalCost += data.totalCost || 0;
-                    totalMileage += data.mileage || 0;
-                    const statusClass = (data.netProfit >= 0) ? 'text-green-600' : 'text-red-600';
-                    reportDetailsHtml += `<div class="flex justify-between items-center border-b pb-1"><span class="font-medium">${data.date} (${formatDuration(data.totalMinutes)})</span><span class="${statusClass} font-bold">${formatCurrency(data.netProfit)}</span></div>`;
+                console.debug("嘗試呼叫:", a.desc, endpoint, a.body);
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(a.body)
                 });
-                const totalHours = totalMinutes / 60;
-                const avgNetHourly = totalHours > 0 ? totalNetProfit / totalHours : 0;
-                const avgGrossHourly = totalHours > 0 ? totalIncome / totalHours : 0;
-                document.getElementById('reportTotalIncome').textContent = formatCurrency(totalIncome);
-                document.getElementById('reportNetProfit').textContent = formatCurrency(totalNetProfit);
-                document.getElementById('reportTotalHours').textContent = formatDuration(totalMinutes);
-                document.getElementById('reportTotalCost').textContent = formatCurrency(totalCost);
-                document.getElementById('reportTotalMileage').textContent = totalMileage.toFixed(1);
-                document.getElementById('reportNetHourly').textContent = `${formatCurrency(avgNetHourly)}/hr`;
-                document.getElementById('reportGrossHourly').textContent = `${formatCurrency(avgGrossHourly)}/hr`;
-                document.getElementById('reportDetails').innerHTML = reportDetailsHtml || '<p>此期間尚未有記錄。</p>';
-            } catch (error) {
-                console.error("載入報表失敗:", error);
-                showMessage("載入報表失敗，請檢查網路或權限。", 'error');
+                const text = await res.text().catch(()=> '');
+                if (!res.ok) {
+                    let parsed = null;
+                    try { parsed = JSON.parse(text || '{}'); } catch(e){}
+                    const shortMsg = parsed && parsed.error && parsed.error.message ? parsed.error.message : `${res.status} ${res.statusText} ${text}`;
+                    lastErr = `呼叫失敗(${a.desc}): ${shortMsg}`;
+                    console.warn(lastErr);
+                    continue; // 試下一種 payload
+                }
+                // parse JSON
+                let data = null;
+                try { data = JSON.parse(text); } catch(e) { data = { rawText: text }; }
+                // try various places for returned text
+                let out = data?.candidates?.[0]?.content?.parts?.[0]?.text
+                       || data?.candidates?.[0]?.output?.[0]?.content?.parts?.[0]?.text
+                       || data?.output?.[0]?.content?.text
+                       || data?.output_text
+                       || data?.candidates?.[0]?.content?.[0]?.text;
+                // fallback: stringify raw
+                if (!out) {
+                    if (typeof data === 'string') out = data;
+                    else out = JSON.stringify(data);
+                }
+                return { raw: data, text: out };
+            } catch (err) {
+                lastErr = `例外(${a.desc}): ${err.message}`;
+                console.warn(lastErr);
+                continue;
             }
         }
+        throw new Error(`所有嘗試均失敗。最後錯誤：${lastErr}`);
+    }
 
-        function changeReportDate(delta) {
-            const tempDate = new Date(currentReportDate);
-            switch(currentReportType) {
-                case 'day': tempDate.setDate(tempDate.getDate() + delta); break;
-                case 'week': tempDate.setDate(tempDate.getDate() + (delta * 7)); break;
-                case 'month': tempDate.setMonth(tempDate.getMonth() + delta); break;
-                case 'year': tempDate.setFullYear(tempDate.getFullYear() + delta); break;
+    // ----------------------------
+    // fetchOilPrice uses callGemini
+    // ----------------------------
+    async function fetchOilPrice(isInitialLoad=false) {
+        if (!isInitialLoad) {
+            document.getElementById('fetchOilPriceButton').disabled = true;
+            document.getElementById('oilPriceDisplayMain').textContent = "更新中...";
+        }
+        const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要額外解釋。格式範例: {"price": 27.1, "unit": "NTD/L"}`;
+        try {
+            const res = await callGemini(prompt);
+            const responseText = res && res.text ? res.text : JSON.stringify(res.raw || "");
+            console.log("Gemini 回傳：", responseText);
+            // try extract JSON object
+            let price = NaN;
+            const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
+            if (jsonMatch) {
+                try {
+                    const obj = JSON.parse(jsonMatch[0]);
+                    if (obj && (obj.price !== undefined)) price = parseFloat(obj.price);
+                } catch (e) {
+                    // fallback: extract number from jsonMatch
+                    const num = jsonMatch[0].match(/(\d+(\.\d+)?)/);
+                    if (num) price = parseFloat(num[0]);
+                }
+            } else {
+                const num = responseText.match(/(\d+(\.\d+)?)/);
+                if (num) price = parseFloat(num[0]);
             }
-            currentReportDate = tempDate;
+
+            if (isNaN(price) || price <= 0) throw new Error("解析到無效油價。");
+            currentOilPrice = price;
+            document.getElementById('oilPriceDisplayMain').textContent = `$${currentOilPrice.toFixed(2)}/L`;
+            if (!isInitialLoad) showMessage(`油價已更新 $${currentOilPrice.toFixed(2)}/L`, 'success');
+            else document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
+            liveCalculate();
+        } catch (err) {
+            console.error("油價獲取失敗:", err);
+            const errMsg = `油價獲取失敗，使用預設值 $${currentOilPrice.toFixed(2)}/L。(${err.message})`;
+            document.getElementById('oilPriceDisplayMain').textContent = errMsg;
+            showMessage(errMsg, 'error');
+            if (isInitialLoad) document.getElementById('message-area-load').textContent = err.message;
+        } finally {
+            if (!isInitialLoad) document.getElementById('fetchOilPriceButton').disabled = false;
+        }
+    }
+
+    // ----------------------------
+    // Live calculate and chart
+    // ----------------------------
+    function liveCalculate() {
+        const income = parseFloat(document.getElementById('income').value) || 0;
+        const mileage = parseFloat(document.getElementById('mileage').value) || 0;
+        const hours = parseFloat(document.getElementById('hours').value) || 0;
+        const minutes = parseFloat(document.getElementById('minutes').value) || 0;
+        const fuelEfficiency = parseFloat(document.getElementById('fuelEfficiencyInput').value) || DEFAULT_FUEL_EFFICIENCY_KML;
+        const maintCostPerKm = parseFloat(document.getElementById('maintCostInput').value) || DEFAULT_MAINT_COST_PER_KM;
+
+        const gasCostPerKm = currentOilPrice / fuelEfficiency;
+        const gasTotalCost = gasCostPerKm * mileage;
+        const maintTotalCost = maintCostPerKm * mileage;
+        const totalCost = gasTotalCost + maintTotalCost;
+        const netProfit = income - totalCost;
+        const totalHours = hours + (minutes/60);
+        const netHourlyRate = totalHours > 0 ? netProfit / totalHours : 0;
+        const grossHourlyRate = totalHours > 0 ? income / totalHours : 0;
+
+        document.getElementById('liveGrossIncome').textContent = `$${income.toFixed(1)}`;
+        document.getElementById('liveTotalCost').textContent = `$${totalCost.toFixed(1)}`;
+        document.getElementById('liveNetProfit').textContent = `$${netProfit.toFixed(1)}`;
+        document.getElementById('liveGasCost').textContent = `$${gasTotalCost.toFixed(1)}`;
+        document.getElementById('liveMaintCost').textContent = `$${maintTotalCost.toFixed(1)}`;
+        document.getElementById('liveGrossHourly').textContent = `$${grossHourlyRate.toFixed(1)}/hr`;
+        document.getElementById('liveNetHourly').textContent = `$${netHourlyRate.toFixed(1)}/hr`;
+
+        updateChart(netProfit, gasTotalCost, maintTotalCost, income);
+    }
+
+    function updateChart(netProfit=0, gasTotalCost=0, maintTotalCost=0, income=0) {
+        const ctx = document.getElementById('costChart').getContext('2d');
+        if (income <= 0 && gasTotalCost <= 0 && maintTotalCost <= 0) {
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+            return;
+        }
+        const dataValues = [ netProfit > 0 ? netProfit : 0.1, gasTotalCost, maintTotalCost ];
+        const data = {
+            labels: ['淨利','油費成本','耗材成本'],
+            datasets: [{ data: dataValues }]
+        };
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' },
+                datalabels: {
+                    color: '#fff',
+                    formatter: (value, ctx) => {
+                        const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+                        const pct = total > 0 ? (value/total*100).toFixed(1) : 0;
+                        return pct > 5 ? `${pct}%` : '';
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a,b)=>a+b,0);
+                            const pct = total>0 ? (value/total*100).toFixed(1) : 0;
+                            return `${context.label}: ${formatCurrency(value)} (${pct}%)`;
+                        }
+                    }
+                }
+            }
+        };
+
+        if (chartInstance) {
+            chartInstance.data = data;
+            chartInstance.options = options;
+            chartInstance.update();
+        } else {
+            chartInstance = new Chart(ctx, { type:'doughnut', data, options, plugins: [ChartDataLabels] });
+        }
+    }
+
+    // ----------------------------
+    // Save / Edit / Delete records
+    // ----------------------------
+    async function handleSaveRecord() {
+        // If isEditingDate set, update instead of creating new
+        if (isEditingDate) {
+            await saveDailyRecord(isEditingDate);
+            isEditingDate = null;
+            document.getElementById('saveDailyRecordButton').textContent = "儲存記錄";
+        } else {
+            await saveDailyRecord();
+        }
+    }
+
+    async function saveDailyRecord(editDate=null) {
+        if (!userId) { showMessage("User not ready", 'error'); return; }
+        const recordDate = document.getElementById('recordDate').value;
+        const income = parseFloat(document.getElementById('income').value) || 0;
+        const mileage = parseFloat(document.getElementById('mileage').value) || 0;
+        const hours = parseFloat(document.getElementById('hours').value) || 0;
+        const minutes = parseFloat(document.getElementById('minutes').value) || 0;
+
+        if (!recordDate || income <= 0 || mileage <= 0) { showMessage("請輸入有效日期/營業額/公里數", 'error'); return; }
+
+        const totalMinutes = hours*60 + minutes;
+        const totalHours = totalMinutes / 60;
+        const gasCostPerKm = currentOilPrice / (userConfig.fuelEfficiency || DEFAULT_FUEL_EFFICIENCY_KML);
+        const gasTotalCost = gasCostPerKm * mileage;
+        const maintTotalCost = (userConfig.maintCostPerKm || DEFAULT_MAINT_COST_PER_KM) * mileage;
+        const totalCost = gasTotalCost + maintTotalCost;
+        const netProfit = income - totalCost;
+
+        const recordData = {
+            date: recordDate,
+            income, mileage, totalMinutes,
+            gasCost: gasTotalCost, maintCost: maintTotalCost, totalCost, netProfit,
+            grossHourly: totalHours>0 ? income/totalHours : 0,
+            netHourly: totalHours>0 ? netProfit/totalHours : 0,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        const docId = editDate || recordDate;
+        try {
+            await db.collection(recordsCollectionPath(userId)).doc(docId).set(recordData);
+            showMessage(`${editDate ? '更新' : '儲存'}成功: ${docId}`, 'success');
+            // reset editing state
+            if (editDate) {
+                isEditingDate = null;
+                document.getElementById('saveDailyRecordButton').textContent = "儲存記錄";
+            }
             loadReport(currentReportType);
+        } catch (e) {
+            console.error("儲存記錄失敗:", e);
+            showMessage("儲存失敗，檢查權限或網路", 'error');
         }
+    }
 
-        window.loadReport = loadReport;
-        window.changeReportDate = changeReportDate;
-        window.saveDailyRecord = saveDailyRecord;
-        window.saveConfig = saveConfig;
-        window.fetchOilPrice = fetchOilPrice;
+    async function deleteRecord(dateStr) {
+        if (!confirm(`確認刪除 ${dateStr} 的記錄？`)) return;
+        try {
+            await db.collection(recordsCollectionPath(userId)).doc(dateStr).delete();
+            showMessage(`已刪除 ${dateStr}`, 'success');
+            loadReport(currentReportType);
+        } catch (e) {
+            console.error("刪除失敗:", e);
+            showMessage("刪除失敗，請檢查權限", 'error');
+        }
+    }
 
-        document.addEventListener('DOMContentLoaded', initFirebase);
+    async function editRecord(dateStr) {
+        try {
+            const doc = await db.collection(recordsCollectionPath(userId)).doc(dateStr).get();
+            if (!doc.exists) { showMessage("找不到該記錄", 'error'); return; }
+            const d = doc.data();
+            // populate UI
+            document.getElementById('recordDate').value = d.date;
+            document.getElementById('income').value = d.income || 0;
+            document.getElementById('mileage').value = d.mileage || 0;
+            const mins = d.totalMinutes || 0;
+            document.getElementById('hours').value = Math.floor(mins/60);
+            document.getElementById('minutes').value = Math.round(mins % 60);
+            // set editing flag
+            isEditingDate = dateStr;
+            document.getElementById('saveDailyRecordButton').textContent = "更新記錄";
+            // scroll to top or focus
+            window.scrollTo({top:0, behavior:'smooth'});
+        } catch (e) {
+            console.error("編輯讀取失敗:", e);
+            showMessage("讀取記錄失敗", 'error');
+        }
+    }
+
+    // ----------------------------
+    // Report load & render
+    // ----------------------------
+    function getStartAndEndDate(date, type) {
+        const start = new Date(date);
+        const end = new Date(date);
+        start.setUTCHours(0,0,0,0);
+        end.setUTCHours(23,59,59,999);
+        switch(type) {
+            case 'week':
+                const dow = (start.getUTCDay()===0?6:start.getUTCDay()-1);
+                start.setUTCDate(start.getUTCDate()-dow);
+                end.setUTCDate(start.getUTCDate()+6);
+                end.setUTCHours(23,59,59,999);
+                break;
+            case 'month':
+                start.setUTCDate(1);
+                end.setUTCMonth(end.getUTCMonth()+1,0);
+                end.setUTCHours(23,59,59,999);
+                break;
+            case 'year':
+                start.setUTCMonth(0,1);
+                end.setUTCMonth(11,31);
+                end.setUTCHours(23,59,59,999);
+                break;
+        }
+        return { start: formatDateToInput(start), end: formatDateToInput(end) };
+    }
+
+    async function loadReport(type='day') {
+        currentReportType = type;
+        const { start, end } = getStartAndEndDate(currentReportDate, type);
+        document.getElementById('reportDateRange').textContent = type==='day' ? start.replace(/-/g,'/') : `${start.replace(/-/g,'/')} ~ ${end.replace(/-/g,'/')}`;
+
+        const recordsRef = db.collection(recordsCollectionPath(userId));
+        try {
+            const snapshot = await recordsRef.where('date','>=',start).where('date','<=',end).orderBy('date','asc').get();
+            let totalIncome=0, totalNetProfit=0, totalMinutes=0, totalCost=0, totalMileage=0;
+            let html = '';
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                totalIncome += d.income || 0;
+                totalNetProfit += d.netProfit || 0;
+                totalMinutes += d.totalMinutes || 0;
+                totalCost += d.totalCost || 0;
+                totalMileage += d.mileage || 0;
+                const statusClass = (d.netProfit >= 0) ? 'text-green-600' : 'text-red-600';
+                html += `
+                    <div class="record-row border-b">
+                        <div>
+                            <div class="font-medium">${d.date.replace(/-/g,'/')}</div>
+                            <div class="muted text-xs">${formatDuration(d.totalMinutes || 0)} • ${formatCurrency(d.income || 0)}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="${statusClass} font-semibold">${formatCurrency(d.netProfit || 0)}</div>
+                            <div class="record-actions mt-1">
+                                <button class="small-btn btn-ghost" onclick="editRecord('${d.date}')">編輯</button>
+                                <button class="small-btn btn-danger" onclick="deleteRecord('${d.date}')">刪除</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('reportDetails').innerHTML = html || '<p class="muted">此期間尚未有記錄。</p>';
+
+            const totalHours = totalMinutes / 60;
+            const avgNetHourly = totalHours > 0 ? totalNetProfit / totalHours : 0;
+            const avgGrossHourly = totalHours > 0 ? totalIncome / totalHours : 0;
+
+            document.getElementById('reportTotalIncome').textContent = formatCurrency(totalIncome);
+            document.getElementById('reportNetProfit').textContent = formatCurrency(totalNetProfit);
+            document.getElementById('reportTotalHours').textContent = formatDuration(totalMinutes);
+            document.getElementById('reportTotalCost').textContent = formatCurrency(totalCost);
+            document.getElementById('reportTotalMileage').textContent = totalMileage.toFixed(1);
+            document.getElementById('reportNetHourly').textContent = `${formatCurrency(avgNetHourly)}/hr`;
+            document.getElementById('reportGrossHourly').textContent = `${formatCurrency(avgGrossHourly)}/hr`;
+
+        } catch (e) {
+            console.error("載入報表失敗:", e);
+            showMessage("載入報表失敗，請檢查權限與網路。", 'error');
+        }
+    }
+
+    function changeReportDate(delta) {
+        const t = new Date(currentReportDate);
+        switch(currentReportType){
+            case 'day': t.setDate(t.getDate()+delta); break;
+            case 'week': t.setDate(t.getDate()+ delta*7); break;
+            case 'month': t.setMonth(t.getMonth()+delta); break;
+            case 'year': t.setFullYear(t.getFullYear()+delta); break;
+        }
+        currentReportDate = t;
+        loadReport(currentReportType);
+    }
+
+    // ----------------------------
+    // Init events
+    // ----------------------------
+    function initAppEvents() {
+        Chart.register(ChartDataLabels);
+        ['income','mileage','hours','minutes','fuelEfficiencyInput','maintCostInput'].forEach(id=>{
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => { liveCalculate(); if (id.startsWith('fuel')||id.startsWith('maint')) saveConfig(); });
+        });
+        document.getElementById('recordDate').value = formatDateToInput(new Date());
+        loadReport(currentReportType);
+        liveCalculate();
+    }
+
+    // ----------------------------
+    // Boot
+    // ----------------------------
+    document.addEventListener('DOMContentLoaded', () => {
+        initFirebase();
+    });
+
+    // Expose for buttons in markup
+    window.fetchOilPrice = fetchOilPrice;
+    window.loadReport = loadReport;
+    window.changeReportDate = changeReportDate;
+    window.saveConfig = saveConfig;
+    window.saveDailyRecord = saveDailyRecord;
+    window.handleSaveRecord = handleSaveRecord;
+    window.editRecord = editRecord;
+    window.deleteRecord = deleteRecord;
+
     </script>
 </body>
 </html>
