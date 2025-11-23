@@ -392,21 +392,20 @@
             const API_URL = `https://generativelanguage.googleapis.com/${usedVersion}/models/${encodeURIComponent(modelName)}:generateContent?key=${KEY}`;
 
             // body 使用 contents + generationConfig（和官方例子一致）
-            const requestBody = {
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            { text: promptText }
-                        ]
-                    }
-                ],
-                // generationConfig 在許多範例中放在 body 裡 (temperature 等)，保守使用低溫度以穩定回傳
-                generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 200
-                }
-            };
+           const requestBody = {
+    contents: [
+        {
+            role: "user",
+            parts: [{ text: promptText }]
+        }
+    ],
+
+    generation_config: {
+        temperature: 0.1,
+        max_output_tokens: 200
+    }
+};
+
 
             const res = await fetch(API_URL, {
                 method: 'POST',
