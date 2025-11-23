@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Gemini + 油價查詢 Demo</title>
+
+    <!-- Google 官方前端 SDK（一定要這段，才能避免 CORS） -->
+    <script src="https://unpkg.com/@google/generative-ai/dist/browser.bundle.min.js"></script>
+
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .box { padding: 20px; background: #f3f3f3; border-radius: 8px; margin-bottom: 20px; }
+        textarea { width: 100%; height: 120px; }
+        button { padding: 10px 20px; }
+    </style>
+</head>
+
+<body>
+
+<h2>Gemini Call + 油價查詢 完整可用版本</h2>
+
+<div class="box">
+    <h3>輸入內容（給 Gemini）</h3>
+    <textarea id="inputText">請幫我抓台灣今日油價並總結。</textarea>
+    <button onclick="onRun()">執行 Gemini</button>
+</div>
+
+<div class="box">
+    <h3>結果</h3>
+    <pre id="result"></pre>
+</div>
+
+<script>
+    const GEMINI_API_KEY = "YOUR_API_KEY";   // ← 填入你的 Key
+
+    // ------------------------------
+    // 1) 正確可用的 Gemini 呼叫 (前端)
+    // ------------------------------
+    async function callGemini(promptText) {
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+        // 使用官方可用 model
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash"
+        });
+
+        const result = await model.generateContent(promptText);
+        return result.response.text();
+    }
+
+    // ------------------------------
+    // 2) 抓油價
+    // ------------------------------
+    async function fetchOilPrice() {
+        try {
+            const res = await fetch("https://quality.data.gov.tw/dq_download_json.php?nid=11514&md5_url=15f4b74a53ce38afcb7631c6fba58828");
+            const json = await res.json();
+            return json;   // 回傳整包給 Gemini 用
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // ------------------------------
+    // 3) 主按鈕
+    // ------------------------------
+    async function onRun() {
+        const resultDom = document.getElementById("result");
+        resultDom.textContent = "處理中...\n";
+
+        // 抓油價
+        const oilData = await fetchOilPrice();
+
+        if (!oilData) {
+            resultDom.textContent = "油價資料抓取失敗";
+            return;
+        }
+
+        // 組 prompt（把油價一起給 Gemini）
+        const promptText = `
+以下是台灣油價 JSON，請簡單整理成可讀內容：
+
+${JSON.stringify(oilData)}
+
+---
+另外補上使用者要求的內容：
+${document.getElementById("inputText").value}
+        `;
+
+        // 呼叫 gemini
+        const geminiReply = await callGemini(promptText);
+
+        resultDom.textContent = geminiReply;
+    }
+</script>
+
+</body>
+</html>
