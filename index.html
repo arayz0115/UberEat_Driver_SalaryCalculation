@@ -83,7 +83,7 @@
                     <div class="muted">油價擷取: <span id="oilPriceDisplayMain">加載中...</span></div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
                     <div>
                         <label class="muted">記錄日期</label>
                         <input id="recordDate" type="date">
@@ -93,8 +93,12 @@
                         <input id="income" type="number" min="0" step="10" value="0" placeholder="0">
                     </div>
                     <div>
-                        <label class="muted">騎乘公里數 (km)</label>
+                        <label class="muted">騎乘公里數 (跑單 km)</label>
                         <input id="mileage" type="number" min="0" step="0.1" value="0" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="muted">總里程 (含往返/空轉 km)</label>
+                        <input id="totalMileage" type="number" min="0" step="0.1" value="0" placeholder="0">
                     </div>
                 </div>
 
@@ -156,6 +160,7 @@
                     <div class="bg-red-50 p-3 rounded-lg"><div class="muted">總消耗成本</div><div id="reportTotalCost" class="font-bold text-rose-600">$0</div></div>
                     <div class="bg-slate-50 p-3 rounded-lg"><div class="muted">平均時薪 (毛利)</div><div id="reportGrossHourly" class="font-bold">$0/hr</div></div>
                     <div class="bg-slate-50 p-3 rounded-lg"><div class="muted">平均時薪 (淨利)</div><div id="reportNetHourly" class="font-bold">$0/hr</div></div>
+                    <div class="bg-white p-3 rounded-lg border"><div class="muted">期間總里程</div><div id="reportTotalMileage" class="font-bold text-slate-800">0.0 km</div></div>
                     <div class="col-span-2 bg-white p-3 rounded-lg border"><div class="muted">期間記錄明細</div>
                         <div id="reportDetails" class="mt-2 text-sm">
                             <p class="muted">此期間尚未有記錄。</p>
@@ -187,7 +192,7 @@
     const DEFAULT_FUEL_EFFICIENCY_KML = 42;
     const DEFAULT_MAINT_COST_PER_KM = 0.60;
 
-    // 你提供的 Cloudflare Worker endpoint（我已把它放這裡）
+    // 你的 Cloudflare Worker endpoint（請確認可用）
     const OIL_WORKER_URL = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
 
     const FIREBASE_CONFIG = {
@@ -341,23 +346,20 @@
         try {
             const res = await fetch(OIL_WORKER_URL, { cache: "no-cache" });
             if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-            const data = await res.json().catch(()=> null);
-
-            // Try to find plausible price in response
+            // attempt json
+            let data = null;
+            try { data = await res.clone().json(); } catch(e) { data = null; }
             let price = NaN;
+
             if (data === null) {
-                // try text
                 const txt = await res.text().catch(()=> '');
                 const m = txt.match(/(\d+(\.\d+)?)/);
                 if (m) price = parseFloat(m[0]);
             } else {
-                // Several expected shapes:
-                // { price: 27.1 } OR { result: {...} } OR array with objects that have price/參考牌價
                 if (typeof data === 'number') price = data;
                 else if (data.price) price = parseFloat(data.price);
                 else if (data.result && data.result.price) price = parseFloat(data.result.price);
                 else if (Array.isArray(data)) {
-                    // search for properties with keywords
                     for (const it of data) {
                         if (!it) continue;
                         if (it.price) { price = parseFloat(it.price); break; }
@@ -365,7 +367,6 @@
                         if (it["牌價"]) { price = parseFloat(String(it["牌價"]).replace(/[^\d\.]/g,'')); break; }
                     }
                 } else {
-                    // maybe nested
                     const jsonStr = JSON.stringify(data);
                     const m = jsonStr.match(/(\d+\.\d{1,2})/);
                     if (m) price = parseFloat(m[0]);
@@ -485,6 +486,7 @@
         const recordDate = document.getElementById('recordDate').value;
         const income = parseFloat(document.getElementById('income').value) || 0;
         const mileage = parseFloat(document.getElementById('mileage').value) || 0;
+        const totalMileage = parseFloat(document.getElementById('totalMileage').value) || 0;
         const hours = parseFloat(document.getElementById('hours').value) || 0;
         const minutes = parseFloat(document.getElementById('minutes').value) || 0;
 
@@ -500,8 +502,14 @@
 
         const recordData = {
             date: recordDate,
-            income, mileage, totalMinutes,
-            gasCost: gasTotalCost, maintCost: maintTotalCost, totalCost, netProfit,
+            income,
+            mileage,
+            totalMileage,
+            totalMinutes,
+            gasCost: gasTotalCost,
+            maintCost: maintTotalCost,
+            totalCost,
+            netProfit,
             grossHourly: totalHours>0 ? income/totalHours : 0,
             netHourly: totalHours>0 ? netProfit/totalHours : 0,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -542,6 +550,7 @@
             document.getElementById('recordDate').value = d.date;
             document.getElementById('income').value = d.income || 0;
             document.getElementById('mileage').value = d.mileage || 0;
+            document.getElementById('totalMileage').value = d.totalMileage || 0;
             const mins = d.totalMinutes || 0;
             document.getElementById('hours').value = Math.floor(mins/60);
             document.getElementById('minutes').value = Math.round(mins % 60);
@@ -591,7 +600,7 @@
         const recordsRef = db.collection(recordsCollectionPath(userId));
         try {
             const snapshot = await recordsRef.where('date','>=',start).where('date','<=',end).orderBy('date','asc').get();
-            let totalIncome=0, totalNetProfit=0, totalMinutes=0, totalCost=0, totalMileage=0;
+            let totalIncome=0, totalNetProfit=0, totalMinutes=0, totalCost=0, totalMileage=0, totalTotalMileage=0;
             let html = '';
             snapshot.forEach(doc => {
                 const d = doc.data();
@@ -600,12 +609,13 @@
                 totalMinutes += d.totalMinutes || 0;
                 totalCost += d.totalCost || 0;
                 totalMileage += d.mileage || 0;
+                totalTotalMileage += d.totalMileage || 0;
                 const statusClass = (d.netProfit >= 0) ? 'text-green-600' : 'text-red-600';
                 html += `
                     <div class="record-row border-b">
                         <div>
                             <div class="font-medium">${d.date.replace(/-/g,'/')}</div>
-                            <div class="muted text-xs">${formatDuration(d.totalMinutes || 0)} • ${formatCurrency(d.income || 0)}</div>
+                            <div class="muted text-xs">${formatDuration(d.totalMinutes || 0)} • 跑單 ${ (d.mileage || 0).toFixed(1) } km • 總里程 ${ (d.totalMileage || 0).toFixed(1) } km</div>
                         </div>
                         <div class="text-right">
                             <div class="${statusClass} font-semibold">${formatCurrency(d.netProfit || 0)}</div>
@@ -627,7 +637,7 @@
             document.getElementById('reportNetProfit').textContent = formatCurrency(totalNetProfit);
             document.getElementById('reportTotalHours').textContent = formatDuration(totalMinutes);
             document.getElementById('reportTotalCost').textContent = formatCurrency(totalCost);
-            document.getElementById('reportTotalMileage')?.textContent = totalMileage.toFixed(1);
+            document.getElementById('reportTotalMileage').textContent = `${totalTotalMileage.toFixed(1)} km`;
             document.getElementById('reportNetHourly').textContent = `${formatCurrency(avgNetHourly)}/hr`;
             document.getElementById('reportGrossHourly').textContent = `${formatCurrency(avgGrossHourly)}/hr`;
 
@@ -654,7 +664,7 @@
      **************************************************************/
     function initAppEvents() {
         Chart.register(ChartDataLabels);
-        ['income','mileage','hours','minutes','fuelEfficiencyInput','maintCostInput'].forEach(id=>{
+        ['income','mileage','totalMileage','hours','minutes','fuelEfficiencyInput','maintCostInput'].forEach(id=>{
             const el = document.getElementById(id);
             if (el) el.addEventListener('input', () => { liveCalculate(); if (id.startsWith('fuel')||id.startsWith('maint')) saveConfig(); });
         });
