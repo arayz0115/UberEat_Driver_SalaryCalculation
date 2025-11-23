@@ -10,19 +10,19 @@
         .net-profit { color: #10b981; } /* 綠色 */
         .cost-val { color: #f87171; } /* 紅色 */
         .input-group label { font-weight: 600; color: #4b5563; }
-        .card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); }
-        #loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.95); z-index:1000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+        .card { background-color: #ffffff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index:1000; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
         .spinner { border:4px solid rgba(0,0,0,0.1); border-top:4px solid #3b82f6; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; }
-        @keyframes spin { 0%{ transform:rotate(0deg);} 100%{ transform:rotate(360deg);} }
+        @keyframes spin {0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
         .hidden { display:none !important; }
-        #message-area { position: fixed; top:1rem; right:1rem; z-index:1001; max-width:90%; display:flex; flex-direction:column; gap:0.5rem; }
-        .alert { padding:0.75rem 1rem; border-radius:0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-size:0.9rem; }
+        #message-area { position: fixed; top: 1rem; right: 1rem; z-index:1001; max-width:90%; display:flex; flex-direction:column; gap:0.5rem; }
+        .alert { padding:0.75rem 1rem; border-radius:0.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.1); font-size:0.9rem; }
         .alert.info { background-color:#e0f2fe; border-color:#90cdf4; color:#2b6cb0; }
         .alert.success { background-color:#d1fae5; border-color:#68d391; color:#2f855a; }
         .alert.error { background-color:#fee2e2; border-color:#fc8181; color:#c53030; }
         .icon { display:inline-flex; align-items:center; justify-content:center; width:1.25rem; height:1.25rem; margin-right:0.5rem; color:currentColor; }
         input[type="number"], input[type="date"], input[type="text"] { border:1px solid #d1d5db; padding:0.75rem 1rem; border-radius:0.5rem; width:100%; font-size:1rem; outline:none; transition: border-color .15s, box-shadow .15s; }
-        input[type="number"]:focus, input[type="date"]:focus, input[type="text"]:focus { border-color:#3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
+        input[type="number"]:focus, input[type="date"]:focus, input[type="text"]:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.25); }
         button { padding:0.75rem 1.25rem; border-radius:0.5rem; font-weight:600; transition: background-color .15s, transform .1s; cursor:pointer; border:none; }
         button:hover { transform: translateY(-1px); }
         button:active { transform: translateY(0); }
@@ -31,7 +31,6 @@
         .btn-secondary { background-color:#6b7280; color:white; }
         .btn-success { background-color:#10b981; color:white; }
         .btn-warning { background-color:#f59e0b; color:white; }
-        .text-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; font-size:0.85rem; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans">
@@ -56,7 +55,6 @@
                     <svg class="icon text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     成本參數設定 (雲端儲存)
                 </h2>
-
                 <div class="space-y-4 mb-4">
                     <div>
                         <label for="fuelEfficiencyInput" class="block text-sm font-medium text-gray-700 mb-1">油耗效率 (km/L)</label>
@@ -80,7 +78,7 @@
 
                 <div class="space-y-4">
                     <div class="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
-                        <svg class="w-6 h-6 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <svg class="w-6 h-6 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         <span id="oilPriceDisplayMain" class="text-lg font-bold text-blue-700">中油 92 汽油: 加載中...</span>
                         <button id="fetchOilPriceButton" onclick="fetchOilPrice()" class="btn-primary ml-auto text-sm">更新油價</button>
                     </div>
@@ -150,11 +148,11 @@
 
                 <div class="flex items-center justify-between mb-4">
                     <button onclick="changeReportDate(-1)" class="p-2 rounded-full hover:bg-gray-200">
-                        <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
                     <span id="reportDateRange" class="font-semibold text-lg text-gray-700">2025/11/22</span>
                     <button onclick="changeReportDate(1)" class="p-2 rounded-full hover:bg-gray-200">
-                        <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
 
@@ -188,11 +186,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore-compat.js"></script>
 
     <script>
-        // --- 核心常數 (預設值) ---
+        // --- 常數 ---
         const DEFAULT_FUEL_EFFICIENCY_KML = 42;
         const DEFAULT_MAINT_COST_PER_KM = 0.60;
-
-        // ⚠️ 替換您的 Gemini API 金鑰（請確保此 key 有 enable Generative Language 的權限）
+        // ⚠️ 在此放你的 Gemini / Google API key（示意）
         const GEMINI_API_KEY = "AIzaSyBJ0mQy-pr1KLYFWjG2KHNnToRNXkDAN-s";
 
         const FIREBASE_CONFIG = {
@@ -205,18 +202,16 @@
         };
         const appId = FIREBASE_CONFIG.appId;
 
-        // App 狀態
         let db = null;
         let auth = null;
         let userId = null;
         let isAuthReady = false;
-        let currentOilPrice = 27.1; // fallback
+        let currentOilPrice = 27.1;
         let chartInstance = null;
         let userConfig = { fuelEfficiency: DEFAULT_FUEL_EFFICIENCY_KML, maintCostPerKm: DEFAULT_MAINT_COST_PER_KM };
         let currentReportDate = new Date();
         let currentReportType = 'day';
 
-        // 工具函數
         const configDocPath = (uid) => `artifacts/${appId}/users/${uid}/config/costs`;
         const recordsCollectionPath = (uid) => `artifacts/${appId}/users/${uid}/records`;
 
@@ -232,8 +227,8 @@
         function formatDate(date) {
             const d = new Date(date);
             const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth()+1).padStart(2,'0');
+            const day = String(d.getDate()).padStart(2,'0');
             return `${year}-${month}-${day}`;
         }
         function formatDuration(totalMinutes) {
@@ -242,10 +237,9 @@
             return `${hours} 小時 ${minutes} 分`;
         }
         function formatCurrency(amount) {
-            return new Intl.NumberFormat('zh-TW', { style: 'currency', currency: 'TWD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+            return new Intl.NumberFormat('zh-TW',{ style:'currency', currency:'TWD', minimumFractionDigits:0, maximumFractionDigits:0 }).format(amount);
         }
 
-        // Firebase init
         function initFirebase() {
             try {
                 if (firebase.apps.length === 0) {
@@ -265,13 +259,12 @@
                         document.getElementById('user-id-display').textContent = `ID: ${userId}`;
                         document.getElementById('loading-overlay').classList.add('hidden');
                         document.getElementById('app-content').classList.remove('hidden');
-
                         await loadConfig();
-                        await fetchOilPrice(true); // initial load
+                        await fetchOilPrice(true);
                         initApp();
                     } else if (!isAuthReady) {
-                        console.log("匿名登入中...");
-                        await auth.signInAnonymously();
+                        console.log("嘗試匿名登入...");
+                        try { await auth.signInAnonymously(); } catch(e) { console.error(e); document.getElementById('message-area-load').textContent = e.message; }
                     }
                 });
             } catch (error) {
@@ -281,30 +274,19 @@
             }
         }
 
-        // 啟動 app
-        window.initApp = function () {
+        window.initApp = function() {
             Chart.register(ChartDataLabels);
-
-            document.getElementById('income').addEventListener('input', liveCalculate);
-            document.getElementById('mileage').addEventListener('input', liveCalculate);
-            document.getElementById('hours').addEventListener('input', liveCalculate);
-            document.getElementById('minutes').addEventListener('input', liveCalculate);
-
-            document.getElementById('fuelEfficiencyInput').addEventListener('input', liveCalculate);
-            document.getElementById('maintCostInput').addEventListener('input', liveCalculate);
-
-            const today = new Date();
-            document.getElementById('recordDate').value = formatDate(today);
-
+            ['income','mileage','hours','minutes','fuelEfficiencyInput','maintCostInput'].forEach(id=>{
+                const el=document.getElementById(id);
+                if(el) el.addEventListener('input', liveCalculate);
+            });
+            document.getElementById('recordDate').value = formatDate(new Date());
             document.getElementById('saveDailyRecordButton').addEventListener('click', saveDailyRecord);
-
             loadReport(currentReportType);
             liveCalculate();
         }
 
-        // config read/write
         async function loadConfig() {
-            if (!db || !userId) return;
             const docRef = db.doc(configDocPath(userId));
             try {
                 const doc = await docRef.get();
@@ -324,9 +306,7 @@
                 showMessage("載入設定檔失敗，使用預設值。", 'error');
             }
         }
-
-        async function saveConfig(isInitial = false) {
-            if (!db || !userId) return;
+        async function saveConfig(isInitial=false) {
             const docRef = db.doc(configDocPath(userId));
             userConfig.fuelEfficiency = parseFloat(document.getElementById('fuelEfficiencyInput').value) || DEFAULT_FUEL_EFFICIENCY_KML;
             userConfig.maintCostPerKm = parseFloat(document.getElementById('maintCostInput').value) || DEFAULT_MAINT_COST_PER_KM;
@@ -334,47 +314,59 @@
                 await docRef.set({ fuelEfficiency: userConfig.fuelEfficiency, maintCostPerKm: userConfig.maintCostPerKm }, { merge: true });
                 document.getElementById('fuelEfficiencyDisplay').textContent = `目前: ${userConfig.fuelEfficiency.toFixed(2)} km/L`;
                 document.getElementById('maintCostDisplay').textContent = `目前: $${userConfig.maintCostPerKm.toFixed(2)}/km`;
-                if (!isInitial) showMessage("個人化成本設定已成功儲存到雲端。", 'success');
+                if (!isInitial) showMessage("個人化成本設定已成功儲存到雲端。",'success');
                 liveCalculate();
-            } catch (error) {
-                console.error("儲存設定檔失敗:", error);
-                showMessage("儲存設定檔失敗，請檢查網路。", 'error');
+            } catch(e) {
+                console.error(e);
+                showMessage("儲存設定檔失敗，請檢查網路。",'error');
             }
         }
 
-        // -----------------------------
-        // callGemini + fetchOilPrice（修正重點）
-        // -----------------------------
-        // 我實作一個通用的 callGemini(prompt) wrapper，fetchOilPrice 會用它。
+        // =========================
+        // callGemini (強化版)
+        // - 會 list models (v1, v1beta)
+        // - 選 model（並標準化 modelId）
+        // - 嘗試多種 endpoint + payload 格式，直到成功
+        // =========================
         async function callGemini(promptText) {
             const KEY = GEMINI_API_KEY;
-            if (!KEY) throw new Error("沒有設定 GEMINI_API_KEY。");
+            if (!KEY) throw new Error("沒有設定 GEMINI_API_KEY。請在程式中放入你的 key。");
 
-            // 1) 先列出可用模型 (v1 -> v1beta)；再挑一個支援 generateContent 的模型
+            // 1) 列出 models
             const tryListModels = async (version) => {
-                const url = `https://generativelanguage.googleapis.com/${version}/models?key=${KEY}`;
-                const res = await fetch(url);
-                if (!res.ok) return null;
-                const json = await res.json();
-                return json.models || [];
+                try {
+                    const url = `https://generativelanguage.googleapis.com/${version}/models?key=${KEY}`;
+                    const res = await fetch(url);
+                    if (!res.ok) {
+                        // 回傳失敗 -> 回 null，讓呼叫端試其它版本
+                        return null;
+                    }
+                    const json = await res.json();
+                    return json.models || [];
+                } catch (e) {
+                    return null;
+                }
             };
 
             const pickModel = (models) => {
                 if (!models || !models.length) return null;
-                // 優先找名字含 gemini 且支援 generateContent 的
+                // 優先找 gemini 名稱且支援 generateContent / generateText 的
                 for (const m of models) {
-                    if ((m.name && /gemini/i.test(m.name)) && (m.supportedMethods && m.supportedMethods.includes('generateContent'))) {
-                        return m.name;
-                    }
+                    const name = m.name || m.model || "";
+                    const methods = m.supportedMethods || m.supported_generation_methods || [];
+                    if (/gemini/i.test(name) && methods && methods.length) return name;
                 }
-                // 再找其他支援 generateContent 的
+                // 再找任何支援 generateContent/generateText 的
                 for (const m of models) {
-                    if (m.supportedMethods && m.supportedMethods.includes('generateContent')) return m.name;
+                    const name = m.name || m.model || "";
+                    const methods = m.supportedMethods || m.supported_generation_methods || [];
+                    if (methods && methods.length) return name;
                 }
+                // fallback: 返回第一個 name
+                if (models[0] && (models[0].name || models[0].model)) return models[0].name || models[0].model;
                 return null;
             };
 
-            // 試 v1, 若沒找到再試 v1beta
             let modelName = null;
             let usedVersion = null;
             let models = await tryListModels('v1');
@@ -386,77 +378,150 @@
                 if (modelName) usedVersion = 'v1beta';
             }
 
-            if (!modelName) throw new Error("找不到可用的 model (請確認 API key 是否有權限)。");
+            if (!modelName) throw new Error("找不到可用的 model（ListModels 回傳無結果，請確認 API Key/權限與 API 是否啟用）。");
 
-            // 正確的 endpoint 要包含 /models/{model}:generateContent
-            const API_URL = `https://generativelanguage.googleapis.com/${usedVersion}/models/${encodeURIComponent(modelName)}:generateContent?key=${KEY}`;
-
-            // body 使用 contents + generationConfig（和官方例子一致）
-           const requestBody = {
-    contents: [
-        {
-            role: "user",
-            parts: [{ text: promptText }]
-        }
-    ],
-
-    generation_config: {
-        temperature: 0.1,
-        max_output_tokens: 200
-    }
-};
-
-
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!res.ok) {
-                const errText = await res.text().catch(()=> '');
-                // 嘗試解析 JSON 錯誤訊息
-                let errMsg = `generateContent API 錯誤: ${res.status} ${res.statusText} ${errText}`;
-                try {
-                    const js = JSON.parse(errText || '{}');
-                    if (js.error && js.error.message) errMsg = `generateContent API 錯誤: ${js.error.message}`;
-                } catch(e){}
-                throw new Error(errMsg);
+            // modelName 有可能是 "models/gemini-1.5-flash" 或 "gemini-1.5-flash"
+            let modelId = modelName;
+            if (typeof modelName === 'string' && modelName.includes('/')) {
+                // 取最後一段
+                modelId = modelName.split('/').pop();
             }
 
-            const data = await res.json();
-            // 解析候選答案（官方回傳格式）
-            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            return { raw: data, text: text || "" };
+            // 建立要嘗試的 endpoint + payload 組合（依序嘗試）
+            const attempts = [];
+
+            // 方案 A: generateContent（v1/v1beta），body 用 snake_case generation_config
+            attempts.push({
+                version: usedVersion || 'v1',
+                url: (ver) => `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelId)}:generateContent?key=${KEY}`,
+                body: {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    generation_config: { temperature: 0.1, max_output_tokens: 200 }
+                }
+            });
+
+            // 方案 B: generateText（有些版本使用 generateText，並接受 input text）
+            attempts.push({
+                version: usedVersion || 'v1beta',
+                url: (ver) => `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelId)}:generateText?key=${KEY}`,
+                body: {
+                    input: { text: promptText },
+                    temperature: 0.1,
+                    maxOutputTokens: 200
+                }
+            });
+
+            // 方案 C: 另一種 generateContent body（camelCase），有些舊範例使用 contents + generationConfig (保守再試)
+            attempts.push({
+                version: usedVersion || 'v1',
+                url: (ver) => `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelId)}:generateContent?key=${KEY}`,
+                body: {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    generationConfig: { temperature: 0.1, maxOutputTokens: 200 }
+                }
+            });
+
+            // 方案 D: 直接 /v1/models/{model}:generate?（某些 edge 狀況）
+            attempts.push({
+                version: usedVersion || 'v1',
+                url: (ver) => `https://generativelanguage.googleapis.com/${ver}/models/${encodeURIComponent(modelId)}:generate?key=${KEY}`,
+                body: {
+                    input: { text: promptText },
+                    temperature: 0.1,
+                    maxOutputTokens: 200
+                }
+            });
+
+            // 逐一嘗試
+            let lastError = null;
+            for (const a of attempts) {
+                const endpoint = a.url(a.version);
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(a.body)
+                    });
+                    const text = await res.text().catch(()=> '');
+                    if (!res.ok) {
+                        // 嘗試解析 JSON 錯誤以供 debug
+                        let parsed = null;
+                        try { parsed = JSON.parse(text || '{}'); } catch(e) { parsed = null; }
+                        const shortMsg = parsed && parsed.error && parsed.error.message ? parsed.error.message : `${res.status} ${res.statusText} ${text}`;
+                        lastError = `呼叫 ${endpoint} 失敗: ${shortMsg}`;
+                        // 若是某些 "unknown field 'temperature'" 類型錯誤，就改嘗試下一組 payload
+                        continue;
+                    }
+                    // 成功
+                    let data = null;
+                    try { data = JSON.parse(text); } catch(e) { data = { rawText: text }; }
+                    // 嘗試解析常見回傳結構
+                    let outputText = null;
+                    if (data) {
+                        // 常見：data.candidates[0].content.parts[0].text
+                        outputText = data?.candidates?.[0]?.content?.parts?.[0]?.text
+                                  || data?.candidates?.[0]?.output?.[0]?.content?.parts?.[0]?.text
+                                  || data?.output?.[0]?.content?.text
+                                  || data?.output?.[0]?.content?.[0]?.text
+                                  || data?.output?.[0]?.text
+                                  || data?.output_text
+                                  || data?.result?.[0]?.output;
+                        // 有些回傳會把文字放在 data.candidates[0].content[0].text
+                        if (!outputText && data?.candidates?.[0]?.content) {
+                            try {
+                                const c = data.candidates[0].content;
+                                // 若 content 是陣列或物件，嘗試合併裡面的 parts
+                                if (Array.isArray(c)) {
+                                    for (const item of c) {
+                                        if (item.parts) {
+                                            for (const p of item.parts) {
+                                                if (p.text) outputText = (outputText ? outputText + '\n' : '') + p.text;
+                                            }
+                                        } else if (item.text) {
+                                            outputText = (outputText ? outputText + '\n' : '') + item.text;
+                                        }
+                                    }
+                                } else if (c.parts) {
+                                    for (const p of c.parts) {
+                                        if (p.text) outputText = (outputText ? outputText + '\n' : '') + p.text;
+                                    }
+                                }
+                            } catch(e){}
+                        }
+                    }
+                    return { raw: data, text: outputText || (typeof data === 'string' ? data : JSON.stringify(data)) };
+                } catch (err) {
+                    lastError = `嘗試 ${endpoint} 時發生例外: ${err.message}`;
+                    continue;
+                }
+            } // end for attempts
+
+            // 若全部失敗，丟出最後一個錯誤，含 model 資訊
+            throw new Error(`找不到可用的 model 或所有請求方法均失敗。modelId=${modelId}。最後錯誤：${lastError}`);
         }
 
-        // fetchOilPrice 會用 callGemini(prompt)
+        // fetchOilPrice 使用 callGemini
         async function fetchOilPrice(isInitialLoad = false) {
             if (!isInitialLoad) {
                 document.getElementById('fetchOilPriceButton').disabled = true;
                 document.getElementById('oilPriceDisplayMain').textContent = "中油 92 汽油: 獲取中...";
             }
-
-            const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
-格式範例: {"price": 27.1, "unit": "NTD/L"}`;
+            const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。格式範例: {"price": 27.1, "unit": "NTD/L"}`;
 
             try {
                 const result = await callGemini(prompt);
                 const responseText = (result && result.text) ? result.text : JSON.stringify(result.raw || "");
-                // 从回傳文本中嘗試抽出第一個 JSON 物件
                 let price = NaN;
                 const jsonMatch = responseText.match(/\{[\s\S]*?\}/);
                 if (jsonMatch) {
                     try {
                         const obj = JSON.parse(jsonMatch[0]);
-                        if (obj && obj.price) price = parseFloat(obj.price);
+                        if (obj && (obj.price !== undefined)) price = parseFloat(obj.price);
                     } catch (e) {
-                        // 如果 parse 失敗，嘗試用 regex 抽數字
                         const txtNum = jsonMatch[0].match(/(\d+(\.\d+)?)/);
                         if (txtNum) price = parseFloat(txtNum[0]);
                     }
                 } else {
-                    // fallback: 嘗試整段文字找數字
                     const numMatch = responseText.match(/(\d+(\.\d+)?)/);
                     if (numMatch) price = parseFloat(numMatch[0]);
                 }
@@ -478,7 +543,7 @@
             }
         }
 
-        // 即時計算
+        // 其餘現有邏輯保持不變 (計算/圖表/報表/存檔)
         function liveCalculate() {
             const income = parseFloat(document.getElementById('income').value) || 0;
             const mileage = parseFloat(document.getElementById('mileage').value) || 0;
@@ -486,17 +551,14 @@
             const minutes = parseFloat(document.getElementById('minutes').value) || 0;
             const fuelEfficiency = parseFloat(document.getElementById('fuelEfficiencyInput').value) || DEFAULT_FUEL_EFFICIENCY_KML;
             const maintCostPerKm = parseFloat(document.getElementById('maintCostInput').value) || DEFAULT_MAINT_COST_PER_KM;
-
             const gasCostPerKm = currentOilPrice / fuelEfficiency;
             const gasTotalCost = gasCostPerKm * mileage;
             const maintTotalCost = maintCostPerKm * mileage;
             const totalCost = gasTotalCost + maintTotalCost;
             const netProfit = income - totalCost;
-
             const totalHours = hours + (minutes / 60);
             const netHourlyRate = totalHours > 0 ? netProfit / totalHours : 0;
             const grossHourlyRate = totalHours > 0 ? income / totalHours : 0;
-
             document.getElementById('liveGrossIncome').textContent = `$${income.toFixed(1)}`;
             document.getElementById('liveTotalCost').textContent = `$${totalCost.toFixed(1)}`;
             document.getElementById('liveNetProfit').textContent = `$${netProfit.toFixed(1)}`;
@@ -504,7 +566,6 @@
             document.getElementById('liveMaintCost').textContent = `$${maintTotalCost.toFixed(1)}`;
             document.getElementById('liveGrossHourly').textContent = `$${grossHourlyRate.toFixed(1)}/hr`;
             document.getElementById('liveNetHourly').textContent = `$${netHourlyRate.toFixed(1)}/hr`;
-
             updateChart(netProfit, gasTotalCost, maintTotalCost, income);
         }
 
@@ -513,66 +574,60 @@
                 if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
                 return;
             }
-
             const dataValues = [ netProfit > 0 ? netProfit : 0.1, gasTotalCost, maintTotalCost ];
-            const data = {
-                labels: ['淨利', '油費成本', '耗材成本'],
-                datasets: [{ data: dataValues, backgroundColor: ['#10b981', '#f59e0b', '#f87171'], hoverBackgroundColor: ['#059669', '#d97706', '#ef4444'] }]
-            };
-
+            const data = { labels: ['淨利','油費成本','耗材成本'], datasets:[{ data: dataValues, backgroundColor:['#10b981','#f59e0b','#f87171'], hoverBackgroundColor:['#059669','#d97706','#ef4444'] }]};
             const options = {
                 responsive:true, maintainAspectRatio:false,
                 plugins: {
-                    legend:{ position:'bottom' },
+                    legend: { position:'bottom' },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                const label = context.label ? `${context.label}: ` : '';
+                                let label = context.label || '';
+                                if (label) label += ': ';
                                 const value = context.parsed;
                                 const total = context.dataset.data.reduce((a,b)=>a+b,0);
-                                const percentage = total > 0 ? (value/total*100).toFixed(1) : 0;
+                                const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
                                 return `${label}${formatCurrency(value)} (${percentage}%)`;
                             }
                         }
                     },
                     datalabels: {
-                        color:'#fff',
+                        color: '#fff',
                         formatter: (value, context) => {
                             const total = context.dataset.data.reduce((a,b)=>a+b,0);
-                            const percentage = total > 0 ? (value/total*100).toFixed(1) : 0;
+                            const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
                             return percentage > 5 ? `${percentage}%` : '';
                         },
-                        font:{ weight: 'bold' }
+                        font: { weight: 'bold' }
                     }
                 }
             };
-
             const ctx = document.getElementById('costChart').getContext('2d');
             if (chartInstance) { chartInstance.data = data; chartInstance.options = options; chartInstance.update(); }
             else { chartInstance = new Chart(ctx, { type:'doughnut', data, options }); }
         }
 
-        // save record
         async function saveDailyRecord() {
-            if (!userId) { showMessage("用戶 ID 未載入，請稍候或重試。", 'error'); return; }
+            if (!userId) { showMessage("用戶 ID 未載入，請稍候或重試。",'error'); return; }
             const recordDate = document.getElementById('recordDate').value;
             const income = parseFloat(document.getElementById('income').value) || 0;
             const mileage = parseFloat(document.getElementById('mileage').value) || 0;
             const hours = parseFloat(document.getElementById('hours').value) || 0;
             const minutes = parseFloat(document.getElementById('minutes').value) || 0;
-            if (!recordDate || income <= 0 || mileage <= 0) { showMessage("請輸入有效的日期、營業額和公里數。", 'warning'); return; }
+            if (!recordDate || income <= 0 || mileage <= 0) { showMessage("請輸入有效的日期、營業額和公里數。",'warning'); return; }
             const totalMinutes = hours * 60 + minutes;
+            const totalHours = totalMinutes / 60;
             const gasCostPerKm = currentOilPrice / userConfig.fuelEfficiency;
             const gasTotalCost = gasCostPerKm * mileage;
             const maintTotalCost = userConfig.maintCostPerKm * mileage;
             const totalCost = gasTotalCost + maintTotalCost;
             const netProfit = income - totalCost;
             const recordData = {
-                date: recordDate,
-                income, mileage, totalMinutes,
+                date: recordDate, income, mileage, totalMinutes,
                 gasCost: gasTotalCost, maintCost: maintTotalCost, totalCost, netProfit,
-                grossHourly: totalMinutes > 0 ? income / (totalMinutes / 60) : 0,
-                netHourly: totalMinutes > 0 ? netProfit / (totalMinutes / 60) : 0,
+                grossHourly: totalHours > 0 ? income / totalHours : 0,
+                netHourly: totalHours > 0 ? netProfit / totalHours : 0,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
             const docRef = db.collection(recordsCollectionPath(userId)).doc(recordDate);
@@ -586,57 +641,51 @@
             }
         }
 
-        // 報表相關略過（保持原樣）
         function getStartAndEndDate(date, type) {
-            const start = new Date(date);
-            const end = new Date(date);
-            start.setUTCHours(0,0,0,0);
-            end.setUTCHours(23,59,59,999);
+            const start = new Date(date), end = new Date(date);
+            start.setUTCHours(0,0,0,0); end.setUTCHours(23,59,59,999);
             switch(type) {
-                case 'week': {
-                    const dayOfWeek = (start.getUTCDay() === 0 ? 6 : start.getUTCDay() - 1);
+                case 'week':
+                    const dayOfWeek = (start.getUTCDay()===0 ? 6 : start.getUTCDay()-1);
                     start.setUTCDate(start.getUTCDate() - dayOfWeek);
                     end.setUTCDate(start.getUTCDate() + 6);
                     end.setUTCHours(23,59,59,999);
                     break;
-                }
-                case 'month': {
+                case 'month':
                     start.setUTCDate(1);
-                    end.setUTCMonth(end.getUTCMonth() + 1, 0);
+                    end.setUTCMonth(end.getUTCMonth()+1,0);
                     end.setUTCHours(23,59,59,999);
                     break;
-                }
-                case 'year': {
-                    start.setUTCMonth(0, 1);
-                    end.setUTCMonth(11, 31);
+                case 'year':
+                    start.setUTCMonth(0,1);
+                    end.setUTCMonth(11,31);
                     end.setUTCHours(23,59,59,999);
                     break;
-                }
             }
             return { start: formatDate(start), end: formatDate(end) };
         }
 
         function getReportRangeDisplay(startDateString, endDateString, type) {
-            if (type === 'day') return startDateString.replace(/-/g, '/');
-            return `${startDateString.replace(/-/g, '/')} ~ ${endDateString.replace(/-/g, '/')}`;
+            if (type === 'day') return startDateString.replace(/-/g,'/');
+            return `${startDateString.replace(/-/g,'/')} ~ ${endDateString.replace(/-/g,'/')}`;
         }
 
         async function loadReport(type) {
             currentReportType = type;
             const { start, end } = getStartAndEndDate(currentReportDate, type);
-            document.getElementById('reportDateRange').textContent = getReportRangeDisplay(start, end, type);
+            document.getElementById('reportDateRange').textContent = getReportRangeDisplay(start,end,type);
             const recordsRef = db.collection(recordsCollectionPath(userId));
             try {
-                const snapshot = await recordsRef.where('date', '>=', start).where('date', '<=', end).orderBy('date', 'asc').get();
-                let totalIncome = 0, totalNetProfit = 0, totalMinutes = 0, totalCost = 0, totalMileage = 0, reportDetailsHtml = '';
-                snapshot.forEach(doc => {
+                const snapshot = await recordsRef.where('date','>=',start).where('date','<=',end).orderBy('date','asc').get();
+                let totalIncome=0,totalNetProfit=0,totalMinutes=0,totalCost=0,totalMileage=0, reportDetailsHtml='';
+                snapshot.forEach(doc=>{
                     const data = doc.data();
-                    totalIncome += data.income;
-                    totalNetProfit += data.netProfit;
-                    totalMinutes += data.totalMinutes;
-                    totalCost += data.totalCost;
-                    totalMileage += data.mileage;
-                    const statusClass = data.netProfit >= 0 ? 'text-green-600' : 'text-red-600';
+                    totalIncome += data.income || 0;
+                    totalNetProfit += data.netProfit || 0;
+                    totalMinutes += data.totalMinutes || 0;
+                    totalCost += data.totalCost || 0;
+                    totalMileage += data.mileage || 0;
+                    const statusClass = (data.netProfit >= 0) ? 'text-green-600' : 'text-red-600';
                     reportDetailsHtml += `<div class="flex justify-between items-center border-b pb-1"><span class="font-medium">${data.date} (${formatDuration(data.totalMinutes)})</span><span class="${statusClass} font-bold">${formatCurrency(data.netProfit)}</span></div>`;
                 });
                 const totalHours = totalMinutes / 60;
