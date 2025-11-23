@@ -496,7 +496,7 @@ async function fetchOilPrice(isInitialLoad = false) {
     
     // 修正點 1: 確保模型名稱使用穩定且支援 generateContent 的模型 (例如 gemini-pro 或 gemini-2.5-flash)
     // 修正為 gemini-pro
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/text-bison-001:generateContent?key=${GEMINI_API_KEY}`;
     
     const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
     格式範例: {"price": 27.1, "unit": "NTD/L"}`;
