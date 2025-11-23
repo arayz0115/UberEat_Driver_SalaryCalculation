@@ -495,98 +495,108 @@ async function fetchOilPrice(isInitialLoad = false) {
         document.getElementById('fetchOilPriceButton').disabled = true;
         document.getElementById('oilPriceDisplayMain').textContent = "中油 92 汽油: 獲取中...";
     }
-    
-    // 🌟 最終修正：使用 GAIS 網域，並將版本從 v1beta 換成 v1，以確保 gemini-pro 模型可以找到。
-    const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
-    
-    const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
-    格式範例: {"price": 27.1, "unit": "NTD/L"}`;
-    
+
+    const KEY = GEMINI_API_KEY;
+    const tryListModels = async (version) => {
+        const url = `https://generativelanguage.googleapis.com/${version}/models?key=${KEY}`;
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const json = await res.json();
+        return json.models || [];
+    };
+
+    const pickModel = (models) => {
+        if (!models || !models.length) return null;
+        // 優先找 gemini 且支援 generateContent 的 model
+        for (const m of models) {
+            if ((m.name && /gemini/i.test(m.name)) &&
+                (m.supportedMethods && m.supportedMethods.includes('generateContent'))) {
+                return m.name;
+            }
+        }
+        // 若沒有 gemini，再找任何支援 generateContent 的
+        for (const m of models) {
+            if (m.supportedMethods && m.supportedMethods.includes('generateContent')) {
+                return m.name;
+            }
+        }
+        return null;
+    };
+
     try {
+        // 1) 先嘗試 v1 列表
+        let models = await tryListModels('v1');
+        let modelName = pickModel(models);
+
+        // 2) 如果 v1 找不到，再試 v1beta
+        if (!modelName) {
+            models = await tryListModels('v1beta');
+            modelName = pickModel(models);
+        }
+
+        if (!modelName) {
+            // 找不到可以用的 model -> 顯示錯誤並回退
+            throw new Error("找不到可用的 model (請確認 API key 是否有權限)。請先呼叫 ListModels 檢查可用模型。");
+        }
+
+        // 3) 使用找到的 model 去呼叫 generateContent
+        const apiUrl = `https://generativelanguage.googleapis.com/${modelName.includes('v1beta') ? 'v1beta' : 'v1'}/models/${encodeURIComponent(modelName)}:generateContent?key=${KEY}`;
+        // 但上面 URL 建構比較保守：簡單作法直接：
+        const API_URL = `https://generativelanguage.googleapis.com/v1/${modelName}:generateContent?key=${KEY}`;
+
+        const prompt = `請以簡短的 JSON 格式提供台灣中油最新的 92 無鉛汽油價格 (每公升)。僅輸出 JSON，不要解釋。
+格式範例: {"price": 27.1, "unit": "NTD/L"}`;
+
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [
-                    { parts: [{ text: prompt }] }
-                ],
-                // 保持 generationConfig 不變
-                generationConfig: {
-                    temperature: 0.1,
-                }
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.1 }
             })
         });
 
-        // --- 錯誤處理與解析邏輯 (保持不變) ---
         if (!response.ok) {
-            let errorDetail = `API 錯誤：${response.status} (${response.statusText})`;
-            
-            try {
-                const clonedResponse = response.clone();
-                const errorData = await clonedResponse.json();
-                if (errorData.error && errorData.error.message) {
-                    errorDetail += ` - 詳細錯誤: ${errorData.error.message}`;
-                } 
-            } catch (e) {
-                errorDetail += ` - 回應無法解析。`;
-            }
-            
-            throw new Error(errorDetail);
+            const errText = await response.text().catch(() => '');
+            throw new Error(`API 錯誤: ${response.status} ${response.statusText} ${errText}`);
         }
 
         const data = await response.json();
+        // 解析回傳（保留你原本的解析邏輯）
         let price = 0;
-
         try {
-            const responseText = data.candidates[0].content.parts[0].text;
-            // 由於模型會輸出 JSON，我們使用正規表達式精確抓取 JSON 內容
-            const jsonMatch = responseText.match(/\{[^}]*\}/); 
-            if (!jsonMatch) {
-                throw new Error("無法在 API 回應中找到有效的 JSON 結構。");
-            }
-            const jsonObject = JSON.parse(jsonMatch[0]);
-            price = parseFloat(jsonObject.price);
-        } catch (e) {
-            console.warn("API 回應解析失敗，嘗試從純文字提取油價:", e);
-            const responseText = data.candidates[0].content.parts[0].text;
-            const textMatch = responseText.match(/(\d+\.?\d*)/); 
-            if (textMatch) {
-                price = parseFloat(textMatch[0]);
+            const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
+            const jsonMatch = responseText.match(/\{[^}]*\}/);
+            if (jsonMatch) {
+                const jsonObj = JSON.parse(jsonMatch[0]);
+                price = parseFloat(jsonObj.price);
             } else {
-                throw new Error("無法從 API 回應中提取油價數值，請檢查模型輸出。");
+                const textMatch = responseText.match(/(\d+\.?\d*)/);
+                price = textMatch ? parseFloat(textMatch[0]) : NaN;
             }
+        } catch (e) {
+            console.warn("解析失敗:", e);
+            throw e;
         }
-        
+
         if (isNaN(price) || price <= 0) throw new Error("獲取到無效的油價數值。");
-        
         currentOilPrice = price;
-        
-        // 更新 UI
-        const display = `中油 92 汽油: $${currentOilPrice.toFixed(2)}/L`;
-        document.getElementById('oilPriceDisplayMain').textContent = display;
-        if (!isInitialLoad) {
-            showMessage(`油價更新成功: ${currentOilPrice.toFixed(2)} NTD/L`, 'success');
-        } else {
-            document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
-        }
+        document.getElementById('oilPriceDisplayMain').textContent = `中油 92 汽油: $${currentOilPrice.toFixed(2)}/L`;
+        if (!isInitialLoad) showMessage(`油價更新成功: ${currentOilPrice.toFixed(2)} NTD/L`, 'success');
+        else document.getElementById('loading-text').textContent = `連線成功，油價: $${currentOilPrice.toFixed(2)}/L`;
         liveCalculate();
 
     } catch (error) {
-        const errorMessage = `油價獲取失敗：使用預設值 $${currentOilPrice.toFixed(2)}/L。(${error.message || '網路連線錯誤'})`;
+        const errorMessage = `油價獲取失敗：使用預設值 $${currentOilPrice.toFixed(2)}/L。(${error.message})`;
         document.getElementById('oilPriceDisplayMain').textContent = errorMessage;
         showMessage(errorMessage, 'error');
         console.error("油價獲取失敗:", error);
-        
-        if (isInitialLoad) {
-             document.getElementById('message-area-load').textContent = error.message;
-        }
-
+        if (isInitialLoad) document.getElementById('message-area-load').textContent = error.message;
     } finally {
-        if (!isInitialLoad) {
-            document.getElementById('fetchOilPriceButton').disabled = false;
-        }
+        if (!isInitialLoad) document.getElementById('fetchOilPriceButton').disabled = false;
     }
 }
+
 
 
         // --- 即時計算邏輯 ---
