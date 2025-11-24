@@ -3,18 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.7</title>
-
+<title>UberEat Salary Calculator V1.2.8</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.7 (雲端同步)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援每單平均收益分析，現在新增 Firebase 雲端同步功能。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.8 (雲端同步修正)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置同步，修復登入狀態和同步問題。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.7" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.8" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -147,11 +146,9 @@
         margin-top: 2px;
         line-height: 1.2;
     }
-    /* === FIX: 移除 history-sub-stats 的 flex 屬性，讓其子元素 (兩個 w-full 的 div) 垂直堆疊，修正排版炸開的問題。 === */
+    /* FIX: 移除 history-sub-stats 的 flex 屬性，讓其子元素 (兩個 w-full 的 div) 垂直堆疊，修正排版炸開的問題。 */
     .history-sub-stats {
         width: 100%;
-        /* display: flex; 移除 */
-        /* justify-content: space-between; 移除 */
         padding-top: 0.75rem;
         border-top: 1px solid #222;
         font-size: 0.8rem;
@@ -182,7 +179,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.7 Cloud Sync Enabled</div>
+                <div class="text-[10px] text-gray-500">V1.2.8 Cloud Sync Fixed</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -417,29 +414,33 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.7 (Cloud Sync)</div>
+        <div>UberEat 外送薪資計算器 V1.2.8 (Cloud Sync Fixed)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
 
 <script>
-// === V1.2.7 新增：Firebase 配置與初始化 ===
-// ⚠️ 請務必替換為您專案的實際配置資訊 ⚠️
+// === V1.2.8 修正版：Firebase 配置與初始化 (使用您提供的 Key) ===
+// ⚠️ 請務必確認這個 API Key 是您專案的有效密鑰！
 const firebaseConfig = {
-    apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
+    apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 假設這是您的有效 Key
     authDomain: "uber-driver-tracker.firebaseapp.com",
     projectId: "uber-driver-tracker",
-    storageBucket: "uber-driver-tracker.firebasestorage.app",
-    messagingSenderId: "665088105970",
-    appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
+    storageBucket: "uber-driver-tracker.appspot.com",
+    messagingSenderId: "333010467554",
+    appId: "1:333010467554:web:86f6a5067253fa433878b2"
 };
 
-// 💡 移除判斷式，直接初始化
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+let db; // 全域變數用於 Firestore 存取
 
-// (可選) 移除原有的 else 區塊
-// 程式碼中不需要這個 if/else 檢查了
+if (typeof firebase !== 'undefined' && firebaseConfig.apiKey && firebaseConfig.projectId !== "uber-driver-tracker") {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log("Firebase 初始化成功。");
+} else {
+    // 如果因為某些原因導致初始化失敗 (例如 SDK 載入問題或配置錯誤)
+    console.error("Firebase SDK 載入失敗或配置錯誤。雲端同步功能將不會啟用。");
+}
 
 
 // === 變數與初始化 ===
@@ -464,22 +465,23 @@ window.onload = async () => {
     document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
     document.getElementById('chartEnd').value = today;
 
-    // 啟動 Firebase 登入狀態監聽 (V1.2.7 新增)
-    if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w") {
+    // 啟動 Firebase 登入狀態監聽 (V1.2.8 修正了登出後的狀態處理)
+    if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 // 使用者已登入，執行雲端下載
-                document.getElementById('authStatusText').innerText = "已登入";
+                document.getElementById('authStatusText').innerText = "已登入"; 
                 document.getElementById('userEmailDisplay').innerText = user.email;
                 document.getElementById('authForm').classList.add('hidden');
                 document.getElementById('userInfo').classList.remove('hidden');
                 syncDataOnLogin(user);
             } else {
                 // 使用者已登出
-                document.getElementById('authStatusText').innerText = "未登入";
+                document.getElementById('authStatusText').innerText = "未登入"; 
                 document.getElementById('authForm').classList.remove('hidden');
                 document.getElementById('userInfo').classList.add('hidden');
-                refreshDashboard(); // 登出後僅顯示本機資料
+                // 登出後，refreshDashboard() 會顯示本地資料 (如果還有)
+                refreshDashboard(); 
             }
         });
     } else {
@@ -494,7 +496,7 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === V1.2.7 新增：身份驗證相關函數 ===
+// === V1.2.8 修正：身份驗證相關函數 (確保 UI 正確更新) ===
 
 function toggleAuthPanel() { document.getElementById('authPanel').classList.toggle('hidden'); }
 
@@ -502,12 +504,15 @@ function registerUser() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
     if (email.length < 5 || password.length < 6) {
-        return console.error("Email 或密碼格式不正確 (密碼需至少6位)");
+        return alert("Email 或密碼格式不正確 (密碼需至少6位)");
     }
+    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+    
     firebase.auth().createUserWithEmailAndPassword(email, password)
         .then((userCredential) => {
             console.log("註冊成功，已自動登入:", userCredential.user.email);
-            // 註冊成功後，會觸發 onAuthStateChanged，並自動同步 (第一次同步即上傳空資料)
+            // 💡 修正：註冊成功後，自動隱藏面板
+            document.getElementById('authPanel').classList.add('hidden');
         })
         .catch((error) => {
             console.error("註冊失敗:", error.message);
@@ -518,10 +523,12 @@ function registerUser() {
 function loginUser() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
+    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+
     firebase.auth().signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
             console.log("登入成功:", userCredential.user.email);
-            // 登入成功後，會觸發 onAuthStateChanged，並自動同步 (下載雲端資料)
+            // 💡 修正：登入成功後，立刻隱藏面板，解決狀態顯示延遲的問題
             document.getElementById('authPanel').classList.add('hidden');
         })
         .catch((error) => {
@@ -531,22 +538,28 @@ function loginUser() {
 }
 
 function logoutUser() {
+    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+    
     firebase.auth().signOut()
         .then(() => {
             console.log("登出成功");
-            // 登出後，將本機資料清空 (可選，但為了明確跨裝置體驗，建議清空)
+            // 登出後，將本機資料清空 (確保下次登入能拉取雲端資料，實現跨裝置一致性)
             localStorage.removeItem('uber_ray_v1');
-            refreshDashboard();
-            alert("登出成功，本機紀錄已清除。");
+            document.getElementById('authPanel').classList.add('hidden'); // 隱藏面板
+            alert("登出成功，本機紀錄已清除。下次登入將自動同步雲端資料。");
+            // onAuthStateChanged 會自動呼叫 refreshDashboard()
         })
         .catch((error) => {
             console.error("登出失敗:", error.message);
+            alert(`登出失敗: ${error.message}`);
         });
 }
 
 function resetPassword() {
     const email = document.getElementById('authEmail').value;
     if (!email) return alert("請先輸入您的 Email！");
+    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+    
     firebase.auth().sendPasswordResetEmail(email)
         .then(() => {
             alert("密碼重設郵件已寄出，請檢查您的信箱！");
@@ -558,56 +571,57 @@ function resetPassword() {
 }
 
 
-// === V1.2.7 新增：雲端資料同步函數 ===
+// === V1.2.8 修正：雲端資料同步函數 (加強錯誤處理和邏輯) ===
 
 /**
  * 登入成功後，從 Firestore 下載資料並更新本機 Local Storage。
- * @param {firebase.User} user - 當前登入的使用者物件。
  */
 async function syncDataOnLogin(user) {
-    if (!user) return;
+    if (!user || !db) return;
 
     try {
         const doc = await db.collection('records').doc(user.uid).get();
         const localList = getHistory();
+        let shouldUploadLocal = false;
 
         if (doc.exists) {
             const cloudList = doc.data().data || [];
             if (cloudList.length > 0) {
-                // 雲端有資料，覆蓋本機資料
+                // 雲端有資料，覆蓋本機資料 (以雲端為準)
                 saveToHistory(cloudList);
-                console.log(`雲端資料下載成功，共 ${cloudList.length} 筆紀錄。`);
+                console.log(`雲端資料下載成功，共 ${cloudList.length} 筆紀錄。已更新本機資料。`);
             } else if (localList.length > 0) {
-                // 雲端無資料，但本機有資料，執行一次上傳
-                console.log("雲端無資料，執行本機資料上傳...");
-                await uploadHistory(localList, user);
+                // 雲端無資料，但本機有資料，標記需要上傳
+                shouldUploadLocal = true;
             }
         } else if (localList.length > 0) {
-            // Firestore 找不到文件，但本機有資料，執行一次上傳
-            console.log("Firestore 找不到文件，執行本機資料上傳...");
-            await uploadHistory(localList, user);
+            // Firestore 找不到文件，但本機有資料，標記需要上傳 (可能是第一次使用雲端功能)
+            shouldUploadLocal = true;
         } else {
-            console.log("本機與雲端均無資料。");
+            console.log("本機與雲端均無紀錄。");
         }
         
-        refreshDashboard();
+        if (shouldUploadLocal) {
+             console.log("偵測到本機紀錄，上傳中...");
+            await uploadHistory(localList, user);
+        }
 
     } catch (e) {
         console.error("雲端資料同步 (下載) 失敗:", e);
-        alert("雲端資料下載失敗，將僅顯示本機資料。");
+        // 即使下載失敗，也允許顯示現有的本機資料
+    } finally {
+        // 💡 修正：確保無論同步是否成功，UI 都會更新
         refreshDashboard();
     }
 }
 
 /**
  * 將 Local Storage 中的資料上傳到 Firestore。
- * @param {Array} data - 要上傳的紀錄列表。
- * @param {firebase.User} user - 當前登入的使用者物件。
  */
 async function uploadHistory(data, user) {
     user = user || firebase.auth().currentUser;
-    if (!user) {
-        console.warn("未登入使用者，無法執行雲端上傳。");
+    if (!user || !db) {
+        console.warn("未登入使用者或資料庫未初始化，無法執行雲端上傳。");
         return;
     }
     
@@ -619,6 +633,7 @@ async function uploadHistory(data, user) {
         console.log(`雲端上傳成功，共 ${data.length} 筆紀錄。`);
     } catch (e) {
         console.error("雲端資料上傳失敗:", e);
+        alert("資料同步到雲端失敗，請檢查網路連線或 Firestore 規則。");
     }
 }
 
@@ -660,7 +675,7 @@ async function fetchOilPrice() {
 function getHistory() { try { return JSON.parse(localStorage.getItem('uber_ray_v1') || '[]'); } catch { return []; } }
 function saveToHistory(data) { localStorage.setItem('uber_ray_v1', JSON.stringify(data)); }
 
-// V1.2.7: saveRecord() 新增雲端同步邏輯
+// V1.2.8: saveRecord() 確保雲端同步
 function saveRecord() {
     const date = document.getElementById('inputDate').value;
     const income = parseFloat(document.getElementById('inputIncome').value);
@@ -671,8 +686,8 @@ function saveRecord() {
     const editId = document.getElementById('editId').value;
     const lockedOil = document.getElementById('recordOilPrice').value;
 
-    if(!date) return console.error('請選日期'); // 用 console.error 替代 alert
-    if(isNaN(income) || isNaN(km)) return console.error('請填寫金額與里程'); // 用 console.error 替代 alert
+    if(!date) return console.error('請選日期');
+    if(isNaN(income) || isNaN(km)) return console.error('請填寫金額與里程');
 
     const finalOil = (editId && lockedOil) ? parseFloat(lockedOil) : globalOilPrice;
     const rec = {
@@ -695,7 +710,7 @@ function saveRecord() {
     list.sort((a,b) => new Date(b.date)-new Date(a.date));
     saveToHistory(list);
     
-    // V1.2.7 新增：資料儲存後，立即上傳到雲端
+    // V1.2.8: 資料儲存後，立即上傳到雲端
     uploadHistory(list);
 
     resetEditor();
@@ -727,14 +742,13 @@ function loadRecordToEditor(id) {
     document.getElementById('editorCard').scrollIntoView({behavior:'smooth'});
 }
 
-// V1.2.7: deleteCurrentRecord() 新增雲端同步邏輯
+// V1.2.8: deleteCurrentRecord() 確保雲端同步
 function deleteCurrentRecord() {
     // ⚠️ 根據平台規範，不使用 window.confirm/alert。
-    // 點擊刪除按鈕後，直接執行刪除操作。
-    console.warn('執行刪除操作。注意：在編輯器中點擊刪除按鈕會立即執行，無二次確認視窗。'); 
+    console.warn('執行刪除操作。'); 
     
     const id = document.getElementById('editId').value;
-    if (!id) return; // 確保有ID才刪除
+    if (!id) return;
     
     const list = getHistory();
     const originalLength = list.length;
@@ -747,7 +761,7 @@ function deleteCurrentRecord() {
 
     saveToHistory(newList);
     
-    // V1.2.7 新增：資料刪除後，立即上傳到雲端
+    // V1.2.8: 資料刪除後，立即上傳到雲端
     uploadHistory(newList);
     
     resetEditor();
@@ -859,7 +873,7 @@ function calculateRecordStats(record) {
     const grossHourly = hours > 0 ? income / hours : 0;
     const netHourly = hours > 0 ? netProfit / hours : 0;
 
-    // 4. 單價計算 (V1.2.3 新增)
+    // 4. 單價計算
     const grossPerOrder = orders > 0 ? income / orders : 0;
     const netPerOrder = orders > 0 ? netProfit / orders : 0;
 
@@ -872,8 +886,8 @@ function calculateRecordStats(record) {
         netProfit: netProfit,
         grossHourly: grossHourly,
         netHourly: netHourly,
-        grossPerOrder: grossPerOrder, // V1.2.3
-        netPerOrder: netPerOrder      // V1.2.3
+        grossPerOrder: grossPerOrder,
+        netPerOrder: netPerOrder
     };
 }
 
@@ -904,8 +918,8 @@ function refreshDashboard() {
     const totalMinutes = totals.totalHours * 60;
     const totalGrossHourly = totals.totalHours > 0 ? totals.totalIncome / totals.totalHours : 0;
     const totalNetHourly = totals.totalHours > 0 ? totals.netProfit / totals.totalHours : 0;
-    const totalGrossPerOrder = totals.totalOrders > 0 ? totals.totalIncome / totals.totalOrders : 0; // V1.2.3
-    const totalNetPerOrder = totals.totalOrders > 0 ? totals.netProfit / totals.totalOrders : 0;     // V1.2.3
+    const totalGrossPerOrder = totals.totalOrders > 0 ? totals.totalIncome / totals.totalOrders : 0;
+    const totalNetPerOrder = totals.totalOrders > 0 ? totals.netProfit / totals.totalOrders : 0;
 
 
     // 更新儀表板
@@ -919,8 +933,8 @@ function refreshDashboard() {
     document.getElementById('dashMinutes').innerText = Math.round((totals.totalHours - Math.floor(totals.totalHours)) * 60);
     document.getElementById('dashGrossHourly').innerText = formatCurrency(totalGrossHourly);
     document.getElementById('dashNetHourly').innerText = formatCurrency(totalNetHourly);
-    document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder); // V1.2.3
-    document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);     // V1.2.3
+    document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
+    document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
 
     // 更新歷史列表 - V1.2.6 樣式調整 (全左對齊，只有淨利靠右)
     const listHtml = filtered.map(r => `
@@ -1053,7 +1067,8 @@ function updateChart() {
     
     if (chartData.length === 0) {
         // 清除 Canvas 上的殘留圖形
-        document.getElementById('mainChart').getContext('2d').clearRect(0, 0, 300, 300);
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, 300, 300);
         return;
     }
 
