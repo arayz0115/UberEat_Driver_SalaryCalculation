@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.8</title>
+<title>UberEat Salary Calculator V1.2.9</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.8 (雲端同步修正)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置同步，修復登入狀態和同步問題。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.9 (UI Optimized)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置同步，優化儀表板數據對齊。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.8" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.9" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -179,7 +179,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.8 Cloud Sync Fixed</div>
+                <div class="text-[10px] text-gray-500">V1.2.9 UI Optimized</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -250,15 +250,15 @@
         
         <div class="grid grid-cols-3 gap-2">
 
-            <div class="flex flex-col items-start pb-4">
+            <div class="flex flex-col items-center pb-4 text-center">
                 <label class="stat-label text-gray-400">區間總營收</label>
                 <div class="text-3xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
             </div>
-            <div class="flex flex-col items-start pb-4"> 
+            <div class="flex flex-col items-center pb-4 text-center"> 
                 <label class="stat-label text-red-400">總成本</label>
                 <div class="text-3xl font-bold text-red-400 mt-1 tracking-tight">$<span id="dashTotalCost">0</span></div> 
             </div>
-            <div class="flex flex-col items-start pb-4">
+            <div class="flex flex-col items-center pb-4 text-center">
                 <label class="stat-label text-green-400">總淨利</label>
                 <div class="text-3xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetProfit">0</span></div>
             </div>
@@ -266,15 +266,15 @@
 
             <div class="col-span-3 border-t border-white/10 pt-4"></div>
 
-            <div class="flex flex-col items-start pt-2">
+            <div class="flex flex-col items-center pt-2 text-center">
                 <label class="stat-label text-red-400">油耗成本</label>
                 <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashOilCost">0</span></div>
             </div>
-            <div class="flex flex-col items-start pt-2">
+            <div class="flex flex-col items-center pt-2 text-center">
                 <label class="stat-label text-red-400">耗材成本</label>
                 <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashMaintCost">0</span></div>
             </div>
-            <div class="flex flex-col items-start pt-2">
+            <div class="flex flex-col items-center pt-2 text-center">
                 <label class="stat-label text-gray-400">總單數 / 總工時</label>
                 <div class="text-lg font-bold text-white mt-1">
                     <span id="dashOrders">0</span>單 | 
@@ -284,22 +284,22 @@
             
             
             <div class="col-span-3 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
-                <div class="flex flex-col items-start">
+                <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-amber-soft">未扣成本實薪</label>
                     <div class="text-2xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashGrossHourly">0</span></div>
                 </div>
-                <div class="flex flex-col items-start">
+                <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-green-400">已扣成本實薪</label>
                     <div class="text-2xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetHourly">0</span></div>
                 </div>
             </div>
 
             <div class="col-span-3 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
-                <div class="flex flex-col items-start">
+                <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-amber-soft">每單平均營收</label>
                     <div class="text-xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashGrossPerOrder">0</span></div>
                 </div>
-                <div class="flex flex-col items-start">
+                <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-green-400">每單平均淨利</label>
                     <div class="text-xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetPerOrder">0</span></div>
                 </div>
@@ -414,7 +414,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.8 (Cloud Sync Fixed)</div>
+        <div>UberEat 外送薪資計算器 V1.2.9 (UI Optimized)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -423,12 +423,12 @@
 // === V1.2.8 修正版：Firebase 配置與初始化 (最穩定的結構) ===
 // ⚠️ 請務必確認這個 API Key 是您專案的有效密鑰！
 const firebaseConfig = {
-  apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
-  authDomain: "uber-driver-tracker.firebaseapp.com",
-  projectId: "uber-driver-tracker",
-  storageBucket: "uber-driver-tracker.firebasestorage.app",
-  messagingSenderId: "665088105970",
-  appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
+    apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 您的 Key
+    authDomain: "uber-driver-tracker.firebaseapp.com",
+    projectId: "uber-driver-tracker", 
+    storageBucket: "uber-driver-tracker.appspot.com",
+    messagingSenderId: "333010467554",
+    appId: "1:333010467554:web:86f6a5067253fa433878b2"
 };
 
 let db; // 全域變數用於 Firestore 存取
