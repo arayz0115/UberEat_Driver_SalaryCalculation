@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.12</title>
+<title>UberEat Salary Calculator V1.2.13</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.12 (Realtime Sync)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置**實時同步**，解決跨設備資料不一致問題。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.13 (UI/UX 優化)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與收合功能。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.12" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.13" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -184,7 +184,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.12 Realtime Sync</div>
+                <div class="text-[10px] text-gray-500">V1.2.13 UI/UX Optimized</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -251,117 +251,131 @@
         <button onclick="saveSettings()" class="btn btn-primary text-sm">儲存設定</button>
     </div>
 
-    <div class="card bg-gradient-to-br from-[#111216] to-[#064e3b20] border-green-500/30 p-5 mb-4">
+    <div class="card card-glow mb-4 p-5" id="editorCard">
+        <div class="flex justify-between items-center border-b border-gray-800 pb-2 cursor-pointer" onclick="toggleEditor()">
+            <h3 class="font-bold text-white flex items-center gap-2 text-base">
+                <span id="editorTitle">📝 新增紀錄</span>
+            </h3>
+            <span id="editorToggleIcon" class="text-xl text-gray-400">🔽</span>
+        </div>
         
-        <div class="grid grid-cols-3 gap-2">
-
-            <div class="flex flex-col items-center text-center">
-                <label class="stat-label text-gray-400">區間總營收</label>
-                <div class="text-3xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
-            </div>
-            <div class="flex flex-col items-center text-center"> 
-                <label class="stat-label text-red-400">總成本</label>
-                <div class="text-3xl font-bold text-red-400 mt-1 tracking-tight">$<span id="dashTotalCost">0</span></div> 
-            </div>
-            <div class="flex flex-col items-center text-center">
-                <label class="stat-label text-green-400">總淨利</label>
-                <div class="text-3xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetProfit">0</span></div>
-            </div>
-
-
-            <div class="col-span-3 border-t border-white/10 pt-4 mt-4"></div>
-
-            <div class="flex flex-col items-center text-center">
-                <label class="stat-label text-red-400">油耗成本</label>
-                <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashOilCost">0</span></div>
-            </div>
-            <div class="flex flex-col items-center text-center">
-                <label class="stat-label text-red-400">耗材成本</label>
-                <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashMaintCost">0</span></div>
-            </div>
-            <div class="flex flex-col items-center text-center">
-                <label class="stat-label text-gray-400">總單數 / 總工時</label>
-                <div class="text-lg font-bold text-white mt-1">
-                    <span id="dashOrders">0</span>單 | 
-                    <span id="dashHours">0</span><span class="text-xs text-gray-500">h</span> <span id="dashMinutes">0</span><span class="text-xs text-gray-500">m</span>
-                </div>
-            </div>
+        <div id="editorContent" class="pt-4">
+            <input type="hidden" id="editId" value="">
+            <input type="hidden" id="recordOilPrice" value=""> 
             
-            
-            <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
-                <div class="flex flex-col items-center text-center">
-                    <label class="stat-label text-amber-soft">未扣成本實薪</label>
-                    <div class="text-2xl font-bold text-amber-soft my-1 tracking-tight">$<span id="dashGrossHourly">0</span></div>
+            <div class="flex justify-end items-center mb-3">
+                 <span id="editorOilHint" class="text-xs text-gray-500 hidden">鎖定油價: --</span>
+            </div>
+
+            <div class="flex flex-col gap-3 mb-4">
+                <div>
+                    <label class="stat-label mb-1">日期</label>
+                    <input id="inputDate" type="date" class="input-field cursor-pointer text-sm" onclick="this.showPicker()" />
                 </div>
-                <div class="flex flex-col items-center text-center">
-                    <label class="stat-label text-green-400">已扣成本實薪</label>
-                    <div class="text-2xl font-bold text-green-400 my-1 tracking-tight">$<span id="dashNetHourly">0</span></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="stat-label mb-1">營業額</label>
+                        <input id="inputIncome" type="number" inputmode="numeric" class="input-field text-amber-soft font-bold text-lg" placeholder="$0" />
+                    </div>
+                    <div>
+                        <label class="stat-label mb-1">單數</label>
+                        <input id="inputOrders" type="number" inputmode="numeric" class="input-field" placeholder="0" />
+                    </div>
                 </div>
             </div>
 
-            <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
-                <div class="flex flex-col items-center text-center">
-                    <label class="stat-label text-amber-soft">每單平均營收</label>
-                    <div class="text-xl font-bold text-amber-soft my-1 tracking-tight">$<span id="dashGrossPerOrder">0</span></div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="stat-label mb-1">里程</label>
+                    <input id="inputDist" type="number" step="0.1" inputmode="decimal" class="input-field" placeholder="KM" />
                 </div>
-                <div class="flex flex-col items-center text-center">
-                    <label class="stat-label text-green-400">每單平均淨利</label>
-                    <div class="text-xl font-bold text-green-400 my-1 tracking-tight">$<span id="dashNetPerOrder">0</span></div>
+                <div>
+                    <label class="stat-label mb-1">工時</label>
+                    <div class="flex gap-1">
+                        <input id="inputHr" type="number" class="input-field text-center px-1" placeholder="時" />
+                        <input id="inputMin" type="number" class="input-field text-center px-1" placeholder="分" />
+                    </div>
                 </div>
             </div>
 
+            <div class="flex gap-2">
+                <button onclick="saveRecord()" class="btn btn-primary" id="btnSave">儲存</button>
+                <button onclick="deleteCurrentRecord()" class="btn btn-danger hidden" id="btnDelete">刪除</button>
+                <button onclick="resetEditor()" class="btn btn-ghost hidden" id="btnCancel">取消</button>
+            </div>
+        </div>
+    </div>
 
+    <div class="card bg-gradient-to-br from-[#111216] to-[#064e3b20] border-green-500/30 p-5 mb-4" id="dashboardCard">
+        <div class="flex justify-between items-center cursor-pointer" onclick="toggleDashboard()">
+            <h3 class="font-bold text-white flex items-center gap-2 text-sm uppercase">
+                <div class="w-1.5 h-4 bg-green-500 rounded-full"></div>
+                區間總營收儀表板
+            </h3>
+            <span id="dashboardToggleIcon" class="text-xl text-gray-400">🔽</span>
+        </div>
+        
+        <div id="dashboardContent" class="pt-4">
+            <div class="grid grid-cols-3 gap-2">
+
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-gray-400">區間總營收</label>
+                    <div class="text-3xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
+                </div>
+                <div class="flex flex-col items-center text-center"> 
+                    <label class="stat-label text-red-400">總成本</label>
+                    <div class="text-3xl font-bold text-red-400 mt-1 tracking-tight">$<span id="dashTotalCost">0</span></div> 
+                </div>
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-green-400">總淨利</label>
+                    <div class="text-3xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetProfit">0</span></div>
+                </div>
+
+
+                <div class="col-span-3 border-t border-white/10 pt-4 mt-4"></div>
+
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-red-400">油耗成本</label>
+                    <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashOilCost">0</span></div>
+                </div>
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-red-400">耗材成本</label>
+                    <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashMaintCost">0</span></div>
+                </div>
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-gray-400">總單數 / 總工時</label>
+                    <div class="text-lg font-bold text-white mt-1">
+                        <span id="dashOrders">0</span>單 | 
+                        <span id="dashHours">0</span><span class="text-xs text-gray-500">h</span> <span id="dashMinutes">0</span><span class="text-xs text-gray-500">m</span>
+                    </div>
+                </div>
+                
+                
+                <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
+                    <div class="flex flex-col items-center text-center">
+                        <label class="stat-label text-amber-soft">未扣成本實薪</label>
+                        <div class="text-2xl font-bold text-amber-soft my-1 tracking-tight">$<span id="dashGrossHourly">0</span></div>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <label class="stat-label text-green-400">已扣成本實薪</label>
+                        <div class="text-2xl font-bold text-green-400 my-1 tracking-tight">$<span id="dashNetHourly">0</span></div>
+                    </div>
+                </div>
+
+                <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
+                    <div class="flex flex-col items-center text-center">
+                        <label class="stat-label text-amber-soft">每單平均營收</label>
+                        <div class="text-xl font-bold text-amber-soft my-1 tracking-tight">$<span id="dashGrossPerOrder">0</span></div>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <label class="stat-label text-green-400">每單平均淨利</label>
+                        <div class="text-xl font-bold text-green-400 my-1 tracking-tight">$<span id="dashNetPerOrder">0</span></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
-    <div class="card card-glow mb-4" id="editorCard">
-        <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-800">
-            <h3 class="font-bold text-white flex items-center gap-2 text-sm">
-                <span id="editorTitle">📝 新增紀錄</span>
-            </h3>
-            <span id="editorOilHint" class="text-xs text-gray-500 hidden">鎖定油價: --</span>
-        </div>
-        <input type="hidden" id="editId" value="">
-        <input type="hidden" id="recordOilPrice" value=""> 
-
-        <div class="flex flex-col gap-3 mb-4">
-            <div>
-                <label class="stat-label mb-1">日期</label>
-                <input id="inputDate" type="date" class="input-field cursor-pointer text-sm" onclick="this.showPicker()" />
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="stat-label mb-1">營業額</label>
-                    <input id="inputIncome" type="number" inputmode="numeric" class="input-field text-amber-soft font-bold text-lg" placeholder="$0" />
-                </div>
-                <div>
-                    <label class="stat-label mb-1">單數</label>
-                    <input id="inputOrders" type="number" inputmode="numeric" class="input-field" placeholder="0" />
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 mb-4">
-            <div>
-                <label class="stat-label mb-1">里程</label>
-                <input id="inputDist" type="number" step="0.1" inputmode="decimal" class="input-field" placeholder="KM" />
-            </div>
-            <div>
-                <label class="stat-label mb-1">工時</label>
-                <div class="flex gap-1">
-                    <input id="inputHr" type="number" class="input-field text-center px-1" placeholder="時" />
-                    <input id="inputMin" type="number" class="input-field text-center px-1" placeholder="分" />
-                </div>
-            </div>
-        </div>
-
-        <div class="flex gap-2">
-            <button onclick="saveRecord()" class="btn btn-primary" id="btnSave">儲存</button>
-            <button onclick="deleteCurrentRecord()" class="btn btn-danger hidden" id="btnDelete">刪除</button>
-            <button onclick="resetEditor()" class="btn btn-ghost hidden" id="btnCancel">取消</button>
-        </div>
-    </div>
-
     <div class="tab-scroll-container mb-3">
         <div class="tab-scroll-content">
             <button class="tab-btn active" onclick="setFilter('day', this)">今日</button>
@@ -419,7 +433,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.12 (Realtime Sync)</div>
+        <div>UberEat 外送薪資計算器 V1.2.13 (UI/UX Optimized)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -458,6 +472,9 @@ let chartInstance = null;
 let chartType = 'bar'; 
 
 window.onload = async () => {
+    // V1.2.13: 優先載入收合狀態，確保 UI 正確顯示
+    loadCollapseStates(); 
+    
     resetEditor();
     loadSettings();
     
@@ -512,6 +529,55 @@ function getLocalDateString() {
     const offset = new Date().getTimezoneOffset() * 60000;
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
+
+// === V1.2.13: 收合/展開相關函數 ===
+/**
+ * 處理單一區塊的收合與展開邏輯，並儲存狀態。
+ */
+function togglePanel(panelId, iconId, storageKey) {
+    const content = document.getElementById(panelId + 'Content');
+    const icon = document.getElementById(iconId);
+    
+    if (content.classList.contains('hidden')) {
+        // 展開 (Expand)
+        content.classList.remove('hidden');
+        icon.innerText = '🔽';
+        localStorage.removeItem(storageKey); 
+    } else {
+        // 收合 (Collapse)
+        content.classList.add('hidden');
+        icon.innerText = '▶️';
+        localStorage.setItem(storageKey, 'true');
+    }
+}
+
+function toggleEditor() {
+    // V1.2.13: 編輯區塊收合
+    togglePanel('editor', 'editorToggleIcon', 'editorCollapsed');
+}
+
+function toggleDashboard() {
+    // V1.2.13: 儀表板區塊收合
+    togglePanel('dashboard', 'dashboardToggleIcon', 'dashboardCollapsed');
+}
+
+/**
+ * 載入並應用 Local Storage 中儲存的收合狀態。
+ */
+function loadCollapseStates() {
+    // 編輯器狀態
+    if (localStorage.getItem('editorCollapsed') === 'true') {
+        document.getElementById('editorContent').classList.add('hidden');
+        document.getElementById('editorToggleIcon').innerText = '▶️';
+    }
+
+    // 儀表板狀態
+    if (localStorage.getItem('dashboardCollapsed') === 'true') {
+        document.getElementById('dashboardContent').classList.add('hidden');
+        document.getElementById('dashboardToggleIcon').innerText = '▶️';
+    }
+}
+
 
 // === V1.2.12: 新增 Firebase 實時監聽功能 (取代 syncDataOnLogin) ===
 
@@ -652,7 +718,7 @@ function resetPassword() {
         });
 }
 
-// === 雲端資料上傳 (uploadHistory) 保持不變 ===
+// === 雲端資料上傳 (uploadHistory) 保持不變) ===
 
 /**
  * 將 Local Storage 中的資料上傳到 Firestore。
@@ -759,6 +825,12 @@ function saveRecord() {
 function loadRecordToEditor(id) {
     const r = getHistory().find(i => i.id === id);
     if(!r) return;
+    
+    // V1.2.13: 確保在編輯時，編輯器是展開的
+    document.getElementById('editorContent').classList.remove('hidden');
+    document.getElementById('editorToggleIcon').innerText = '🔽';
+    localStorage.removeItem('editorCollapsed');
+    
     document.getElementById('editId').value = r.id;
     document.getElementById('recordOilPrice').value = r.oilPrice || globalOilPrice;
     document.getElementById('inputDate').value = r.date;
