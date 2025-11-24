@@ -420,7 +420,7 @@
     </div>
 
 <script>
-// === V1.2.8 修正版：Firebase 配置與初始化 (使用您提供的 Key) ===
+// === V1.2.8 修正版：Firebase 配置與初始化 (最穩定的結構) ===
 // ⚠️ 請務必確認這個 API Key 是您專案的有效密鑰！
 const firebaseConfig = {
   apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
@@ -433,7 +433,8 @@ const firebaseConfig = {
 
 let db; // 全域變數用於 Firestore 存取
 
-if (typeof firebase !== 'undefined' && firebaseConfig.apiKey && firebaseConfig.projectId !== "uber-driver-tracker") {
+// 💡 修正：移除多餘的 projectId 檢查，只檢查 SDK 是否載入且 Key 是否存在
+if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     console.log("Firebase 初始化成功。");
@@ -465,7 +466,7 @@ window.onload = async () => {
     document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
     document.getElementById('chartEnd').value = today;
 
-    // 啟動 Firebase 登入狀態監聽 (V1.2.8 修正了登出後的狀態處理)
+    // 啟動 Firebase 登入狀態監聽
     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
