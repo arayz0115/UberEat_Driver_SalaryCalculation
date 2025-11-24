@@ -142,10 +142,11 @@
         margin-top: 2px;
         line-height: 1.2;
     }
+    /* === FIX: 移除 history-sub-stats 的 flex 屬性，讓其子元素 (兩個 w-full 的 div) 垂直堆疊，修正排版炸開的問題。 === */
     .history-sub-stats {
         width: 100%;
-        display: flex;
-        justify-content: space-between;
+        /* display: flex; 移除 */
+        /* justify-content: space-between; 移除 */
         padding-top: 0.75rem;
         border-top: 1px solid #222;
         font-size: 0.8rem;
@@ -536,10 +537,23 @@ function loadRecordToEditor(id) {
 }
 
 function deleteCurrentRecord() {
-    // 雖然 Canvas 不支援 confirm，但為了確保邏輯，這裡使用一個簡單的訊息
-    if(!confirm('確定刪除此紀錄嗎？')) return; 
+    // ⚠️ 根據平台規範，不使用 window.confirm/alert。
+    // 點擊刪除按鈕後，直接執行刪除操作。
+    console.warn('執行刪除操作。注意：在編輯器中點擊刪除按鈕會立即執行，無二次確認視窗。'); 
+    
     const id = document.getElementById('editId').value;
-    saveToHistory(getHistory().filter(r => r.id != id));
+    if (!id) return; // 確保有ID才刪除
+    
+    const list = getHistory();
+    const originalLength = list.length;
+    
+    const newList = list.filter(r => r.id != id);
+    if(newList.length === originalLength) {
+        console.error(`刪除失敗：找不到 ID 為 ${id} 的紀錄。`);
+        return;
+    }
+
+    saveToHistory(newList);
     resetEditor();
     refreshDashboard();
 }
@@ -741,6 +755,7 @@ function refreshDashboard() {
 
             <!-- BOTTOM ROW: 次要數據與平均值 (使用 justify-between 確保標籤與數值各自對齊) -->
             <div class="history-sub-stats">
+                <!-- Block 1: Trip Details (w-full) -->
                 <div class="flex flex-col gap-1 w-full">
                     <!-- 左側：單數/里程 -->
                     <div class="flex justify-between items-center">
@@ -759,7 +774,7 @@ function refreshDashboard() {
                     </div>
                 </div>
                 
-                <!-- 底部關鍵數據放在單獨一行，確保左側標籤與右側數值對齊 -->
+                <!-- Block 2: Performance Summary (w-full, border-top) -->
                 <div class="w-full mt-3 pt-3 border-t border-gray-800 flex flex-col gap-1">
                      <div class="flex justify-between items-center">
                         <span class="stat-label-small text-green-500">已扣成本時薪</span>
