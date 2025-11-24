@@ -480,7 +480,6 @@
 
 <script>
 // === V1.2.8 修正版：Firebase 配置與初始化 (最穩定的結構) ===
-// ⚠️ 請務必確認這個 API Key 是您專案的有效密鑰！
 const firebaseConfig = {
     apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 您的 Key
     authDomain: "uber-driver-tracker.firebaseapp.com",
@@ -490,17 +489,12 @@ const firebaseConfig = {
     appId: "1:333010467554:web:86f6a5067253fa433878b2"
 };
 
-let db; // 全域變數用於 Firestore 存取
-let firebaseUnsubscribe = null; // V1.2.12: 用來儲存實時監聽的取消函式
+let db; 
+let firebaseUnsubscribe = null; 
 
-// 💡 修正：移除多餘的 projectId 檢查，只檢查 SDK 是否載入且 Key 是否存在
 if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    console.log("Firebase 初始化成功。");
-} else {
-    // 如果因為某些原因導致初始化失敗 (例如 SDK 載入問題或配置錯誤)
-    console.error("Firebase SDK 載入失敗或配置錯誤。雲端同步功能將不會啟用。");
 }
 
 
@@ -510,56 +504,1014 @@ let globalOilPrice = 30.0;
 let currentFilter = 'day';
 let chartInstance = null;
 let chartType = 'bar'; 
+let records = []; // V1.2.12: 所有記錄的資料陣列
 
 window.onload = async () => {
-    // V1.2.13: 優先載入收合狀態，確保 UI 正確顯示
     loadCollapseStates(); 
-    
     resetEditor();
     loadSettings();
     
     const today = getLocalDateString();
     
-    // 初始化自定義篩選器日期為今天
+    // 初始化日期範圍
     document.getElementById('filterStart').value = today;
     document.getElementById('filterEnd').value = today;
 
-    // 初始化圖表日期範圍
     const now = new Date();
     document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
     document.getElementById('chartEnd').value = today;
 
-    // 啟動 Firebase 登入狀態監聽 (V1.2.12: 替換為實時監聽邏輯)
     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                // 使用者已登入
                 document.getElementById('authStatusText').innerText = "已登入"; 
                 document.getElementById('userEmailDisplay').innerText = user.email;
                 document.getElementById('authForm').classList.add('hidden');
                 document.getElementById('userInfo').classList.remove('hidden');
-                
-                // V1.2.12: 啟用實時監聽
-                setupRealtimeListener(user);
-
+                setupRealtimeListener(user); // 啟用實時監聽
             } else {
-                // 使用者已登出
                 document.getElementById('authStatusText').innerText = "未登入"; 
                 document.getElementById('authForm').classList.remove('hidden');
                 document.getElementById('userInfo').classList.add('hidden');
-                
-                // V1.2.12: 取消實時監聽 (如果有的話)
                 if (firebaseUnsubscribe) {
                     firebaseUnsubscribe();
                     firebaseUnsubscribe = null;
                 }
-                
-                // 登出後，顯示本地資料
-                refreshDashboard(); 
+                refreshDashboard(); // 登出後，顯示本地資料
             }
         });
     } else {
         refreshDashboard();
     }
     
-    await fetchOil
+    await fetchOilPrice(); // 獲取當前油價
+    refreshDashboard();
+    updateChart(); // 初始化圖表
+}; 
+
+// === 通用工具函式 ===
+function getLocalDateString(date = new Date()) {
+    return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+}
+
+function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 調整為週一為起始日
+    return new Date(d.setDate(diff));
+}
+
+function toggleElement(id) {
+    document.getElementById(id).classList.toggle('hidden');
+}
+
+// V1.2.17: 展開/收合狀態本地儲存
+let collapseStates = JSON.parse(localStorage.getItem('collapseStates') || '{}');
+
+function saveCollapseStates() {
+    localStorage.setItem('collapseStates', JSON.stringify(collapseStates));
+}
+
+function loadCollapseStates() {
+    // 載入儀表板和編輯器狀態
+    if (collapseStates.editor === false) toggleEditor(false, true);
+    if (collapseStates.dashboard === false) toggleDashboard(false, true);
+    if (collapseStates.settings === true) toggleSettings(true, true);
+    if (collapseStates.auth === true) toggleAuthPanel(true, true);
+    if (collapseStates.charts === true) toggleCharts(true, true);
+}
+
+
+// === UI 切換函式 ===
+
+function toggleEditor(force, initialLoad = false) {
+    const editorContent = document.getElementById('editorContent');
+    const editorIcon = document.getElementById('editorToggleIcon');
+    const isHidden = editorContent.classList.contains('hidden');
+
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        editorContent.classList.remove('hidden');
+        editorIcon.innerText = '▼';
+        collapseStates.editor = true;
+    } else {
+        editorContent.classList.add('hidden');
+        editorIcon.innerText = '▲';
+        collapseStates.editor = false;
+    }
+    if (!initialLoad) saveCollapseStates();
+}
+
+function toggleDashboard(force, initialLoad = false) {
+    const dashboardContent = document.getElementById('dashboardContent');
+    const dashboardIcon = document.getElementById('dashboardToggleIcon');
+    const isHidden = dashboardContent.classList.contains('hidden');
+    
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        dashboardContent.classList.remove('hidden');
+        dashboardIcon.innerText = '▼';
+        collapseStates.dashboard = true;
+    } else {
+        dashboardContent.classList.add('hidden');
+        dashboardIcon.innerText = '▲';
+        collapseStates.dashboard = false;
+    }
+    if (!initialLoad) saveCollapseStates();
+}
+
+function toggleSettings(force, initialLoad = false) {
+    const settingsPanel = document.getElementById('settingsPanel');
+    const isHidden = settingsPanel.classList.contains('hidden');
+
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        settingsPanel.classList.remove('hidden');
+        collapseStates.settings = true;
+    } else {
+        settingsPanel.classList.add('hidden');
+        collapseStates.settings = false;
+    }
+    if (!initialLoad) saveCollapseStates();
+}
+
+function toggleAuthPanel(force, initialLoad = false) {
+    const authPanel = document.getElementById('authPanel');
+    const isHidden = authPanel.classList.contains('hidden');
+    
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        authPanel.classList.remove('hidden');
+        collapseStates.auth = true;
+    } else {
+        authPanel.classList.add('hidden');
+        collapseStates.auth = false;
+    }
+    if (!initialLoad) saveCollapseStates();
+}
+
+function toggleCharts(force, initialLoad = false) {
+    const chartsPanel = document.getElementById('chartsPanel');
+    const isHidden = chartsPanel.classList.contains('hidden');
+    
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        chartsPanel.classList.remove('hidden');
+        collapseStates.charts = true;
+        updateChart(); // 展開時更新圖表
+    } else {
+        chartsPanel.classList.add('hidden');
+        collapseStates.charts = false;
+    }
+    if (!initialLoad) saveCollapseStates();
+}
+
+
+// V1.2.17: 歷史明細收合/展開
+let historyCollapseStates = {}; // 儲存明細的展開狀態
+
+function toggleHistoryDetails(id, element) {
+    const subStats = document.getElementById('sub-stats-' + id);
+    const icon = element.querySelector('.history-toggle-icon');
+
+    if (subStats.classList.contains('hidden')) {
+        subStats.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+        historyCollapseStates[id] = true;
+    } else {
+        subStats.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+        historyCollapseStates[id] = false;
+    }
+}
+
+
+// === 設置與油價相關函式 ===
+
+function loadSettings() {
+    const settings = JSON.parse(localStorage.getItem('uberEatSettings')) || {
+        fuelRate: 35,
+        maintCost: 3.5,
+        oilType: '95'
+    };
+    
+    document.getElementById('settingFuelRate').value = settings.fuelRate;
+    document.getElementById('settingMaint').value = settings.maintCost;
+    document.getElementById('oilType').value = settings.oilType;
+}
+
+function saveSettings() {
+    const settings = {
+        fuelRate: parseFloat(document.getElementById('settingFuelRate').value),
+        maintCost: parseFloat(document.getElementById('settingMaint').value),
+        oilType: document.getElementById('oilType').value
+    };
+    
+    if (isNaN(settings.fuelRate) || settings.fuelRate <= 0) {
+        alert("油耗 (km/L) 必須是有效的正數！");
+        return;
+    }
+    if (isNaN(settings.maintCost) || settings.maintCost < 0) {
+        alert("耗材 ($/km) 必須是有效的正數或零！");
+        return;
+    }
+
+    localStorage.setItem('uberEatSettings', JSON.stringify(settings));
+    alert("設定已儲存！");
+    refreshDashboard(); 
+}
+
+async function fetchOilPrice() {
+    const oilType = document.getElementById('oilType').value;
+    const oilDisplay = document.getElementById('oilPriceDisplay');
+    oilDisplay.innerHTML = '讀取中...';
+    
+    try {
+        const response = await fetch(workerAPI + '?oilType=' + oilType);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        const price = data.price; 
+        
+        if (price) {
+            globalOilPrice = parseFloat(price);
+            oilDisplay.innerHTML = `$${globalOilPrice.toFixed(2)}`;
+            localStorage.setItem('globalOilPrice', globalOilPrice.toFixed(2));
+        } else {
+            throw new Error('API returned no price data');
+        }
+    } catch (error) {
+        console.error("獲取油價失敗，使用上次紀錄值或預設值。", error);
+        
+        const storedPrice = localStorage.getItem('globalOilPrice');
+        if (storedPrice) {
+            globalOilPrice = parseFloat(storedPrice);
+            oilDisplay.innerHTML = `$${globalOilPrice.toFixed(2)} (本地備用)`;
+        } else {
+            globalOilPrice = 30.0;
+            oilDisplay.innerHTML = `$30.00 (預設值)`;
+        }
+    }
+    document.getElementById('recordOilPrice').value = globalOilPrice.toFixed(2);
+}
+
+
+// === 資料處理與計算函式 ===
+
+function calculateCosts(dist, oilPrice, fuelRate, maintCost) {
+    if (dist <= 0) return { oilCost: 0, maintenanceCost: 0, totalCost: 0 };
+    
+    const oilCost = (dist / fuelRate) * oilPrice;
+    const maintenanceCost = dist * maintCost;
+    const totalCost = oilCost + maintenanceCost;
+    
+    return {
+        oilCost: parseFloat(oilCost.toFixed(2)),
+        maintenanceCost: parseFloat(maintenanceCost.toFixed(2)),
+        totalCost: parseFloat(totalCost.toFixed(2))
+    };
+}
+
+function createRecordObject(id = null) {
+    const income = parseFloat(document.getElementById('inputIncome').value) || 0;
+    const orders = parseInt(document.getElementById('inputOrders').value) || 0;
+    const dist = parseFloat(document.getElementById('inputDist').value) || 0;
+    const hr = parseInt(document.getElementById('inputHr').value) || 0;
+    const min = parseInt(document.getElementById('inputMin').value) || 0;
+    const date = document.getElementById('inputDate').value;
+    const fuelRate = parseFloat(document.getElementById('settingFuelRate').value);
+    const maintCost = parseFloat(document.getElementById('settingMaint').value);
+    const recordOilPrice = parseFloat(document.getElementById('recordOilPrice').value);
+    const totalMinutes = hr * 60 + min;
+    const totalHours = totalMinutes / 60;
+
+    const costs = calculateCosts(dist, recordOilPrice, fuelRate, maintCost);
+    const netProfit = income - costs.totalCost;
+    
+    return {
+        id: id || Date.now().toString(),
+        date: date,
+        income: income,
+        orders: orders,
+        distance: dist,
+        hours: totalHours,
+        totalMinutes: totalMinutes,
+        oilPrice: recordOilPrice,
+        fuelRate: fuelRate,
+        maintCost: maintCost,
+        oilCost: costs.oilCost,
+        maintenanceCost: costs.maintenanceCost,
+        totalCost: costs.totalCost,
+        netProfit: parseFloat(netProfit.toFixed(2)),
+    };
+}
+
+
+// === 編輯器函式 ===
+
+function resetEditor() {
+    document.getElementById('editId').value = '';
+    document.getElementById('editorTitle').innerText = '📝 新增紀錄';
+    document.getElementById('inputDate').value = getLocalDateString();
+    document.getElementById('inputIncome').value = '';
+    document.getElementById('inputOrders').value = '';
+    document.getElementById('inputDist').value = '';
+    document.getElementById('inputHr').value = '';
+    document.getElementById('inputMin').value = '';
+    document.getElementById('btnDelete').classList.add('hidden');
+    document.getElementById('btnCancel').classList.add('hidden');
+    document.getElementById('editorOilHint').classList.add('hidden');
+    
+    document.getElementById('recordOilPrice').value = globalOilPrice.toFixed(2);
+}
+
+function loadRecordToEditor(id) {
+    const record = records.find(r => r.id === id);
+    if (!record) return;
+
+    toggleEditor(true); // 展開編輯器
+    
+    document.getElementById('editId').value = record.id;
+    document.getElementById('editorTitle').innerText = `✏️ 編輯 ${record.date}`;
+    document.getElementById('inputDate').value = record.date;
+    document.getElementById('inputIncome').value = record.income;
+    document.getElementById('inputOrders').value = record.orders;
+    document.getElementById('inputDist').value = record.distance;
+    
+    const hr = Math.floor(record.totalMinutes / 60);
+    const min = record.totalMinutes % 60;
+    document.getElementById('inputHr').value = hr;
+    document.getElementById('inputMin').value = min;
+
+    document.getElementById('recordOilPrice').value = record.oilPrice;
+    document.getElementById('editorOilHint').innerText = `鎖定油價: $${record.oilPrice.toFixed(2)}`;
+    document.getElementById('editorOilHint').classList.remove('hidden');
+
+    document.getElementById('btnDelete').classList.remove('hidden');
+    document.getElementById('btnCancel').classList.remove('hidden');
+    document.getElementById('btnSave').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function saveRecord() {
+    const id = document.getElementById('editId').value;
+    const newRecord = createRecordObject(id);
+    
+    if (newRecord.income <= 0 || newRecord.orders <= 0) {
+        alert("請輸入有效的營業額和單數！");
+        return;
+    }
+    if (newRecord.distance <= 0) {
+        alert("請輸入有效的里程！");
+        return;
+    }
+    if (newRecord.totalMinutes <= 0) {
+        alert("請輸入有效的工時！");
+        return;
+    }
+
+    if (id) {
+        // 編輯模式
+        const index = records.findIndex(r => r.id === id);
+        if (index !== -1) {
+            records[index] = newRecord;
+        }
+    } else {
+        // 新增模式
+        records.push(newRecord);
+    }
+    
+    saveRecordsToLocal();
+    saveRecordsToCloud();
+    resetEditor();
+    refreshDashboard();
+    toggleEditor(false); // 儲存後收起編輯器
+}
+
+function deleteCurrentRecord() {
+    const id = document.getElementById('editId').value;
+    if (!id) return;
+    
+    if (confirm("確定要刪除這筆紀錄嗎？")) {
+        // 刪除本地
+        records = records.filter(r => r.id !== id);
+        saveRecordsToLocal();
+        
+        // 刪除雲端 (如果已登入)
+        if (firebase.auth().currentUser) {
+            db.collection("records").doc(id).delete().then(() => {
+                console.log("雲端紀錄刪除成功");
+            }).catch((error) => {
+                console.error("雲端紀錄刪除失敗:", error);
+            });
+        }
+
+        resetEditor();
+        refreshDashboard();
+        toggleEditor(false);
+    }
+}
+
+
+// === 資料儲存與載入 (本地/雲端) ===
+
+function saveRecordsToLocal() {
+    // 排序紀錄 (日期由近到遠)
+    records.sort((a, b) => new Date(b.date) - new Date(a.date));
+    localStorage.setItem('uberEatRecords', JSON.stringify(records));
+}
+
+function saveRecordsToCloud() {
+    const user = firebase.auth().currentUser;
+    if (!user) return; // 未登入則不執行雲端寫入
+
+    // 只寫入當前編輯或新增的單筆資料，實時監聽會同步所有資料
+    // 但在登入同步時，確保所有本地數據都上傳
+    
+    // V1.2.14: 移除此處的單筆寫入，因為實時監聽會處理同步。
+    // 實時監聽 (setupRealtimeListener) 已包含讀取功能
+    // 為了安全和效率，不進行批次寫入，只依靠監聽器。
+    // 但是，當新增或編輯時，我們需要主動寫入 Firestore。
+    const id = document.getElementById('editId').value;
+    if (id) {
+        const recordToSave = records.find(r => r.id === id);
+        if (recordToSave) {
+            // 寫入/更新
+            db.collection("users").doc(user.uid).collection("records").doc(id).set(recordToSave)
+            .then(() => console.log("雲端紀錄更新成功:", recordToSave.id))
+            .catch(error => console.error("雲端更新失敗:", error));
+        }
+    } else {
+        // 新增 (id 在 createRecordObject 中生成)
+        const latestRecord = records[0]; 
+        if(latestRecord && !latestRecord.synced) { // 假設新增的紀錄還沒有 synced 標記
+             db.collection("users").doc(user.uid).collection("records").doc(latestRecord.id).set({...latestRecord, synced: true})
+            .then(() => console.log("雲端紀錄新增成功:", latestRecord.id))
+            .catch(error => console.error("雲端新增失敗:", error));
+        }
+    }
+}
+
+// V1.2.12: 實時監聽 (核心同步邏輯)
+function setupRealtimeListener(user) {
+    if (firebaseUnsubscribe) {
+        firebaseUnsubscribe(); // 取消舊的監聽
+    }
+    
+    // 監聽該用戶的所有紀錄
+    firebaseUnsubscribe = db.collection("users").doc(user.uid).collection("records")
+        .orderBy("date", "desc") // 確保排序
+        .onSnapshot(snapshot => {
+            records = []; // 清空現有紀錄
+            snapshot.forEach(doc => {
+                records.push(doc.data());
+            });
+            
+            // 將雲端資料同步至本地儲存
+            saveRecordsToLocal(); 
+            
+            // 更新儀表板和列表
+            refreshDashboard();
+            
+        }, error => {
+            console.error("實時監聽錯誤:", error);
+            // 發生錯誤時，仍使用本地資料刷新儀表板
+            refreshDashboard(); 
+        });
+}
+
+function loadRecordsFromLocal() {
+    const storedRecords = localStorage.getItem('uberEatRecords');
+    if (storedRecords) {
+        records = JSON.parse(storedRecords);
+    } else {
+        records = [];
+    }
+}
+
+
+// === 儀表板與列表刷新函式 ===
+
+function filterRecords(data) {
+    let startDate, endDate;
+    const today = new Date(getLocalDateString()); // 確保是 UTC 00:00:00 的日期
+    today.setHours(0, 0, 0, 0);
+
+    const isCustom = currentFilter === 'custom';
+    
+    if (isCustom) {
+        const start = document.getElementById('filterStart').value;
+        const end = document.getElementById('filterEnd').value;
+        
+        // 確保日期有效
+        if (!start || !end) return [];
+
+        startDate = new Date(start);
+        endDate = new Date(end);
+        // 將結束日期設為當天午夜 23:59:59，以包含當天所有紀錄
+        endDate.setHours(23, 59, 59, 999); 
+        
+    } else if (currentFilter === 'day') {
+        startDate = new Date(today);
+        endDate = new Date(today);
+        endDate.setHours(23, 59, 59, 999);
+        
+    } else if (currentFilter === 'week') {
+        startDate = getWeekStart(today);
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+
+    } else if (currentFilter === 'month') {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+    } else if (currentFilter === 'year') {
+        startDate = new Date(today.getFullYear(), 0, 1);
+        endDate = new Date(today.getFullYear(), 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+
+    } else { // 'all'
+        // 不過濾日期
+        return data; 
+    }
+
+    // 處理時區問題：Firestore 儲存的 date 是 "YYYY-MM-DD" 字串，但用 new Date(date) 會根據瀏覽器時區解析
+    // 為確保篩選正確，我們將紀錄的日期字串解析為一個基準時間，通常為該日期的 00:00:00
+    
+    const filtered = data.filter(record => {
+        const recordDate = new Date(record.date);
+        // 由於 date 欄位是 YYYY-MM-DD 格式，在 new Date() 後，它會被視為 UTC 00:00:00
+        // 但在比較時，必須確保與我們計算出的本地時區的 startDate/endDate 基準一致。
+        // 最簡單的方式是比較 ISO 格式字串的日期部分，或確保日期物件只有日期的概念。
+
+        // 重新設定 recordDate 以匹配本地日期的 00:00:00
+        recordDate.setHours(0, 0, 0, 0);
+        
+        // 確保 recordDate 在 [startDate, endDate] 區間內
+        return recordDate >= startDate && recordDate <= endDate;
+    });
+
+    return filtered;
+}
+
+function setFilter(filterType, element = null) {
+    currentFilter = filterType;
+    
+    // 移除所有 Tab 按鈕的 active 狀態
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // 設定當前選中按鈕的 active 狀態
+    if (element) {
+        element.classList.add('active');
+    } else {
+        // 如果是程式呼叫 (例如載入時)，找到對應的按鈕
+        document.querySelector(`.tab-scroll-content button[onclick="setFilter('${filterType}', this)"]`)?.classList.add('active');
+    }
+    
+    // 顯示/隱藏自定義日期選擇器
+    if (filterType === 'custom') {
+        document.getElementById('customDateFilter').classList.remove('hidden');
+    } else {
+        document.getElementById('customDateFilter').classList.add('hidden');
+    }
+    
+    refreshDashboard();
+}
+
+function applyCustomFilter() {
+    setFilter('custom', document.querySelector('.tab-scroll-content button[onclick="setFilter(\'custom\', this)"]'));
+}
+
+function refreshDashboard() {
+    loadRecordsFromLocal();
+    const filteredRecords = filterRecords(records);
+
+    // 彙總數據
+    const totalIncome = filteredRecords.reduce((sum, r) => sum + r.income, 0);
+    const totalOrders = filteredRecords.reduce((sum, r) => sum + r.orders, 0);
+    const totalDist = filteredRecords.reduce((sum, r) => sum + r.distance, 0);
+    const totalOilCost = filteredRecords.reduce((sum, r) => sum + r.oilCost, 0);
+    const totalMaintCost = filteredRecords.reduce((sum, r) => sum + r.maintenanceCost, 0);
+    const totalMinutes = filteredRecords.reduce((sum, r) => sum + r.totalMinutes, 0);
+    
+    const totalCost = totalOilCost + totalMaintCost;
+    const netProfit = totalIncome - totalCost;
+    const totalHours = totalMinutes / 60;
+    
+    // 計算平均值
+    const avgGrossHourly = totalHours > 0 ? (totalIncome / totalHours) : 0;
+    const avgNetHourly = totalHours > 0 ? (netProfit / totalHours) : 0;
+    const avgGrossPerOrder = totalOrders > 0 ? (totalIncome / totalOrders) : 0;
+    const avgNetPerOrder = totalOrders > 0 ? (netProfit / totalOrders) : 0;
+
+    // 更新儀表板 UI
+    document.getElementById('dashTotalIncome').innerText = totalIncome.toFixed(0);
+    document.getElementById('dashTotalCost').innerText = totalCost.toFixed(0);
+    document.getElementById('dashNetProfit').innerText = netProfit.toFixed(0);
+    document.getElementById('dashOilCost').innerText = totalOilCost.toFixed(0);
+    document.getElementById('dashMaintCost').innerText = totalMaintCost.toFixed(0);
+    document.getElementById('dashOrders').innerText = totalOrders;
+    document.getElementById('dashHours').innerText = Math.floor(totalHours);
+    document.getElementById('dashMinutes').innerText = Math.round((totalHours % 1) * 60);
+    document.getElementById('dashGrossHourly').innerText = avgGrossHourly.toFixed(0);
+    document.getElementById('dashNetHourly').innerText = avgNetHourly.toFixed(0);
+    document.getElementById('dashGrossPerOrder').innerText = avgGrossPerOrder.toFixed(0);
+    document.getElementById('dashNetPerOrder').innerText = avgNetPerOrder.toFixed(0);
+
+    // 刷新歷史列表
+    renderHistoryList(filteredRecords);
+    
+    // 刷新圖表 (如果已展開)
+    if (!document.getElementById('chartsPanel').classList.contains('hidden')) {
+        updateChart();
+    }
+}
+
+function renderHistoryList(data) {
+    const list = document.getElementById('historyList');
+    list.innerHTML = ''; // 清空現有列表
+
+    if (data.length === 0) {
+        list.innerHTML = '<div class="text-center py-6 text-gray-500">此區間暫無紀錄。</div>';
+        return;
+    }
+
+    data.forEach(record => {
+        const netHourly = record.totalMinutes > 0 ? (record.netProfit / (record.totalMinutes / 60)) : 0;
+        const netPerOrder = record.orders > 0 ? (record.netProfit / record.orders) : 0;
+        
+        // 判斷淨利顏色
+        const netProfitColor = record.netProfit >= 0 ? 'text-green-400' : 'text-red-400';
+        
+        // 使用一個獨立的 ID 來控制明細展開
+        const detailId = `detail-${record.id}`;
+        
+        const isExpanded = historyCollapseStates[detailId] === true;
+        const subStatsClass = isExpanded ? '' : 'hidden';
+        const iconRotate = isExpanded ? 'transform: rotate(180deg);' : 'transform: rotate(0deg);';
+        
+        const itemHtml = `
+            <div class="history-item" onclick="toggleHistoryDetails('${record.id}', this)">
+                
+                <div class="history-header-wrapper">
+                    <div class="history-main-area">
+                        <div class="grid grid-cols-3 gap-3 w-full">
+                            
+                            <div class="history-stat-group" onclick="loadRecordToEditor('${record.id}')">
+                                <span class="stat-label-small text-gray-400">${record.date.substring(5).replace('-', '/')}</span>
+                                <div class="history-main-value text-gray-200">
+                                    ${record.orders} <span class="text-xs font-normal text-gray-400">單</span>
+                                </div>
+                            </div>
+                            
+                            <div class="history-stat-group center">
+                                <span class="stat-label-small text-gray-400">總營收</span>
+                                <div class="history-main-value text-amber-soft">
+                                    $${record.income.toFixed(0)}
+                                </div>
+                            </div>
+
+                            <div class="history-stat-group right">
+                                <span class="stat-label-small text-gray-400">淨利</span>
+                                <div class="history-main-value ${netProfitColor}">
+                                    $${record.netProfit.toFixed(0)}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    <div class="history-toggle-icon" style="${iconRotate}">▼</div>
+                </div>
+
+                <div id="sub-stats-${record.id}" class="history-sub-stats ${subStatsClass}">
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div>
+                            <div class="text-xs text-gray-400">實發淨時薪</div>
+                            <div class="text-base font-bold text-green-400">$${netHourly.toFixed(0)}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400">平均淨單利</div>
+                            <div class="text-base font-bold text-green-400">$${netPerOrder.toFixed(0)}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400">總成本</div>
+                            <div class="text-base font-bold text-red-400">$${record.totalCost.toFixed(0)}</div>
+                        </div>
+                    </div>
+
+                    <div class="performance-summary">
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex justify-between">
+                                <span>里程 (km):</span>
+                                <span class="font-bold">${record.distance.toFixed(1)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>工時 (h:m):</span>
+                                <span class="font-bold">${Math.floor(record.totalMinutes / 60)}h ${record.totalMinutes % 60}m</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>油耗成本:</span>
+                                <span class="font-bold text-red-400">$${record.oilCost.toFixed(0)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>耗材成本:</span>
+                                <span class="font-bold text-red-400">$${record.maintenanceCost.toFixed(0)}</span>
+                            </div>
+                            <div class="col-span-2 text-right text-gray-500 mt-2">
+                                <span> (油價: $${record.oilPrice.toFixed(2)}, 油耗: ${record.fuelRate}km/L, 耗材: $${record.maintCost.toFixed(1)}/km)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        `;
+        list.insertAdjacentHTML('beforeend', itemHtml);
+    });
+}
+
+
+// === 圖表相關函式 ===
+
+function switchChartType(type) {
+    chartType = type;
+    document.getElementById('btnChartBar').classList.remove('active');
+    document.getElementById('btnChartPie').classList.remove('active');
+    document.getElementById('chartGroupBy').closest('div').style.display = (type === 'bar' ? 'flex' : 'none');
+    
+    if (type === 'bar') {
+        document.getElementById('btnChartBar').classList.add('active');
+    } else {
+        document.getElementById('btnChartPie').classList.add('active');
+    }
+    updateChart();
+}
+
+function updateChart() {
+    if (chartInstance) {
+        chartInstance.destroy(); // 銷毀舊圖表
+    }
+    
+    const chartStart = document.getElementById('chartStart').value;
+    const chartEnd = document.getElementById('chartEnd').value;
+    const groupBy = document.getElementById('chartGroupBy').value;
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    
+    // 根據圖表日期範圍過濾數據 (獨立於儀表板篩選)
+    const chartStartDate = new Date(chartStart);
+    const chartEndDate = new Date(chartEnd);
+    chartEndDate.setHours(23, 59, 59, 999);
+    
+    const chartData = records.filter(record => {
+        const recordDate = new Date(record.date);
+        recordDate.setHours(0, 0, 0, 0); // 確保日期基準一致
+        return recordDate >= chartStartDate && recordDate <= chartEndDate;
+    });
+
+    if (chartData.length === 0) {
+        // 可以顯示無數據的提示
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        return; 
+    }
+
+    if (chartType === 'bar') {
+        renderBarChart(ctx, chartData, groupBy);
+    } else {
+        renderPieChart(ctx, chartData);
+    }
+}
+
+function renderBarChart(ctx, chartData, groupBy) {
+    // 數據分組
+    const groupedData = {};
+
+    chartData.forEach(record => {
+        let key;
+        const date = new Date(record.date);
+
+        if (groupBy === 'month') {
+            key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        } else if (groupBy === 'year') {
+            key = date.getFullYear().toString();
+        } else { // 'day'
+            key = record.date;
+        }
+
+        if (!groupedData[key]) {
+            groupedData[key] = {
+                income: 0,
+                netProfit: 0,
+                totalCost: 0,
+            };
+        }
+        groupedData[key].income += record.income;
+        groupedData[key].netProfit += record.netProfit;
+        groupedData[key].totalCost += record.totalCost;
+    });
+
+    // 準備圖表數據
+    const sortedKeys = Object.keys(groupedData).sort();
+    const labels = sortedKeys;
+    const netProfits = sortedKeys.map(key => groupedData[key].netProfit.toFixed(0));
+    const totalCosts = sortedKeys.map(key => groupedData[key].totalCost.toFixed(0));
+
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '淨利潤',
+                    data: netProfits,
+                    backgroundColor: '#10b981', // 綠色
+                    borderColor: '#059669',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '總成本',
+                    data: totalCosts,
+                    backgroundColor: '#ef4444', // 紅色
+                    borderColor: '#dc2626',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#e5e5e5' }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    ticks: { color: '#9ca3af' },
+                    grid: { color: 'rgba(51,51,51,0.5)' }
+                },
+                y: {
+                    stacked: false,
+                    ticks: { color: '#9ca3af' },
+                    grid: { color: 'rgba(51,51,51,0.5)' }
+                }
+            }
+        }
+    });
+}
+
+function renderPieChart(ctx, chartData) {
+    // 彙總總淨利、總油耗成本、總耗材成本
+    const totalOilCost = chartData.reduce((sum, r) => sum + r.oilCost, 0);
+    const totalMaintCost = chartData.reduce((sum, r) => sum + r.maintenanceCost, 0);
+    const totalNetProfit = chartData.reduce((sum, r) => sum + r.netProfit, 0);
+    
+    // 如果總淨利為負數，將其計入總成本
+    const displayNetProfit = Math.max(0, totalNetProfit);
+    const effectiveTotalCost = totalOilCost + totalMaintCost + Math.abs(Math.min(0, totalNetProfit));
+
+    chartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['總淨利', '總油耗成本', '總耗材成本'],
+            datasets: [{
+                data: [displayNetProfit, totalOilCost, totalMaintCost],
+                backgroundColor: ['#10b981', '#fcd34d', '#ef4444'],
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: '#e5e5e5' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            // 計算總和 (只包含顯示的數據)
+                            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            const value = context.raw;
+                            const percentage = ((value / total) * 100).toFixed(1) + '%';
+                            
+                            // 修正淨利為負時的顯示
+                            let labelText = context.label;
+                            if (context.label === '總淨利' && totalNetProfit < 0) {
+                                // 由於圓餅圖不適合展示負值，我們將淨利為負的絕對值隱含到其他成本中
+                                return `總淨利: -$${Math.abs(totalNetProfit).toFixed(0)} (負數不計入百分比)`;
+                            }
+
+                            return `${labelText}: $${value.toFixed(0)} (${percentage})`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+// === Firebase 驗證函式 ===
+
+async function registerUser() {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    
+    if (!email || password.length < 6) {
+        alert("Email 或密碼格式不正確 (密碼需至少6位)。");
+        return;
+    }
+    
+    try {
+        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        // 註冊成功後，將本地資料同步至雲端
+        await syncLocalToCloud(userCredential.user.uid);
+        alert("註冊成功！資料已同步。");
+    } catch (error) {
+        alert("註冊失敗: " + error.message);
+    }
+}
+
+async function loginUser() {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    
+    if (!email || password.length < 6) {
+        alert("Email 或密碼格式不正確 (密碼需至少6位)。");
+        return;
+    }
+    
+    try {
+        await firebase.auth().signInWithEmailAndPassword(email, password);
+        // 登入成功後，onAuthStateChanged 會自動觸發 setupRealtimeListener
+        alert("登入成功！雲端資料將自動同步。");
+    } catch (error) {
+        alert("登入失敗: " + error.message);
+    }
+}
+
+async function logoutUser() {
+    if (confirm("確定要登出並清除本機所有紀錄嗎？(清除後將只顯示雲端資料)")) {
+        localStorage.removeItem('uberEatRecords');
+        records = [];
+        
+        try {
+            await firebase.auth().signOut();
+            alert("登出成功，本機紀錄已清除。");
+        } catch (error) {
+            alert("登出失敗: " + error.message);
+        }
+    }
+}
+
+async function resetPassword() {
+    const email = document.getElementById('authEmail').value;
+    if (!email) {
+        alert("請輸入您註冊的 Email！");
+        return;
+    }
+    
+    try {
+        await firebase.auth().sendPasswordResetEmail(email);
+        alert(`密碼重設郵件已發送至 ${email}，請檢查您的信箱。`);
+    } catch (error) {
+        alert("密碼重設失敗: " + error.message);
+    }
+}
+
+// 首次註冊/登入時，將本地資料推送到雲端 (僅執行一次)
+async function syncLocalToCloud(uid) {
+    if (records.length === 0) return;
+
+    const batch = db.batch();
+    const userRef = db.collection("users").doc(uid).collection("records");
+    let count = 0;
+    
+    records.forEach(record => {
+        if (count >= 499) return; // Firestore 批次寫入限制 500
+        const docRef = userRef.doc(record.id);
+        batch.set(docRef, record);
+        count++;
+    });
+
+    try {
+        await batch.commit();
+        console.log(`成功將 ${count} 筆本地紀錄同步到雲端。`);
+    } catch (error) {
+        console.error("同步本地數據到雲端失敗:", error);
+    }
+}
+</script>
+</body>
+</html>
