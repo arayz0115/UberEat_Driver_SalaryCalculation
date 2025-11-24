@@ -3,20 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.6</title>
+<title>UberEat Salary Calculator V1.2.7 (Cloud Sync)</title>
 
-<!-- === App 化專用 Meta 設定 === --><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing (V1.2.6) === --><meta property="og:title" content="UberEat 外送薪資計算器 V1.2.6" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援每單平均收益分析，優化跑單效率。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.7 (雲端同步)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援每單平均收益分析，優化跑單效率。現已支援雲端同步。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.6" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.7" />
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <style>
     /* === 全局設定 === */
@@ -172,12 +176,12 @@
 </head>
 <body class="max-w-md mx-auto p-3">
 
-    <!-- 標題 (V1.2.6) --><div class="flex justify-between items-center mb-4 px-1 pt-2">
+    <div class="flex justify-between items-center mb-4 px-1 pt-2">
         <div class="flex items-center gap-2">
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.6 Alignment for Reading Comfort</div>
+                <div class="text-[10px] text-gray-500">V1.2.7 Cloud Sync for Cross-Platform</div>
             </div>
         </div>
         <button onclick="toggleSettings()" class="p-2 bg-[#1a1c23] rounded-full text-gray-400 border border-[#333] text-xs active:bg-gray-800">
@@ -185,7 +189,21 @@
         </button>
     </div>
 
-    <!-- 設定面板 --><div id="settingsPanel" class="hidden mb-4 card border-green-900/50">
+    <div class="card mb-4 border-blue-500/30">
+        <h3 class="text-blue-400 font-bold mb-3 text-sm uppercase">☁️ 雲端同步設定 (Email/密碼)</h3>
+        <div class="space-y-3">
+            <input id="authEmail" type="email" class="input-field" placeholder="請輸入 Email" />
+            <input id="authPassword" type="password" class="input-field" placeholder="請輸入密碼 (至少6位數)" />
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="handleAuth(true)" class="btn btn-primary text-sm">註冊新帳號</button>
+                <button onclick="handleAuth(false)" class="btn btn-ghost text-sm">登入現有帳號</button>
+            </div>
+            <button onclick="handleLogout()" class="btn btn-danger text-sm hidden" id="btnLogout">登出</button>
+        </div>
+        <div id="authStatus" class="text-xs mt-3 p-2 bg-[#1a1c23] rounded text-gray-400">當前狀態：正在檢查登入狀態...</div>
+    </div>
+
+    <div id="settingsPanel" class="hidden mb-4 card border-green-900/50">
         <h3 class="text-green-500 font-bold mb-3 text-sm uppercase">全域參數</h3>
         <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
@@ -215,36 +233,26 @@
         <button onclick="saveSettings()" class="btn btn-primary text-sm">儲存設定</button>
     </div>
 
-    <!-- 1. 儀表板 (Dashboard) -->
-    <!-- V1.2.6 FIX: 調整為閱讀舒適導向的對齊方式 -->
     <div class="card bg-gradient-to-br from-[#111216] to-[#064e3b20] border-green-500/30 p-5 mb-4">
         
-        <!-- 佈局容器：使用 grid-cols-3 -->
         <div class="grid grid-cols-3 gap-2">
 
-            <!-- Row 1: 營收 / 成本 / 淨利 (全部靠左對齊，但給予數字右邊空間) -->
-            <!-- Col 1: 總營收 (左對齊) -->
             <div class="flex flex-col items-start pb-4">
                 <label class="stat-label text-gray-400">區間總營收</label>
                 <div class="text-3xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
             </div>
-            <!-- Col 2: 總成本 (左對齊) -->
             <div class="flex flex-col items-start pb-4"> 
                 <label class="stat-label text-red-400">總成本</label>
                 <div class="text-3xl font-bold text-red-400 mt-1 tracking-tight">$<span id="dashTotalCost">0</span></div> 
             </div>
-            <!-- Col 3: 總淨利 (左對齊) -->
             <div class="flex flex-col items-start pb-4">
                 <label class="stat-label text-green-400">總淨利</label>
                 <div class="text-3xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetProfit">0</span></div>
             </div>
 
 
-            <!-- 分隔線 -->
             <div class="col-span-3 border-t border-white/10 pt-4"></div>
 
-            <!-- Row 2: 油耗成本 / 耗材成本 / 總單數 & 總工時 -->
-            <!-- 採用 flex-col items-start 搭配 text-right 讓數字更靠近右邊 -->
             <div class="flex flex-col items-start pt-2">
                 <label class="stat-label text-red-400">油耗成本</label>
                 <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashOilCost">0</span></div>
@@ -253,7 +261,6 @@
                 <label class="stat-label text-red-400">耗材成本</label>
                 <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashMaintCost">0</span></div>
             </div>
-            <!-- 第三欄合併顯示單數和工時 (左對齊) -->
             <div class="flex flex-col items-start pt-2">
                 <label class="stat-label text-gray-400">總單數 / 總工時</label>
                 <div class="text-lg font-bold text-white mt-1">
@@ -263,28 +270,22 @@
             </div>
             
             
-            <!-- Row 3: 未扣成本時薪 / 已扣成本時薪 (現在都靠左對齊) -->
             <div class="col-span-3 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
-                <!-- Col 1: 未扣成本實薪 (左對齊) -->
                 <div class="flex flex-col items-start">
                     <label class="stat-label text-amber-soft">未扣成本實薪</label>
                     <div class="text-2xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashGrossHourly">0</span></div>
                 </div>
-                <!-- Col 2: 已扣成本實薪 (左對齊) -->
                 <div class="flex flex-col items-start">
                     <label class="stat-label text-green-400">已扣成本實薪</label>
                     <div class="text-2xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetHourly">0</span></div>
                 </div>
             </div>
 
-            <!-- Row 4: 每單平均營收 / 每單平均淨利 (現在都靠左對齊) -->
             <div class="col-span-3 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
-                <!-- Col 1: 每單平均營收 (左對齊) -->
                 <div class="flex flex-col items-start">
                     <label class="stat-label text-amber-soft">每單平均營收</label>
                     <div class="text-xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashGrossPerOrder">0</span></div>
                 </div>
-                <!-- Col 2: 每單平均淨利 (左對齊) -->
                 <div class="flex flex-col items-start">
                     <label class="stat-label text-green-400">每單平均淨利</label>
                     <div class="text-xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetPerOrder">0</span></div>
@@ -295,7 +296,7 @@
         </div>
     </div>
     
-    <!-- 2. 編輯控制台 (修正日期佈局) --><div class="card card-glow mb-4" id="editorCard">
+    <div class="card card-glow mb-4" id="editorCard">
         <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-800">
             <h3 class="font-bold text-white flex items-center gap-2 text-sm">
                 <span id="editorTitle">📝 新增紀錄</span>
@@ -305,12 +306,12 @@
         <input type="hidden" id="editId" value="">
         <input type="hidden" id="recordOilPrice" value=""> 
 
-        <!-- NEW: 垂直佈局，讓日期輸入更寬敞 --><div class="flex flex-col gap-3 mb-4">
-            <!-- Row 1: Date --><div>
+        <div class="flex flex-col gap-3 mb-4">
+            <div>
                 <label class="stat-label mb-1">日期</label>
-                <!-- 加入 text-sm 確保日期完整顯示 --><input id="inputDate" type="date" class="input-field cursor-pointer text-sm" onclick="this.showPicker()" />
+                <input id="inputDate" type="date" class="input-field cursor-pointer text-sm" onclick="this.showPicker()" />
             </div>
-            <!-- Row 2: Income / Orders --><div class="grid grid-cols-2 gap-3">
+            <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="stat-label mb-1">營業額</label>
                     <input id="inputIncome" type="number" inputmode="numeric" class="input-field text-amber-soft font-bold text-lg" placeholder="$0" />
@@ -343,7 +344,7 @@
         </div>
     </div>
 
-    <!-- 3. 篩選 Tab (新增自定義) --><div class="tab-scroll-container mb-3">
+    <div class="tab-scroll-container mb-3">
         <div class="tab-scroll-content">
             <button class="tab-btn active" onclick="setFilter('day', this)">今日</button>
             <button class="tab-btn" onclick="setFilter('week', this)">本週</button>
@@ -355,7 +356,7 @@
         </div>
     </div>
     
-    <!-- NEW: 自定義日期區間輸入 --><div id="customDateFilter" class="card p-3 mb-4 hidden border-blue-500/30">
+    <div id="customDateFilter" class="card p-3 mb-4 hidden border-blue-500/30">
         <h3 class="text-xs font-bold text-blue-400 mb-2 uppercase">自定義區間篩選</h3>
         <div class="flex gap-2 items-center">
             <input type="date" id="filterStart" class="input-field text-sm py-1" onchange="applyCustomFilter()" />
@@ -364,7 +365,7 @@
         </div>
     </div>
 
-    <!-- 4. 進階圖表區 --><div id="chartsPanel" class="hidden card mb-4 border border-green-500/30">
+    <div id="chartsPanel" class="hidden card mb-4 border border-green-500/30">
         <div class="flex justify-between items-center mb-3">
             <h4 class="text-sm font-bold text-white">📊 數據分析中心</h4>
             <div class="flex bg-[#1a1c23] rounded-lg p-1">
@@ -373,7 +374,7 @@
             </div>
         </div>
 
-        <!-- 進階控制器 --><div class="bg-[#1a1c23] p-2 rounded-lg mb-3">
+        <div class="bg-[#1a1c23] p-2 rounded-lg mb-3">
             <div class="flex gap-2 mb-2">
                 <input type="date" id="chartStart" class="input-field text-xs py-1" onchange="updateChart()" />
                 <span class="text-gray-500 self-center">~</span>
@@ -389,24 +390,41 @@
             </div>
         </div>
 
-        <!-- 圖表容器 (固定高度) --><div style="position: relative; height: 300px; width: 100%;">
+        <div style="position: relative; height: 300px; width: 100%;">
             <canvas id="mainChart"></canvas>
         </div>
     </div>
 
-    <!-- 5. 歷史列表 --><div class="mb-8">
+    <div class="mb-8">
         <h3 class="text-xs font-bold text-gray-500 mb-2 uppercase pl-1">區間明細</h3>
         <div id="historyList" class="rounded-xl overflow-hidden border border-[#2a2d36]"></div>
     </div>
 
-    <!-- 6. 版權 Footer (V1.2.6) --><div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.6</div>
+    <div class="footer-credit">
+        <div>UberEat 外送薪資計算器 V1.2.7 (雲端同步版)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
 
 <script>
-// === 變數與初始化 ===
+// === Firebase 配置與初始化 (請替換為您的金鑰！) ===
+const firebaseConfig = {
+    apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // <-- 替換為您的 API Key
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID", // <-- 替換為您的 Project ID
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// 初始化 Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+let currentUserId = null; // 用來存儲當前登入用戶的 ID
+let allHistoryRecords = []; // 雲端資料的本地快取
+
+// === 變數與初始化 (已更新為支援 Firebase) ===
 const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
 let globalOilPrice = 30.0;
 let currentFilter = 'day';
@@ -414,21 +432,39 @@ let chartInstance = null;
 let chartType = 'bar'; 
 
 window.onload = async () => {
-    resetEditor();
-    loadSettings();
-    
-    const today = getLocalDateString();
-    
-    // 初始化自定義篩選器日期為今天
-    document.getElementById('filterStart').value = today;
-    document.getElementById('filterEnd').value = today;
+    // 檢查是否有現有登入狀態
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            currentUserId = user.uid;
+            document.getElementById('authStatus').innerText = `當前狀態：已登入 (Email: ${user.email} | UID: ${currentUserId.substring(0, 6)}...)`;
+            document.getElementById('btnLogout').classList.remove('hidden');
+            // 登入成功後，載入雲端歷史資料
+            await fetchHistoryFromFirebase();
+        } else {
+            currentUserId = null;
+            document.getElementById('authStatus').innerText = `當前狀態：未登入，請登入或註冊以同步資料。`;
+            document.getElementById('btnLogout').classList.add('hidden');
+            allHistoryRecords = []; // 清除本地快取
+        }
+        
+        // 確保所有設定都載入
+        resetEditor();
+        loadSettings();
+        
+        const today = getLocalDateString();
+        
+        // 初始化日期設定
+        document.getElementById('filterStart').value = today;
+        document.getElementById('filterEnd').value = today;
+        const now = new Date();
+        document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
+        document.getElementById('chartEnd').value = today;
 
-    // 初始化圖表日期範圍
-    const now = new Date();
-    document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
-    document.getElementById('chartEnd').value = today;
-
-    refreshDashboard();
+        // 更新儀表板
+        refreshDashboard();
+    });
+    
+    // 獲取油價 (不依賴登入狀態)
     await fetchOilPrice();
 };
 
@@ -437,7 +473,61 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === 設定處理 ===
+// === 身份驗證處理 (Email/密碼) ===
+async function handleAuth(isRegister) {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    const authStatus = document.getElementById('authStatus');
+
+    if (!email || password.length < 6) {
+        authStatus.innerText = '錯誤: 請輸入有效的 Email 和至少 6 位數的密碼。';
+        return;
+    }
+
+    authStatus.innerText = isRegister ? '正在註冊...' : '正在登入...';
+    try {
+        if (isRegister) {
+            await auth.createUserWithEmailAndPassword(email, password);
+            authStatus.innerText = '註冊成功！您現在已登入並啟用雲端同步。';
+        } else {
+            await auth.signInWithEmailAndPassword(email, password);
+            authStatus.innerText = '登入成功！資料將自動同步。';
+        }
+        // onAuthStateChanged 會自動處理後續的資料載入和 UI 更新
+    } catch (error) {
+        let message = '';
+        switch(error.code) {
+            case 'auth/email-already-in-use':
+                message = '此 Email 已被註冊。請直接登入。';
+                break;
+            case 'auth/invalid-email':
+                message = 'Email 格式無效。';
+                break;
+            case 'auth/wrong-password':
+            case 'auth/user-not-found':
+                message = '登入失敗：Email 或密碼錯誤。';
+                break;
+            default:
+                message = `發生錯誤: ${error.message}`;
+        }
+        authStatus.innerText = `錯誤: ${message}`;
+        console.error("Auth Error:", error);
+    }
+}
+
+async function handleLogout() {
+    try {
+        await auth.signOut();
+        document.getElementById('authStatus').innerText = '您已登出。';
+        allHistoryRecords = []; // 清空本地資料
+        refreshDashboard(); // 更新儀表板為空
+    } catch (e) {
+        console.error("登出失敗:", e);
+    }
+}
+
+
+// === 設定處理 (保持使用 localStorage 儲存本地設定) ===
 function loadSettings() {
     document.getElementById('settingFuelRate').value = localStorage.getItem('fuelRate') || 12;
     document.getElementById('settingMaint').value = localStorage.getItem('maintCost') || 1.5;
@@ -456,7 +546,6 @@ function toggleSettings() { document.getElementById('settingsPanel').classList.t
 async function fetchOilPrice() {
     try {
         const type = document.getElementById('oilType').value;
-        // 使用 try-catch 確保即使 API 失敗也能使用預設值
         const res = await fetch(workerAPI);
         const data = await res.json();
         if(data[type]) {
@@ -470,11 +559,74 @@ async function fetchOilPrice() {
     }
 }
 
-// === 歷史資料 CRUD ===
-function getHistory() { try { return JSON.parse(localStorage.getItem('uber_ray_v1') || '[]'); } catch { return []; } }
-function saveToHistory(data) { localStorage.setItem('uber_ray_v1', JSON.stringify(data)); }
+// === 歷史資料 CRUD (更新為使用 Firebase Firestore) ===
 
-function saveRecord() {
+// 從 Firebase 載入資料並更新本地快取
+async function fetchHistoryFromFirebase() {
+    if (!currentUserId) return [];
+    try {
+        const path = `uberRecords/${currentUserId}/records`;
+        const snapshot = await db.collection(path).get();
+        
+        allHistoryRecords = snapshot.docs.map(doc => {
+            const data = doc.data();
+            // 將 Firestore 的文件 ID 存為 firebaseId，同時保留本地的 id (時間戳)
+            return { firebaseId: doc.id, id: data.id || Date.now(), ...data }; 
+        });
+        
+        // 依日期排序 (最新的在前)
+        allHistoryRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        console.log(`成功從 Firebase 載入 ${allHistoryRecords.length} 筆紀錄。`);
+        return allHistoryRecords;
+
+    } catch (e) {
+        console.error("從 Firebase 讀取歷史資料失敗:", e);
+        return [];
+    }
+}
+
+// 獲取歷史紀錄 (從本地快取)
+function getHistory() { 
+    return allHistoryRecords; 
+}
+
+
+// Firebase 的儲存/更新函數
+async function saveRecordToFirebase(record) {
+    if (!currentUserId) {
+        console.error('未登入，無法儲存到雲端。');
+        alert('請先登入帳號才能儲存資料到雲端！');
+        return false;
+    }
+    
+    // 移除用於編輯器追蹤的屬性，但保留 id
+    const { firebaseId, id, ...dataToSave } = record; 
+    
+    try {
+        const recordRef = db.collection(`uberRecords/${currentUserId}/records`);
+        if (firebaseId) {
+            // 更新現有紀錄
+            await recordRef.doc(firebaseId).update({...dataToSave, id: id});
+            console.log("Firebase 紀錄更新成功:", firebaseId);
+        } else {
+            // 新增紀錄，需要給予本地的 id 屬性
+            const docRef = await recordRef.add({...dataToSave, id: id}); 
+            console.log("Firebase 紀錄新增成功. ID:", docRef.id);
+        }
+        
+        // 重新載入並更新儀表板 (確保數據一致性)
+        await fetchHistoryFromFirebase();
+        return true;
+
+    } catch (e) {
+        console.error("儲存/更新到 Firebase 失敗:", e);
+        alert('儲存到雲端失敗，請檢查網路或 Firebase 設定。');
+        return false;
+    }
+}
+
+async function saveRecord() {
     const date = document.getElementById('inputDate').value;
     const income = parseFloat(document.getElementById('inputIncome').value);
     const orders = parseFloat(document.getElementById('inputOrders').value);
@@ -484,37 +636,42 @@ function saveRecord() {
     const editId = document.getElementById('editId').value;
     const lockedOil = document.getElementById('recordOilPrice').value;
 
-    if(!date) return console.error('請選日期'); // 用 console.error 替代 alert
-    if(isNaN(income) || isNaN(km)) return console.error('請填寫金額與里程'); // 用 console.error 替代 alert
+    if(!date) return console.error('請選日期');
+    if(isNaN(income) || isNaN(km)) return console.error('請填寫金額與里程');
 
     const finalOil = (editId && lockedOil) ? parseFloat(lockedOil) : globalOilPrice;
-    const rec = {
-        id: editId ? parseInt(editId) : Date.now(),
+    
+    let rec = {
+        // 使用時間戳記作為本地的 'id'，用於本地追蹤
+        id: editId ? parseInt(editId) : Date.now(), 
         date: date, income: income, orders: orders||0, km: km, hours: hr+(min/60),
         oilPrice: finalOil,
         fuelRate: parseFloat(document.getElementById('settingFuelRate').value),
         maintCost: parseFloat(document.getElementById('settingMaint').value)
     };
 
-    const list = getHistory();
-    if(editId) {
-        const idx = list.findIndex(r => r.id == editId);
-        if(idx!==-1) list[idx] = rec;
-    } else {
-        list.push(rec);
-        // 如果是新增今日紀錄，自動切換到今日篩選
-        if(date === getLocalDateString()) { currentFilter = 'day'; updateTabs(); }
+    // 如果是編輯模式，則需要帶上 Firebase 的文件 ID
+    if (editId) {
+        const existingRec = getHistory().find(r => r.id == editId);
+        if (existingRec && existingRec.firebaseId) {
+            rec.firebaseId = existingRec.firebaseId; 
+        }
     }
-    list.sort((a,b) => new Date(b.date)-new Date(a.date));
-    saveToHistory(list);
-    resetEditor();
-    refreshDashboard();
+    
+    const success = await saveRecordToFirebase(rec);
+
+    if (success) {
+        // 如果是新增今日紀錄，自動切換到今日篩選
+        if(!editId && date === getLocalDateString()) { currentFilter = 'day'; updateTabs(); }
+        resetEditor();
+        refreshDashboard();
+    }
 }
 
-function loadRecordToEditor(id) {
-    const r = getHistory().find(i => i.id === id);
+function loadRecordToEditor(localId) {
+    const r = getHistory().find(i => i.id === localId);
     if(!r) return;
-    document.getElementById('editId').value = r.id;
+    document.getElementById('editId').value = r.id; // 使用本地 ID 進行編輯器追蹤
     document.getElementById('recordOilPrice').value = r.oilPrice || globalOilPrice;
     document.getElementById('inputDate').value = r.date;
     document.getElementById('inputIncome').value = r.income;
@@ -536,24 +693,33 @@ function loadRecordToEditor(id) {
     document.getElementById('editorCard').scrollIntoView({behavior:'smooth'});
 }
 
-function deleteCurrentRecord() {
-    // ⚠️ 根據平台規範，不使用 window.confirm/alert。
-    // 點擊刪除按鈕後，直接執行刪除操作。
-    console.warn('執行刪除操作。注意：在編輯器中點擊刪除按鈕會立即執行，無二次確認視窗。'); 
-    
-    const id = document.getElementById('editId').value;
-    if (!id) return; // 確保有ID才刪除
-    
-    const list = getHistory();
-    const originalLength = list.length;
-    
-    const newList = list.filter(r => r.id != id);
-    if(newList.length === originalLength) {
-        console.error(`刪除失敗：找不到 ID 為 ${id} 的紀錄。`);
+async function deleteCurrentRecord() {
+    if (!currentUserId) {
+        console.error('未登入，無法刪除雲端資料。');
+        alert('請先登入帳號才能刪除資料！');
         return;
     }
+    
+    const localId = document.getElementById('editId').value;
+    if (!localId) return; 
+    
+    const recordToDelete = getHistory().find(r => r.id == localId);
+    if (!recordToDelete || !recordToDelete.firebaseId) {
+        console.error(`刪除失敗：找不到 ID 為 ${localId} 的紀錄或 Firebase ID。`);
+        return;
+    }
+    
+    try {
+        await db.collection(`uberRecords/${currentUserId}/records`).doc(recordToDelete.firebaseId).delete();
+        console.log("Firebase 紀錄刪除成功:", recordToDelete.firebaseId);
+        
+        await fetchHistoryFromFirebase(); // 重新載入快取
+        
+    } catch (e) {
+        console.error("從 Firebase 刪除失敗:", e);
+        alert('從雲端刪除失敗，請檢查網路。');
+    }
 
-    saveToHistory(newList);
     resetEditor();
     refreshDashboard();
 }
@@ -575,7 +741,7 @@ function resetEditor() {
     document.getElementById('btnCancel').classList.add('hidden');
 }
 
-// === 篩選與儀表板更新 ===
+// === 篩選與儀表板更新 (保持不變，因為它依賴 getHistory()，而 getHistory() 現在讀取雲端快取) ===
 function updateTabs(btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -729,23 +895,19 @@ function refreshDashboard() {
     // 更新歷史列表 - V1.2.6 樣式調整 (全左對齊，只有淨利靠右)
     const listHtml = filtered.map(r => `
         <div class="history-item" onclick="loadRecordToEditor(${r.id})">
-            <!-- TOP ROW: 關鍵財務數據 (營收, 成本, 淨利) -->
             <div class="history-top-row">
-                <!-- Col 1: 日期與營收 (左對齊) -->
                 <div class="history-stat-group w-1/3">
                     <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
                     <div class="history-main-value text-amber-soft">$${formatCurrency(r.income)}</div>
                     <div class="stat-label-small text-amber-soft">總營收</div>
                 </div>
                 
-                <!-- Col 2: 總成本 (左對齊) -->
                 <div class="history-stat-group w-1/3">
                     <div class="text-sm font-semibold text-red-300">成本</div>
                     <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
                     <div class="stat-label-small text-red-500">油耗 + 耗材</div>
                 </div>
 
-                <!-- Col 3: 淨利 (右對齊) -->
                 <div class="history-stat-group right w-1/3">
                     <div class="text-sm font-semibold text-green-300">淨利</div>
                     <div class="history-main-value text-green-400">$${formatCurrency(r.netProfit)}</div>
@@ -753,28 +915,22 @@ function refreshDashboard() {
                 </div>
             </div>
 
-            <!-- BOTTOM ROW: 次要數據與平均值 (使用 justify-between 確保標籤與數值各自對齊) -->
             <div class="history-sub-stats">
-                <!-- Block 1: Trip Details (w-full) -->
                 <div class="flex flex-col gap-1 w-full">
-                    <!-- 左側：單數/里程 -->
                     <div class="flex justify-between items-center">
                         <span class="stat-label-small text-gray-400">單數/里程</span>
                         <span class="text-white">${r.orders} 單 / ${r.km.toFixed(1)} KM</span>
                     </div>
-                    <!-- 左側：工時 -->
                     <div class="flex justify-between items-center">
                         <span class="stat-label-small text-gray-400">工時</span>
                         <span class="text-white">${formatDuration(r.hours)}</span>
                     </div>
-                    <!-- 左側：油/耗材成本 -->
                     <div class="flex justify-between items-center">
                         <span class="stat-label-small text-red-500">油/耗材成本</span>
                         <span class="text-red-400">$${formatCurrency(r.oilCost)} / $${formatCurrency(r.maintenanceCost)}</span>
                     </div>
                 </div>
                 
-                <!-- Block 2: Performance Summary (w-full, border-top) -->
                 <div class="w-full mt-3 pt-3 border-t border-gray-800 flex flex-col gap-1">
                      <div class="flex justify-between items-center">
                         <span class="stat-label-small text-green-500">已扣成本時薪</span>
@@ -795,7 +951,7 @@ function refreshDashboard() {
     
     document.getElementById('historyList').innerHTML = listHtml || `
         <div class="p-5 text-center text-gray-500 text-sm">
-            --- 此區間暫無紀錄 ---
+            --- ${currentUserId ? '此區間暫無紀錄' : '請先登入帳號以載入雲端資料'} ---
         </div>
     `;
     
