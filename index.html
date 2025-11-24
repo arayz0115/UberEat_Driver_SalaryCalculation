@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.9</title>
+<title>UberEat Salary Calculator V1.2.10</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.9 (UI Optimized)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置同步，優化儀表板數據對齊。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.10 (Alignment Refined)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置同步，優化儀表板與列表排版。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.9" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.10" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -95,7 +95,7 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 V1.2.6 樣式 (對齊優化) === */
+    /* === 歷史列表 V1.2.10 樣式修正 (對齊優化) === */
     .history-item {
         background-color: #111216; 
         border-bottom: 1px solid #222; 
@@ -118,17 +118,15 @@
     .history-stat-group {
         display: flex;
         flex-direction: column;
-        /* V1.2.6: 所有欄位預設靠左對齊 */
-        align-items: flex-start;
+        align-items: flex-start; /* 預設靠左對齊 */
         text-align: left;
     }
+    /* === 修正目標一：新增 Center 類別，用於成本欄位置中 === */
     .history-stat-group.center {
-        /* V1.2.6: 成本置中 */
-        align-items: center;
+        align-items: center; 
         text-align: center;
     }
     .history-stat-group.right {
-        /* V1.2.6: 淨利靠右 */
         align-items: flex-end;
         text-align: right;
     }
@@ -146,13 +144,21 @@
         margin-top: 2px;
         line-height: 1.2;
     }
-    /* FIX: 移除 history-sub-stats 的 flex 屬性，讓其子元素 (兩個 w-full 的 div) 垂直堆疊，修正排版炸開的問題。 */
+    
+    /* === 修正目標二：歷史列表底部區塊移除多餘線條，改為間距分隔 === */
     .history-sub-stats {
         width: 100%;
-        padding-top: 0.75rem;
-        border-top: 1px solid #222;
+        padding-top: 0.75rem; 
+        /* 移除 border-top，改在上方手動加入分隔線或僅靠 margin-top 區隔 */
         font-size: 0.8rem;
         color: #9ca3af;
+        margin-top: 0.75rem; /* 增加頂部間距，取代線條 */
+    }
+    /* 內部 Performance Summary 區塊也移除 border-top */
+    .history-sub-stats .performance-summary {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #222; /* 仍然保留內部這條線，讓資訊有區隔 */
     }
 
 
@@ -179,7 +185,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.9 UI Optimized</div>
+                <div class="text-[10px] text-gray-500">V1.2.10 Alignment Refined</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -414,7 +420,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.9 (UI Optimized)</div>
+        <div>UberEat 外送薪資計算器 V1.2.10 (Alignment Refined)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -937,7 +943,7 @@ function refreshDashboard() {
     document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
     document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
 
-    // 更新歷史列表 - V1.2.6 樣式調整 (全左對齊，只有淨利靠右)
+    // 更新歷史列表 - V1.2.10 樣式調整 (成本置中，減少線條干擾)
     const listHtml = filtered.map(r => `
         <div class="history-item" onclick="loadRecordToEditor(${r.id})">
             <div class="history-top-row">
@@ -947,7 +953,7 @@ function refreshDashboard() {
                     <div class="stat-label-small text-amber-soft">總營收</div>
                 </div>
                 
-                <div class="history-stat-group w-1/3">
+                <div class="history-stat-group center w-1/3">
                     <div class="text-sm font-semibold text-red-300">成本</div>
                     <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
                     <div class="stat-label-small text-red-500">油耗 + 耗材</div>
@@ -976,7 +982,7 @@ function refreshDashboard() {
                     </div>
                 </div>
                 
-                <div class="w-full mt-3 pt-3 border-t border-gray-800 flex flex-col gap-1">
+                <div class="w-full performance-summary flex flex-col gap-1">
                      <div class="flex justify-between items-center">
                         <span class="stat-label-small text-green-500">已扣成本時薪</span>
                         <span class="text-green-400 font-bold">$${formatCurrency(r.netHourly)}</span>
