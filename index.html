@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat 外送薪資計算器 V1.2.2</title>
+<title>UberEat Salary Calculator V1.2.6</title>
 
 <!-- === App 化專用 Meta 設定 === --><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing (V1.2.2) === --><meta property="og:title" content="UberEat 外送薪資計算器 V1.2.2" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援多維度圖表分析，是您優化跑單效率的專業工具。" />
+<!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing (V1.2.6) === --><meta property="og:title" content="UberEat 外送薪資計算器 V1.2.6" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援每單平均收益分析，優化跑單效率。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.2" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.6" />
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -91,7 +91,7 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 V1.2.2 調整: 重新設計三欄式佈局，資訊更清晰 === */
+    /* === 歷史列表 V1.2.6 樣式 (對齊優化) === */
     .history-item {
         background-color: #111216; 
         border-bottom: 1px solid #222; 
@@ -99,26 +99,59 @@
         cursor: pointer; 
         transition: background 0.2s;
         display: flex;
-        align-items: center; 
+        flex-direction: column; 
     }
     .history-item:active { background-color: #1c1e24; }
     
-    .history-col {
+    .history-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        margin-bottom: 0.5rem; 
+    }
+    
+    .history-stat-group {
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        /* V1.2.6: 所有欄位預設靠左對齊 */
         align-items: flex-start;
-        padding: 0 0.5rem;
+        text-align: left;
     }
-    .history-col-right {
+    .history-stat-group.center {
+        /* V1.2.6: 成本置中 */
+        align-items: center;
+        text-align: center;
+    }
+    .history-stat-group.right {
+        /* V1.2.6: 淨利靠右 */
         align-items: flex-end;
         text-align: right;
     }
-    .stat-label-small {
-        font-size: 0.7rem; /* 比 0.75rem 更小 */
-        color: #6b7280; 
+
+    /* 確保關鍵數字頂部對齊 */
+    .history-main-value {
+        font-size: 1.5rem; 
+        font-weight: bold;
+        line-height: 1.1;
         margin-top: 2px;
     }
+    .stat-label-small {
+        font-size: 0.7rem; 
+        color: #6b7280; 
+        margin-top: 2px;
+        line-height: 1.2;
+    }
+    .history-sub-stats {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid #222;
+        font-size: 0.8rem;
+        color: #9ca3af;
+    }
+
 
     /* === 字體與標籤 === */
     .stat-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -138,12 +171,12 @@
 </head>
 <body class="max-w-md mx-auto p-3">
 
-    <!-- 標題 (V1.2.2) --><div class="flex justify-between items-center mb-4 px-1 pt-2">
+    <!-- 標題 (V1.2.6) --><div class="flex justify-between items-center mb-4 px-1 pt-2">
         <div class="flex items-center gap-2">
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.2 Layout Optimized</div>
+                <div class="text-[10px] text-gray-500">V1.2.6 Alignment for Reading Comfort</div>
             </div>
         </div>
         <button onclick="toggleSettings()" class="p-2 bg-[#1a1c23] rounded-full text-gray-400 border border-[#333] text-xs active:bg-gray-800">
@@ -181,55 +214,86 @@
         <button onclick="saveSettings()" class="btn btn-primary text-sm">儲存設定</button>
     </div>
 
-    <!-- 1. 儀表板 (Dashboard) --><div class="card bg-gradient-to-br from-[#111216] to-[#064e3b20] border-green-500/30 p-5 mb-4">
-        <!-- TOP ROW: 營收 / 成本 / 淨利 --><div class="grid grid-cols-3 gap-2 items-start mb-4">
-            <div>
+    <!-- 1. 儀表板 (Dashboard) -->
+    <!-- V1.2.6 FIX: 調整為閱讀舒適導向的對齊方式 -->
+    <div class="card bg-gradient-to-br from-[#111216] to-[#064e3b20] border-green-500/30 p-5 mb-4">
+        
+        <!-- 佈局容器：使用 grid-cols-3 -->
+        <div class="grid grid-cols-3 gap-2">
+
+            <!-- Row 1: 營收 / 成本 / 淨利 (全部靠左對齊，但給予數字右邊空間) -->
+            <!-- Col 1: 總營收 (左對齊) -->
+            <div class="flex flex-col items-start pb-4">
                 <label class="stat-label text-gray-400">區間總營收</label>
                 <div class="text-3xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
             </div>
-            <div class="text-center">
+            <!-- Col 2: 總成本 (左對齊) -->
+            <div class="flex flex-col items-start pb-4"> 
                 <label class="stat-label text-red-400">總成本</label>
-                <div class="text-3xl font-bold text-red-400 mt-1">$<span id="dashTotalCost">0</span></div> 
+                <div class="text-3xl font-bold text-red-400 mt-1 tracking-tight">$<span id="dashTotalCost">0</span></div> 
             </div>
-            <div class="text-right">
+            <!-- Col 3: 總淨利 (左對齊) -->
+            <div class="flex flex-col items-start pb-4">
                 <label class="stat-label text-green-400">總淨利</label>
-                <div class="text-3xl font-bold text-green-400 mt-1">$<span id="dashNetProfit">0</span></div>
+                <div class="text-3xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetProfit">0</span></div>
             </div>
-        </div>
-        
-        <!-- Bottom Row: 成本細項與工時數據 --><div class="border-t border-white/10 pt-4">
-            <!-- Row 1: Cost Data & Summary --><div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-4">
-                <div>
-                    <label class="stat-label text-red-400">油耗成本</label>
-                    <div class="text-lg font-bold text-red-400">$<span id="dashOilCost">0</span></div>
+
+
+            <!-- 分隔線 -->
+            <div class="col-span-3 border-t border-white/10 pt-4"></div>
+
+            <!-- Row 2: 油耗成本 / 耗材成本 / 總單數 & 總工時 -->
+            <!-- 採用 flex-col items-start 搭配 text-right 讓數字更靠近右邊 -->
+            <div class="flex flex-col items-start pt-2">
+                <label class="stat-label text-red-400">油耗成本</label>
+                <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashOilCost">0</span></div>
+            </div>
+            <div class="flex flex-col items-start pt-2">
+                <label class="stat-label text-red-400">耗材成本</label>
+                <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashMaintCost">0</span></div>
+            </div>
+            <!-- 第三欄合併顯示單數和工時 (左對齊) -->
+            <div class="flex flex-col items-start pt-2">
+                <label class="stat-label text-gray-400">總單數 / 總工時</label>
+                <div class="text-lg font-bold text-white mt-1">
+                    <span id="dashOrders">0</span>單 | 
+                    <span id="dashHours">0</span><span class="text-xs text-gray-500">h</span> <span id="dashMinutes">0</span><span class="text-xs text-gray-500">m</span>
                 </div>
-                <div>
-                    <label class="stat-label text-red-400">耗材成本</label>
-                    <div class="text-lg font-bold text-red-400">$<span id="dashMaintCost">0</span></div>
+            </div>
+            
+            
+            <!-- Row 3: 未扣成本時薪 / 已扣成本時薪 (現在都靠左對齊) -->
+            <div class="col-span-3 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
+                <!-- Col 1: 未扣成本實薪 (左對齊) -->
+                <div class="flex flex-col items-start">
+                    <label class="stat-label text-amber-soft">未扣成本實薪</label>
+                    <div class="text-2xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashGrossHourly">0</span></div>
                 </div>
-                <div>
-                    <label class="stat-label text-gray-400">總單數</label>
-                    <div class="text-lg font-bold text-white"><span id="dashOrders">0</span></div>
-                </div>
-                <div>
-                    <label class="stat-label text-gray-400">總工時</label>
-                    <div class="text-lg font-bold text-white"><span id="dashHours">0</span><span class="text-xs text-gray-500">h</span> <span id="dashMinutes">0</span><span class="text-xs text-gray-500">m</span></div>
+                <!-- Col 2: 已扣成本實薪 (左對齊) -->
+                <div class="flex flex-col items-start">
+                    <label class="stat-label text-green-400">已扣成本實薪</label>
+                    <div class="text-2xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetHourly">0</span></div>
                 </div>
             </div>
 
-            <!-- Row 2: Hourly Rate Data --><div class="grid grid-cols-2 gap-2 text-center border-t border-white/10 pt-4">
-                <div>
-                    <label class="stat-label text-amber-soft">未扣成本實薪</label>
-                    <div class="text-2xl font-bold text-amber-soft">$<span id="dashGrossHourly">0</span></div>
+            <!-- Row 4: 每單平均營收 / 每單平均淨利 (現在都靠左對齊) -->
+            <div class="col-span-3 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
+                <!-- Col 1: 每單平均營收 (左對齊) -->
+                <div class="flex flex-col items-start">
+                    <label class="stat-label text-amber-soft">每單平均營收</label>
+                    <div class="text-xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashGrossPerOrder">0</span></div>
                 </div>
-                <div>
-                    <label class="stat-label text-green-400">已扣成本實薪</label>
-                    <div class="text-2xl font-bold text-green-400">$<span id="dashNetHourly">0</span></div>
+                <!-- Col 2: 每單平均淨利 (左對齊) -->
+                <div class="flex flex-col items-start">
+                    <label class="stat-label text-green-400">每單平均淨利</label>
+                    <div class="text-xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetPerOrder">0</span></div>
                 </div>
             </div>
+
+
         </div>
     </div>
-
+    
     <!-- 2. 編輯控制台 (修正日期佈局) --><div class="card card-glow mb-4" id="editorCard">
         <div class="flex justify-between items-center mb-3 pb-2 border-b border-gray-800">
             <h3 class="font-bold text-white flex items-center gap-2 text-sm">
@@ -334,8 +398,8 @@
         <div id="historyList" class="rounded-xl overflow-hidden border border-[#2a2d36]"></div>
     </div>
 
-    <!-- 6. 版權 Footer (V1.2.2) --><div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.2</div>
+    <!-- 6. 版權 Footer (V1.2.6) --><div class="footer-credit">
+        <div>UberEat 外送薪資計算器 V1.2.6</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -571,7 +635,7 @@ function getFilteredData() {
 }
 
 function calculateRecordStats(record) {
-    const { income, km, hours, oilPrice, fuelRate, maintCost } = record;
+    const { income, orders, km, hours, oilPrice, fuelRate, maintCost } = record;
     
     // 1. 成本計算
     const oilCost = (km / fuelRate) * oilPrice;
@@ -585,6 +649,11 @@ function calculateRecordStats(record) {
     const grossHourly = hours > 0 ? income / hours : 0;
     const netHourly = hours > 0 ? netProfit / hours : 0;
 
+    // 4. 單價計算 (V1.2.3 新增)
+    const grossPerOrder = orders > 0 ? income / orders : 0;
+    const netPerOrder = orders > 0 ? netProfit / orders : 0;
+
+
     return {
         ...record,
         oilCost: oilCost,
@@ -592,7 +661,9 @@ function calculateRecordStats(record) {
         totalCost: totalCost,
         netProfit: netProfit,
         grossHourly: grossHourly,
-        netHourly: netHourly
+        netHourly: netHourly,
+        grossPerOrder: grossPerOrder, // V1.2.3
+        netPerOrder: netPerOrder      // V1.2.3
     };
 }
 
@@ -619,10 +690,13 @@ function refreshDashboard() {
         totalHours: 0
     });
     
-    // 計算平均時薪
+    // 計算平均時薪與單價
     const totalMinutes = totals.totalHours * 60;
     const totalGrossHourly = totals.totalHours > 0 ? totals.totalIncome / totals.totalHours : 0;
     const totalNetHourly = totals.totalHours > 0 ? totals.netProfit / totals.totalHours : 0;
+    const totalGrossPerOrder = totals.totalOrders > 0 ? totals.totalIncome / totals.totalOrders : 0; // V1.2.3
+    const totalNetPerOrder = totals.totalOrders > 0 ? totals.netProfit / totals.totalOrders : 0;     // V1.2.3
+
 
     // 更新儀表板
     document.getElementById('dashTotalIncome').innerText = formatCurrency(totals.totalIncome);
@@ -635,31 +709,71 @@ function refreshDashboard() {
     document.getElementById('dashMinutes').innerText = Math.round((totals.totalHours - Math.floor(totals.totalHours)) * 60);
     document.getElementById('dashGrossHourly').innerText = formatCurrency(totalGrossHourly);
     document.getElementById('dashNetHourly').innerText = formatCurrency(totalNetHourly);
+    document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder); // V1.2.3
+    document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);     // V1.2.3
 
-    // 更新歷史列表 - V1.2.2 樣式調整
+    // 更新歷史列表 - V1.2.6 樣式調整 (全左對齊，只有淨利靠右)
     const listHtml = filtered.map(r => `
-        <div class="history-item flex justify-between gap-1" onclick="loadRecordToEditor(${r.id})">
-            <!-- Col 1: 日期與營收 (黃色) -->
-            <div class="history-col w-[30%]">
-                <div class="font-semibold text-white text-base">${r.date.slice(5)}</div>
-                <div class="font-bold text-amber-soft text-xl mt-1">$${formatCurrency(r.income)}</div>
-                <div class="stat-label-small text-amber-soft">營收</div>
-            </div>
-            
-            <!-- Col 2: 中間數據 (里程, 單數, 工時, 成本) -->
-            <div class="history-col w-[35%] text-left">
-                <div class="text-sm text-gray-400">${r.km.toFixed(1)} KM / ${r.orders} 單</div>
-                <div class="text-xs text-gray-500 mt-1">${formatDuration(r.hours)}</div>
-                <div class="font-semibold text-red-400 text-base mt-2">總成本: $${formatCurrency(r.totalCost)}</div>
-                <div class="text-xs text-gray-500 mt-1">油: $${formatCurrency(r.oilCost)} | 耗: $${formatCurrency(r.maintenanceCost)}</div>
+        <div class="history-item" onclick="loadRecordToEditor(${r.id})">
+            <!-- TOP ROW: 關鍵財務數據 (營收, 成本, 淨利) -->
+            <div class="history-top-row">
+                <!-- Col 1: 日期與營收 (左對齊) -->
+                <div class="history-stat-group w-1/3">
+                    <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
+                    <div class="history-main-value text-amber-soft">$${formatCurrency(r.income)}</div>
+                    <div class="stat-label-small text-amber-soft">總營收</div>
+                </div>
+                
+                <!-- Col 2: 總成本 (左對齊) -->
+                <div class="history-stat-group w-1/3">
+                    <div class="text-sm font-semibold text-red-300">成本</div>
+                    <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
+                    <div class="stat-label-small text-red-500">油耗 + 耗材</div>
+                </div>
+
+                <!-- Col 3: 淨利 (右對齊) -->
+                <div class="history-stat-group right w-1/3">
+                    <div class="text-sm font-semibold text-green-300">淨利</div>
+                    <div class="history-main-value text-green-400">$${formatCurrency(r.netProfit)}</div>
+                    <div class="stat-label-small text-green-500">實賺</div>
+                </div>
             </div>
 
-            <!-- Col 3: 淨利與淨時薪 (綠色) -->
-            <div class="history-col history-col-right w-[35%]">
-                <div class="font-bold text-green-400 text-xl">$${formatCurrency(r.netProfit)}</div>
-                <div class="stat-label-small text-green-500">淨利</div>
-                <div class="text-xs text-green-600 mt-2">時薪 $${formatCurrency(r.netHourly)}</div>
-                <div class="stat-label-small mt-1"></div>
+            <!-- BOTTOM ROW: 次要數據與平均值 (使用 justify-between 確保標籤與數值各自對齊) -->
+            <div class="history-sub-stats">
+                <div class="flex flex-col gap-1 w-full">
+                    <!-- 左側：單數/里程 -->
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-gray-400">單數/里程</span>
+                        <span class="text-white">${r.orders} 單 / ${r.km.toFixed(1)} KM</span>
+                    </div>
+                    <!-- 左側：工時 -->
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-gray-400">工時</span>
+                        <span class="text-white">${formatDuration(r.hours)}</span>
+                    </div>
+                    <!-- 左側：油/耗材成本 -->
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-red-500">油/耗材成本</span>
+                        <span class="text-red-400">$${formatCurrency(r.oilCost)} / $${formatCurrency(r.maintenanceCost)}</span>
+                    </div>
+                </div>
+                
+                <!-- 底部關鍵數據放在單獨一行，確保左側標籤與右側數值對齊 -->
+                <div class="w-full mt-3 pt-3 border-t border-gray-800 flex flex-col gap-1">
+                     <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-green-500">已扣成本時薪</span>
+                        <span class="text-green-400 font-bold">$${formatCurrency(r.netHourly)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-amber-soft">每單平均營收</span>
+                        <span class="text-amber-soft">$${formatCurrency(r.grossPerOrder)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-green-500">每單平均淨利</span>
+                        <span class="text-green-400 font-bold">$${formatCurrency(r.netPerOrder)}</span>
+                    </div>
+                </div>
             </div>
         </div>
     `).join('');
