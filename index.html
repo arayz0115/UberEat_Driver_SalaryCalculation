@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.11</title>
+<title>UberEat Salary Calculator V1.2.12</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.11 (Symmetry Refined)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置同步，優化儀表板與列表排版，修正儀表板高度不對稱問題。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.12 (Realtime Sync)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置**實時同步**，解決跨設備資料不一致問題。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.11" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.12" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -184,7 +184,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.11 Symmetry Refined</div>
+                <div class="text-[10px] text-gray-500">V1.2.12 Realtime Sync</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -419,7 +419,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.11 (Symmetry Refined)</div>
+        <div>UberEat 外送薪資計算器 V1.2.12 (Realtime Sync)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -437,6 +437,7 @@ const firebaseConfig = {
 };
 
 let db; // 全域變數用於 Firestore 存取
+let firebaseUnsubscribe = null; // V1.2.12: 用來儲存實時監聽的取消函式
 
 // 💡 修正：移除多餘的 projectId 檢查，只檢查 SDK 是否載入且 Key 是否存在
 if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
@@ -471,22 +472,32 @@ window.onload = async () => {
     document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
     document.getElementById('chartEnd').value = today;
 
-    // 啟動 Firebase 登入狀態監聽
+    // 啟動 Firebase 登入狀態監聽 (V1.2.12: 替換為實時監聽邏輯)
     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                // 使用者已登入，執行雲端下載
+                // 使用者已登入
                 document.getElementById('authStatusText').innerText = "已登入"; 
                 document.getElementById('userEmailDisplay').innerText = user.email;
                 document.getElementById('authForm').classList.add('hidden');
                 document.getElementById('userInfo').classList.remove('hidden');
-                syncDataOnLogin(user);
+                
+                // V1.2.12: 啟用實時監聽
+                setupRealtimeListener(user);
+
             } else {
                 // 使用者已登出
                 document.getElementById('authStatusText').innerText = "未登入"; 
                 document.getElementById('authForm').classList.remove('hidden');
                 document.getElementById('userInfo').classList.add('hidden');
-                // 登出後，refreshDashboard() 會顯示本地資料 (如果還有)
+                
+                // V1.2.12: 取消實時監聽 (如果有的話)
+                if (firebaseUnsubscribe) {
+                    firebaseUnsubscribe();
+                    firebaseUnsubscribe = null;
+                }
+                
+                // 登出後，顯示本地資料
                 refreshDashboard(); 
             }
         });
@@ -502,7 +513,66 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === V1.2.8 修正：身份驗證相關函數 (確保 UI 正確更新) ===
+// === V1.2.12: 新增 Firebase 實時監聽功能 (取代 syncDataOnLogin) ===
+
+/**
+ * 啟用 Firestore 上的實時監聽，任何雲端資料的變動都會立即反映到本地。
+ */
+function setupRealtimeListener(user) {
+    if (!user || !db) return;
+    
+    // V1.2.12: 如果已經在監聽，先取消舊的監聽
+    if (firebaseUnsubscribe) {
+        firebaseUnsubscribe();
+        firebaseUnsubscribe = null;
+    }
+
+    const userRef = db.collection('records').doc(user.uid);
+
+    // 設定新的實時監聽
+    firebaseUnsubscribe = userRef.onSnapshot((doc) => {
+        if (doc.exists) {
+            const cloudList = doc.data().data || [];
+            
+            // 檢查雲端資料是否與本地資料不同，避免無限循環或不必要的刷新
+            const currentLocalList = getHistory();
+            
+            if (JSON.stringify(cloudList) !== JSON.stringify(currentLocalList)) {
+                console.log(`[Realtime Sync] 偵測到雲端資料更新，共 ${cloudList.length} 筆。`);
+                
+                // 1. 更新本地儲存 (覆蓋)
+                saveToHistory(cloudList); 
+                
+                // 2. 更新儀表板 UI
+                refreshDashboard(); 
+                
+            } else {
+                // V1.2.12 修正: 即使資料相同，也刷新儀表板以確保 UI 狀態正確
+                console.log('[Realtime Sync] 雲端資料與本地一致，刷新儀表板確保一致性。');
+                refreshDashboard();
+            }
+        } else {
+            // 雲端文件不存在 (可能是新用戶或已清除資料)
+            const localList = getHistory();
+            if (localList.length > 0) {
+                // 雲端無資料，但本地有資料：執行單次上傳 (將本地資料作為雲端初始資料)
+                console.log("雲端文件不存在，但偵測到本地紀錄，執行單次上傳。");
+                uploadHistory(localList, user);
+            } else {
+                console.log("雲端與本地均無紀錄。");
+                refreshDashboard();
+            }
+        }
+    }, (error) => {
+        console.error("[Realtime Listener Error]", error);
+        alert(`實時同步發生錯誤: ${error.message}，請嘗試重新整理。`);
+        // 監聽失敗，至少顯示本地資料
+        refreshDashboard(); 
+    });
+}
+
+
+// === 身份驗證相關函數 (保持不變) ===
 
 function toggleAuthPanel() { document.getElementById('authPanel').classList.toggle('hidden'); }
 
@@ -546,6 +616,12 @@ function loginUser() {
 function logoutUser() {
     if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
     
+    // V1.2.12: 登出前取消實時監聽
+    if (firebaseUnsubscribe) {
+        firebaseUnsubscribe();
+        firebaseUnsubscribe = null;
+    }
+    
     firebase.auth().signOut()
         .then(() => {
             console.log("登出成功");
@@ -576,50 +652,7 @@ function resetPassword() {
         });
 }
 
-
-// === V1.2.8 修正：雲端資料同步函數 (加強錯誤處理和邏輯) ===
-
-/**
- * 登入成功後，從 Firestore 下載資料並更新本機 Local Storage。
- */
-async function syncDataOnLogin(user) {
-    if (!user || !db) return;
-
-    try {
-        const doc = await db.collection('records').doc(user.uid).get();
-        const localList = getHistory();
-        let shouldUploadLocal = false;
-
-        if (doc.exists) {
-            const cloudList = doc.data().data || [];
-            if (cloudList.length > 0) {
-                // 雲端有資料，覆蓋本機資料 (以雲端為準)
-                saveToHistory(cloudList);
-                console.log(`雲端資料下載成功，共 ${cloudList.length} 筆紀錄。已更新本機資料。`);
-            } else if (localList.length > 0) {
-                // 雲端無資料，但本機有資料，標記需要上傳
-                shouldUploadLocal = true;
-            }
-        } else if (localList.length > 0) {
-            // Firestore 找不到文件，但本機有資料，標記需要上傳 (可能是第一次使用雲端功能)
-            shouldUploadLocal = true;
-        } else {
-            console.log("本機與雲端均無紀錄。");
-        }
-        
-        if (shouldUploadLocal) {
-             console.log("偵測到本機紀錄，上傳中...");
-            await uploadHistory(localList, user);
-        }
-
-    } catch (e) {
-        console.error("雲端資料同步 (下載) 失敗:", e);
-        // 即使下載失敗，也允許顯示現有的本機資料
-    } finally {
-        // 💡 修正：確保無論同步是否成功，UI 都會更新
-        refreshDashboard();
-    }
-}
+// === 雲端資料上傳 (uploadHistory) 保持不變 ===
 
 /**
  * 將 Local Storage 中的資料上傳到 Firestore。
@@ -639,7 +672,7 @@ async function uploadHistory(data, user) {
         console.log(`雲端上傳成功，共 ${data.length} 筆紀錄。`);
     } catch (e) {
         console.error("雲端資料上傳失敗:", e);
-        alert("資料同步到雲端失敗，請檢查網路連線或 Firestore 規則。");
+        // 不彈出 alert，避免干擾，讓實時監聽機制處理
     }
 }
 
@@ -677,11 +710,11 @@ async function fetchOilPrice() {
     }
 }
 
-// === 歷史資料 CRUD (Local Storage 部份不變) ===
+// === 歷史資料 CRUD (重點：save/delete 後，透過 uploadHistory 觸發實時監聽) ===
 function getHistory() { try { return JSON.parse(localStorage.getItem('uber_ray_v1') || '[]'); } catch { return []; } }
 function saveToHistory(data) { localStorage.setItem('uber_ray_v1', JSON.stringify(data)); }
 
-// V1.2.8: saveRecord() 確保雲端同步
+// V1.2.12: saveRecord() 儲存後，透過 uploadHistory 觸發實時監聽
 function saveRecord() {
     const date = document.getElementById('inputDate').value;
     const income = parseFloat(document.getElementById('inputIncome').value);
@@ -716,11 +749,11 @@ function saveRecord() {
     list.sort((a,b) => new Date(b.date)-new Date(a.date));
     saveToHistory(list);
     
-    // V1.2.8: 資料儲存後，立即上傳到雲端
+    // V1.2.12: 資料儲存後，立即上傳到雲端，這將觸發所有連線設備的 onSnapshot 實時監聽
     uploadHistory(list);
 
     resetEditor();
-    refreshDashboard();
+    // 實時監聽器會自動呼叫 refreshDashboard，這裡可以不用手動呼叫
 }
 
 function loadRecordToEditor(id) {
@@ -748,7 +781,7 @@ function loadRecordToEditor(id) {
     document.getElementById('editorCard').scrollIntoView({behavior:'smooth'});
 }
 
-// V1.2.8: deleteCurrentRecord() 確保雲端同步
+// V1.2.12: deleteCurrentRecord() 刪除後，透過 uploadHistory 觸發實時監聽
 function deleteCurrentRecord() {
     // ⚠️ 根據平台規範，不使用 window.confirm/alert。
     console.warn('執行刪除操作。'); 
@@ -767,11 +800,11 @@ function deleteCurrentRecord() {
 
     saveToHistory(newList);
     
-    // V1.2.8: 資料刪除後，立即上傳到雲端
+    // V1.2.12: 資料刪除後，立即上傳到雲端，這將觸發所有連線設備的 onSnapshot 實時監聽
     uploadHistory(newList);
     
     resetEditor();
-    refreshDashboard();
+    // 實時監聽器會自動呼叫 refreshDashboard，這裡可以不用手動呼叫
 }
 
 function resetEditor() {
