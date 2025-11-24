@@ -3,169 +3,181 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Uber Driver 計算器（最終版）</title>
+<title>Uber Driver 計算器（深灰優化版）</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/base.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/components.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/utilities.min.css">
 <style>
-input, button, select { outline: none; }
-.card { @apply bg-white shadow-md rounded-xl p-5 mb-5; }
-.btn-main { @apply bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 transition w-full; }
-.btn-sub { @apply bg-gray-200 text-gray-700 rounded-lg px-4 py-2 hover:bg-gray-300 transition; }
+body { @apply bg-gray-900 text-gray-100; }
+.card { @apply bg-gray-800 shadow-xl rounded-2xl p-5 mb-6 border border-gray-700; }
+input, select { @apply w-full bg-gray-700 border border-gray-600 text-gray-100 p-2 rounded-lg; }
+.btn-main { @apply bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 transition w-full font-semibold; }
+.btn-sub { @apply bg-gray-600 text-white rounded-lg px-3 py-1 hover:bg-gray-500 transition text-sm; }
+.title { @apply text-xl font-semibold mb-3 text-blue-300; }
 </style>
 </head>
-<body class="bg-gray-100 p-4">
-<h1 class="text-2xl font-bold text-center mb-4">Uber Driver 計算器（最終版）</h1>
+<body class="p-4">
+<h1 class="text-3xl font-bold text-center mb-6 text-blue-400">Uber Driver 計算器</h1>
 
-<div class="text-center mb-4">
-  <label class="font-semibold mr-2">選擇油品：</label>
-  <select id="oilType" class="border p-2 rounded" onchange="fetchOilPrice()">
-    <option value="92" selected>92 無鉛汽油</option>
-    <option value="95">95 無鉛汽油</option>
-    <option value="98">98 無鉛汽油</option>
-    <option value="diesel">超級柴油</option>
-  </select>
-</div>
+<div id="oilPriceDisplayMain" class="text-center text-blue-300 font-semibold mb-4">讀取中...</div>
 
-<div id="oilPriceDisplayMain" class="text-center text-blue-600 font-semibold mb-4">讀取中...</div>
-
-<!-- 成本設定區 -->
+<!-- 成本設定 -->
 <div class="card">
-<h2 class="text-xl font-semibold mb-3">成本設定（雲端儲存）</h2>
-<label>油耗設定 (km/L)</label>
-<input id="fuelRate" class="w-full border p-2 rounded mb-3" />
+<h2 class="title">成本設定</h2>
+<label>油品種類</label>
+<select id="fuelType" class="mb-3">
+<option value="92">92 無鉛</option>
+<option value="95">95 無鉛</option>
+<option value="98">98 無鉛</option>
+<option value="diesel">柴油</option>
+</select>
+<label>油耗 (km/L)</label>
+<input id="fuelRate" class="mb-3" />
 <label>每公里耗材成本 ($/km)</label>
-<input id="maintCost" class="w-full border p-2 rounded mb-3" />
-<button class="btn-main" onclick="saveSettings()">儲存設定</button>
+<input id="maintCost" class="mb-3" />
+<button class="btn-main mt-2" onclick="saveSettings()">儲存設定</button>
 </div>
 
-<!-- 當日數據輸入 -->
+<!-- 當日輸入 -->
 <div class="card">
-<h2 class="text-xl font-semibold mb-3">當日數據輸入</h2>
-<label>記錄日期</label>
-<input id="recordDate" type="date" class="w-full border p-2 rounded mb-3" />
-<label>當日營業額</label>
-<input id="dayIncome" class="w-full border p-2 rounded mb-3" />
-<label>當日實際公里數</label>
-<input id="dayDistance" class="w-full border p-2 rounded mb-3" />
+<h2 class="title">當日數據輸入</h2>
+<label>日期</label>
+<input id="recordDate" type="date" class="mb-3" />
+<label>營業額</label>
+<input id="dayIncome" class="mb-3" />
+<label>實際公里數</label>
+<input id="dayDistance" class="mb-3" />
 <label>工作時數</label>
-<input id="workHours" class="w-full border p-2 rounded mb-3" />
+<input id="workHours" class="mb-3" />
 <button class="btn-main" onclick="saveRecord()">儲存紀錄</button>
 </div>
 
-<!-- 當日預估 -->
+<!-- 當日計算 -->
 <div class="card">
-<h2 class="text-xl font-semibold mb-3">即時預估</h2>
-<div id="previewResult" class="text-gray-800">尚無資料</div>
+<h2 class="title">收益分析</h2>
+<div id="previewResult" class="text-gray-300">尚無資料</div>
+</div>
+
+<!-- 圓餅圖 -->
+<div class="card">
+<h2 class="title">成本比例圖</h2>
+<canvas id="pieChart" height="150"></canvas>
 </div>
 
 <!-- 歷史紀錄 -->
 <div class="card">
-<h2 class="text-xl font-semibold mb-3">歷史紀錄</h2>
+<h2 class="title">歷史紀錄</h2>
 <div id="historyList" class="space-y-3"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
+const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev";
+let oilPrices = {92:27.1,95:28.6,98:30.6,diesel:25.5};
 let globalOilPrice = 27.1;
 
 async function fetchOilPrice() {
-  try {
-    const res = await fetch(workerAPI);
-    const data = await res.json();
-
-    const oilType = document.getElementById('oilType').value;
-    const price = data[oilType];
-
-    if (price === undefined) throw new Error("油品無資料");
-
-    globalOilPrice = price;
-    document.getElementById('oilPriceDisplayMain').textContent = `油價 (${oilType})：$${price}/L`;
-
-  } catch (err) {
-    document.getElementById('oilPriceDisplayMain').textContent = `油價讀取失敗，使用預設 $${globalOilPrice}/L`;
-    console.error(err);
-  }
+    try {
+        const res = await fetch(workerAPI);
+        const data = await res.json();
+        oilPrices = data;
+        const f = document.getElementById('fuelType').value;
+        globalOilPrice = oilPrices[f];
+        document.getElementById('oilPriceDisplayMain').textContent = `${f}：$${globalOilPrice}/L`;
+    } catch (err) {
+        document.getElementById('oilPriceDisplayMain').textContent = `油價讀取失敗，使用預設`;
+    }
 }
 
 function saveSettings() {
-  const fuelRate = document.getElementById('fuelRate').value;
-  const maint = document.getElementById('maintCost').value;
-  localStorage.setItem('fuelRate', fuelRate);
-  localStorage.setItem('maintCost', maint);
-  alert('設定已儲存');
+    const fuelRate = document.getElementById('fuelRate').value;
+    const maint = document.getElementById('maintCost').value;
+    const fuelType = document.getElementById('fuelType').value;
+    localStorage.setItem('fuelRate', fuelRate);
+    localStorage.setItem('maintCost', maint);
+    localStorage.setItem('fuelType', fuelType);
+    alert('設定已儲存');
+    fetchOilPrice();
 }
 
 function loadSettings() {
-  document.getElementById('fuelRate').value = localStorage.getItem('fuelRate') || 40;
-  document.getElementById('maintCost').value = localStorage.getItem('maintCost') || 0.6;
+    document.getElementById('fuelRate').value = localStorage.getItem('fuelRate') || 40;
+    document.getElementById('maintCost').value = localStorage.getItem('maintCost') || 0.6;
+    document.getElementById('fuelType').value = localStorage.getItem('fuelType') || "92";
 }
 
 function saveRecord() {
-  const record = {
-    date: document.getElementById('recordDate').value,
-    income: parseFloat(document.getElementById('dayIncome').value || 0),
-    km: parseFloat(document.getElementById('dayDistance').value || 0),
-    hours: parseFloat(document.getElementById('workHours').value || 0),
-    oilType: document.getElementById('oilType').value,
-    oilPrice: globalOilPrice
-  };
+    const record = {
+        date: recordDate.value,
+        income: +dayIncome.value,
+        km: +dayDistance.value,
+        hours: +workHours.value,
+        fuelType: fuelType.value,
+        oilPrice: oilPrices[fuelType.value]
+    };
 
-  const all = JSON.parse(localStorage.getItem('history') || '[]');
-  all.push(record);
-  localStorage.setItem('history', JSON.stringify(all));
+    const all = JSON.parse(localStorage.getItem('history') || '[]');
+    all.push(record);
+    localStorage.setItem('history', JSON.stringify(all));
+    loadHistory();
+}
 
-  alert('紀錄已儲存');
-  loadHistory();
+let pieChart;
+function updateChart(oilCost, maintCost, net) {
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(document.getElementById('pieChart'), {
+        type: 'pie',
+        data: {
+            labels: ['油費', '耗材', '純收益'],
+            datasets: [{ data: [oilCost, maintCost, net] }]
+        }
+    });
 }
 
 function loadHistory() {
-  const list = document.getElementById('historyList');
-  list.innerHTML = "";
+    const list = document.getElementById('historyList');
+    list.innerHTML = "";
+    const all = JSON.parse(localStorage.getItem('history') || '[]');
 
-  const all = JSON.parse(localStorage.getItem('history') || '[]');
+    all.forEach((r, idx) => {
+        const oilCost = (r.km / (localStorage.getItem('fuelRate')||40)) * r.oilPrice;
+        const maint = r.km * (localStorage.getItem('maintCost')||0.6);
+        const net = r.income - oilCost - maint;
 
-  all.forEach((r, idx) => {
-    const div = document.createElement('div');
-    div.className = "border p-3 rounded-lg bg-gray-50";
-    div.innerHTML = `
-      <div>📅 ${r.date}</div>
-      <div>🚗 油品：${r.oilType}</div>
-      <div>💲 當時油價：${r.oilPrice}</div>
-      <div>營業額：$${r.income}</div>
-      <div>公里數：${r.km} km</div>
-      <div>時數：${r.hours} 小時</div>
-      <div class='flex space-x-2 mt-2'>
-          <button class='btn-sub' onclick='editRecord(${idx})'>編輯</button>
-          <button class='btn-sub' onclick='deleteRecord(${idx})'>刪除</button>
-      </div>`;
-    list.appendChild(div);
-  });
+        const div = document.createElement('div');
+        div.className = "border border-gray-700 p-3 rounded-lg bg-gray-700";
+        div.innerHTML = `
+            <div>📅 ${r.date}</div>
+            <div>營業額：$${r.income}</div>
+            <div>公里數：${r.km} km</div>
+            <div>油品：${r.fuelType}（$${r.oilPrice}）</div>
+            <div>純收益：$${net.toFixed(0)}</div>
+            <div class='flex space-x-2 mt-2'>
+                <button class='btn-sub' onclick='editRecord(${idx})'>編輯</button>
+                <button class='btn-sub' onclick='deleteRecord(${idx})'>刪除</button>
+            </div>`;
+        list.appendChild(div);
+    });
 }
 
 function editRecord(i) {
-  const all = JSON.parse(localStorage.getItem('history') || '[]');
-  const r = all[i];
-  document.getElementById('recordDate').value = r.date;
-  document.getElementById('dayIncome').value = r.income;
-  document.getElementById('dayDistance').value = r.km;
-  document.getElementById('workHours').value = r.hours;
-  document.getElementById('oilType').value = r.oilType;
-  alert('已載入至輸入欄位，可修改後重新儲存。');
+    const all = JSON.parse(localStorage.getItem('history') || '[]');
+    const r = all[i];
+    recordDate.value = r.date;
+    dayIncome.value = r.income;
+    dayDistance.value = r.km;
+    workHours.value = r.hours;
+    fuelType.value = r.fuelType;
+    alert('已載入，可重新儲存覆蓋');
 }
 
 function deleteRecord(i) {
-  const all = JSON.parse(localStorage.getItem('history') || '[]');
-  all.splice(i, 1);
-  localStorage.setItem('history', JSON.stringify(all));
-  loadHistory();
+    const all = JSON.parse(localStorage.getItem('history') || '[]');
+    all.splice(i,1);
+    localStorage.setItem('history', JSON.stringify(all));
+    loadHistory();
 }
 
 window.onload = () => {
-  loadSettings();
-  loadHistory();
-  fetchOilPrice();
-};
-</script>
-</body>
-</html>
+    loadSettings();
+    fetchOil
