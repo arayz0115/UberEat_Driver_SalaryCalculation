@@ -2,175 +2,722 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Uber Driver 計算器（深灰版）</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/base.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/components.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/utilities.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Uber 雲端版 V5.1 (仿製版)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body { background-color: #0f0f0f; color: #e5e5e5; }
-.card { background-color: #1f1f1f; border: 1px solid #333; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-input, select { background-color: #2a2a2a; color: #e5e5e5; border: 1px solid #444; border-radius: 0.6rem; padding: 0.75rem; width: 100%; }
-.btn-main { background-color: #6366f1; color: white; border-radius: 0.75rem; padding: 0.75rem; width: 100%; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.4); transition: 0.2s; }
-.btn-main:hover { background-color: #4f46e5; }
-.btn-sub { background-color: #444; color: #ddd; border-radius: 0.5rem; padding: 0.5rem 1rem; transition: 0.2s; }
-.btn-sub:hover { background-color: #555; }
-h1 { color: #f1f1f1; }
-label { color: #cfcfcf; font-weight: 500; }
+    /* 全局深色主題設定 */
+    body { background-color: #0a0a0a; color: #e5e5e5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; padding-bottom: 80px; }
+    
+    /* 卡片樣式 - 模仿截圖 */
+    .dashboard-card {
+        background-color: #15161b; /* 極深藍灰 */
+        border: 1px solid #262936;
+        border-radius: 1.2rem;
+        padding: 1.25rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 紫色漸層卡片 */
+    .card-purple-glow {
+        background: linear-gradient(135deg, #1e1b2e 0%, #2d1f3f 100%);
+        border: 1px solid #4c1d95;
+        position: relative;
+        overflow: hidden;
+    }
+    .card-purple-glow::after {
+        content: '⚡';
+        position: absolute;
+        right: 10px;
+        bottom: 5px;
+        font-size: 2rem;
+        opacity: 0.2;
+        color: #d8b4fe;
+    }
+
+    /* 輸入框樣式 */
+    .input-dark {
+        background-color: #1f2128;
+        border: 1px solid #333645;
+        color: #fff;
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        width: 100%;
+        transition: border-color 0.2s;
+        font-size: 1rem;
+    }
+    .input-dark:focus {
+        outline: none;
+        border-color: #6366f1;
+    }
+
+    /* 按鈕樣式 */
+    .btn-primary {
+        background-color: #eab308; /* Uber 黃/金 */
+        color: #000;
+        font-weight: 700;
+        border-radius: 0.75rem;
+        padding: 0.8rem;
+        width: 100%;
+        transition: 0.2s;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+
+    .filter-btn {
+        background-color: #1f2128;
+        color: #9ca3af;
+        padding: 0.4rem 0.8rem;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        border: 1px solid #333;
+        white-space: nowrap;
+    }
+    .filter-btn.active {
+        background-color: #3730a3;
+        color: #fff;
+        border-color: #6366f1;
+    }
+
+    /* 文字層級 */
+    .label-text { color: #6b7280; font-size: 0.85rem; margin-bottom: 0.25rem; display: block; }
+    .value-text { font-size: 1.5rem; font-weight: 600; color: #f3f4f6; }
+    .value-sub { font-size: 0.9rem; color: #9ca3af; }
+
+    /* 隱藏的區塊 */
+    .hidden-section { display: none; }
 </style>
 </head>
-<body class="p-4">
-<h1 class="text-3xl font-bold text-center mb-6 tracking-wide">Uber Driver 計算器（深灰版）</h1>
+<body class="p-4 max-w-md mx-auto">
 
-<div class="text-center mb-6">
-  <label class="font-semibold mr-2">選擇油品：</label>
-  <select id="oilType" class="border p-2 rounded w-40 bg-gray-700" onchange="fetchOilPrice()">
-    <option value="92">92 無鉛汽油</option>
-    <option value="95">95 無鉛汽油</option>
-    <option value="98">98 無鉛汽油</option>
-    <option value="diesel">超級柴油</option>
-  </select>
-</div>
+    <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-2">
+            <div class="bg-yellow-500 p-1.5 rounded-lg text-black font-bold text-xs">Uber</div>
+            <h1 class="text-lg font-bold text-gray-100">雲端版 V5.1 (Remix)</h1>
+        </div>
+        <button onclick="toggleSettings()" class="p-2 rounded-full bg-gray-800 text-gray-400 hover:text-white">
+            ⚙️
+        </button>
+    </div>
 
-<div id="oilPriceDisplayMain" class="text-center text-blue-400 font-semibold mb-6 text-lg">讀取中...</div>
+    <div id="settingsPanel" class="hidden-section mb-4 dashboard-card border-yellow-600/30">
+        <h3 class="text-yellow-500 font-bold mb-3">參數設定</h3>
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+                <label class="label-text">油品選擇</label>
+                <select id="oilType" class="input-dark" onchange="fetchOilPrice()">
+                    <option value="92">92 無鉛</option>
+                    <option value="95">95 無鉛</option>
+                    <option value="98">98 無鉛</option>
+                    <option value="diesel">柴油</option>
+                </select>
+            </div>
+            <div>
+                <label class="label-text">當前油價 ($/L)</label>
+                <input id="currentOilPrice" class="input-dark text-yellow-400" readonly value="--" />
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+                <label class="label-text">油耗 (km/L)</label>
+                <input id="settingFuelRate" type="number" class="input-dark" placeholder="例如 12" />
+            </div>
+            <div>
+                <label class="label-text">耗材成本 ($/km)</label>
+                <input id="settingMaint" type="number" step="0.1" class="input-dark" placeholder="例如 1.5" />
+            </div>
+        </div>
+        <button onclick="saveSettings()" class="bg-gray-700 w-full py-2 rounded-lg text-white text-sm">儲存參數</button>
+    </div>
 
-<!-- 成本設定區 -->
-<div class="card">
-<h2 class="text-xl font-semibold mb-4 text-blue-300">成本設定</h2>
-<label>油耗設定 (km/L)</label>
-<input id="fuelRate" class="mb-3" />
-<label>每公里耗材成本 ($/km)</label>
-<input id="maintCost" class="mb-4" />
-<button class="btn-main" onclick="saveSettings()">儲存設定</button>
-</div>
+    <div class="flex gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar">
+        <button class="filter-btn active" onclick="setFilter('day', this)">今日</button>
+        <button class="filter-btn" onclick="setFilter('week', this)">本週</button>
+        <button class="filter-btn" onclick="setFilter('month', this)">本月</button>
+        <button class="filter-btn" onclick="setFilter('year', this)">今年</button>
+        <button class="filter-btn" onclick="setFilter('custom', this)">自訂</button>
+    </div>
+    <div id="customDateRange" class="hidden-section flex gap-2 mb-3">
+        <input type="date" id="startDate" class="input-dark py-1" onchange="refreshDashboard()" />
+        <span class="self-center text-gray-500">to</span>
+        <input type="date" id="endDate" class="input-dark py-1" onchange="refreshDashboard()" />
+    </div>
 
-<!-- 當日數據輸入 -->
-<div class="card">
-<h2 class="text-xl font-semibold mb-4 text-blue-300">當日數據輸入</h2>
-<label>記錄日期</label>
-<input id="recordDate" type="date" class="mb-3" />
-<label>當日營業額</label>
-<input id="dayIncome" class="mb-3" />
-<label>當日實際公里數</label>
-<input id="dayDistance" class="mb-3" />
-<label>工作時數</label>
-<input id="workHours" class="mb-4" />
-<button class="btn-main" onclick="saveRecord()">儲存紀錄</button>
-</div>
+    <div class="dashboard-card mb-4">
+        <label class="label-text text-gray-400">區間總金額</label>
+        <div class="flex items-baseline gap-1">
+            <span class="text-gray-400 text-xl">$</span>
+            <span id="dashTotalIncome" class="text-4xl font-bold text-white tracking-wide">0</span>
+        </div>
+    </div>
 
-<!-- 預估 -->
-<div class="card">
-<h2 class="text-xl font-semibold mb-4 text-blue-300">即時預估</h2>
-<div id="previewResult" class="text-gray-300">尚無資料</div>
-</div>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="dashboard-card flex flex-col justify-center">
+            <label class="label-text">里程 (KM)</label>
+            <span id="dashDistance" class="text-2xl font-bold">0</span>
+        </div>
+        <div class="dashboard-card flex flex-col justify-center">
+            <label class="label-text">總單數</label>
+            <span id="dashOrders" class="text-2xl font-bold">0</span>
+        </div>
+    </div>
 
-<!-- 歷史紀錄 -->
-<div class="card">
-<h2 class="text-xl font-semibold mb-4 text-blue-300">歷史紀錄</h2>
-<div id="historyList" class="space-y-3"></div>
-</div>
+    <div class="dashboard-card mb-4 flex justify-between items-center px-6">
+        <div class="flex items-center gap-2">
+            <span class="text-gray-500">🕒</span>
+            <label class="label-text mb-0">上線時間</label>
+        </div>
+        <div class="text-xl font-bold">
+            <span id="dashHours">0</span> <span class="text-sm font-normal text-gray-500">小時</span>
+            <span id="dashMinutes">0</span> <span class="text-sm font-normal text-gray-500">分鐘</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="dashboard-card">
+            <label class="label-text">帳面時薪</label>
+            <span id="dashNominalHourly" class="text-xl font-bold text-gray-300">$0</span>
+        </div>
+        <div class="dashboard-card card-purple-glow">
+            <label class="label-text text-purple-200">真實時薪</label>
+            <span id="dashRealHourly" class="text-2xl font-bold text-white">$0</span>
+        </div>
+    </div>
+
+    <div class="dashboard-card bg-slate-800/50 mb-6">
+        <div class="mb-4">
+            <label class="label-text">區間實際淨利</label>
+            <div class="text-4xl font-bold text-white">$<span id="dashNetProfit">0</span></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-gray-700">
+            <div>
+                <label class="label-text">總成本 (油+耗)</label>
+                <div id="dashTotalCost" class="text-red-400 font-semibold">-$0</div>
+            </div>
+            <div>
+                <label class="label-text">每單實賺</label>
+                <div id="dashPerOrder" class="text-green-400 font-semibold">$0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-6">
+        <button onclick="openModal()" class="btn-primary bg-indigo-600 text-white hover:bg-indigo-500">
+            ➕ 新增/編輯紀錄
+        </button>
+        <button onclick="toggleCharts()" class="btn-primary bg-gray-700 text-gray-200 hover:bg-gray-600">
+            📊 查看圖表分析
+        </button>
+    </div>
+
+    <div id="chartsPanel" class="hidden-section mb-8">
+        <h3 class="text-lg font-bold mb-3 pl-1 border-l-4 border-indigo-500">數據可視化</h3>
+        
+        <div class="dashboard-card mb-4">
+            <h4 class="text-sm text-gray-400 mb-2">營收趨勢 (Bar)</h4>
+            <canvas id="chartIncome"></canvas>
+        </div>
+        
+        <div class="dashboard-card mb-4">
+            <h4 class="text-sm text-gray-400 mb-2">淨利走勢 (Line)</h4>
+            <canvas id="chartProfit"></canvas>
+        </div>
+
+        <div class="dashboard-card">
+            <h4 class="text-sm text-gray-400 mb-2">成本佔比 (Pie)</h4>
+            <div class="h-48 flex justify-center">
+                <canvas id="chartCost"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-20">
+        <h3 class="text-lg font-bold mb-3 pl-1 border-l-4 border-yellow-500">歷史明細 (當前區間)</h3>
+        <div id="historyList" class="space-y-3">
+            </div>
+    </div>
+
+    <div id="inputModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-end sm:items-center justify-center">
+        <div class="bg-[#15161b] w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 border-t border-gray-700 sm:border shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-white" id="modalTitle">新增紀錄</h2>
+                <button onclick="closeModal()" class="text-gray-400 text-2xl">&times;</button>
+            </div>
+
+            <input type="hidden" id="editIndex" value="-1"> <div class="space-y-3">
+                <div>
+                    <label class="label-text">日期</label>
+                    <input id="inputDate" type="date" class="input-dark" />
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-text">當日營業額 ($)</label>
+                        <input id="inputIncome" type="number" inputmode="numeric" class="input-dark" />
+                    </div>
+                    <div>
+                        <label class="label-text">總單數</label>
+                        <input id="inputOrders" type="number" inputmode="numeric" class="input-dark" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="label-text">實際里程 (KM)</label>
+                        <input id="inputDist" type="number" step="0.1" inputmode="decimal" class="input-dark" />
+                    </div>
+                    <div>
+                        <label class="label-text">工作時數</label>
+                        <div class="flex gap-2">
+                            <input id="inputHr" type="number" placeholder="時" class="input-dark" />
+                            <input id="inputMin" type="number" placeholder="分" class="input-dark" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-xs text-gray-500 mt-2 p-2 bg-gray-800 rounded">
+                    計算基準：油價 $<span id="modalOilPrice">--</span> | 油耗 <span id="modalFuelRate">--</span> | 耗材 $<span id="modalMaint">--</span>
+                </div>
+
+                <div class="flex gap-3 mt-4">
+                    <button onclick="saveRecord()" class="btn-primary bg-indigo-600 text-white">儲存紀錄</button>
+                    <button id="btnDelete" onclick="deleteCurrentRecord()" class="btn-primary bg-red-900 text-red-200 hidden">刪除</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <script>
+// === 全域變數 ===
 const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
-let globalOilPrice = 27.1;
+let globalOilPrice = 30.0; // 預設
+let currentFilter = 'day'; // day, week, month, year, custom
+let chartsInstances = {}; // 儲存圖表實例
 
-async function fetchOilPrice() {
-  try {
-    const res = await fetch(workerAPI);
-    const data = await res.json();
+// === 初始化 ===
+window.onload = async () => {
+    // 設定日期輸入框預設為今天
+    document.getElementById('inputDate').valueAsDate = new Date();
+    
+    // 載入設定
+    loadSettings();
+    
+    // 嘗試抓油價
+    await fetchOilPrice();
+    
+    // 載入並渲染
+    refreshDashboard();
+};
 
-    const oilType = document.getElementById('oilType').value;
-    const price = data[oilType];
+// === 核心功能：資料存取 ===
+function getHistory() {
+    return JSON.parse(localStorage.getItem('uber_history_v5') || '[]');
+}
 
-    if (price === undefined) throw new Error("油品無資料");
+function saveToHistory(data) {
+    localStorage.setItem('uber_history_v5', JSON.stringify(data));
+}
 
-    globalOilPrice = price;
-    document.getElementById('oilPriceDisplayMain').textContent = `油價 (${oilType})：$${price}/L`;
+function getSettings() {
+    return {
+        fuelRate: parseFloat(localStorage.getItem('fuelRate') || 12),
+        maintCost: parseFloat(localStorage.getItem('maintCost') || 1.5),
+        oilType: localStorage.getItem('oilType') || '95'
+    };
+}
 
-  } catch (err) {
-    document.getElementById('oilPriceDisplayMain').textContent = `油價讀取失敗，使用預設 $${globalOilPrice}/L`;
-    console.error(err);
-  }
+// === 設定相關 ===
+function loadSettings() {
+    const s = getSettings();
+    document.getElementById('settingFuelRate').value = s.fuelRate;
+    document.getElementById('settingMaint').value = s.maintCost;
+    document.getElementById('oilType').value = s.oilType;
+    
+    // 更新 Modal 裡的提示
+    document.getElementById('modalFuelRate').innerText = s.fuelRate;
+    document.getElementById('modalMaint').innerText = s.maintCost;
 }
 
 function saveSettings() {
-  const fuelRate = document.getElementById('fuelRate').value;
-  const maint = document.getElementById('maintCost').value;
-  localStorage.setItem('fuelRate', fuelRate);
-  localStorage.setItem('maintCost', maint);
-  alert('設定已儲存');
+    localStorage.setItem('fuelRate', document.getElementById('settingFuelRate').value);
+    localStorage.setItem('maintCost', document.getElementById('settingMaint').value);
+    toggleSettings(); // 關閉面板
+    loadSettings();
+    refreshDashboard(); // 重新計算所有數據
+    alert('設定已更新並套用至計算公式');
 }
 
-function loadSettings() {
-  document.getElementById('fuelRate').value = localStorage.getItem('fuelRate') || 40;
-  document.getElementById('maintCost').value = localStorage.getItem('maintCost') || 0.6;
+function toggleSettings() {
+    const p = document.getElementById('settingsPanel');
+    p.style.display = p.style.display === 'block' ? 'none' : 'block';
+}
+
+// === 油價 API ===
+async function fetchOilPrice() {
+    try {
+        const type = document.getElementById('oilType').value;
+        const res = await fetch(workerAPI);
+        const data = await res.json();
+        if (data[type]) {
+            globalOilPrice = data[type];
+            document.getElementById('currentOilPrice').value = globalOilPrice;
+            document.getElementById('modalOilPrice').innerText = globalOilPrice;
+        }
+    } catch (e) {
+        console.error("油價抓取失敗", e);
+        document.getElementById('currentOilPrice').value = globalOilPrice + " (預設)";
+        document.getElementById('modalOilPrice').innerText = globalOilPrice;
+    }
+}
+
+// === 記錄管理 (CRUD) ===
+function openModal(editIdx = -1) {
+    const modal = document.getElementById('inputModal');
+    const idxField = document.getElementById('editIndex');
+    const btnDel = document.getElementById('btnDelete');
+    const title = document.getElementById('modalTitle');
+
+    modal.classList.remove('hidden');
+    idxField.value = editIdx;
+
+    if (editIdx >= 0) {
+        // 編輯模式
+        const list = getHistory();
+        // 注意：這裡的 editIdx 是過濾後的 index 還是原始 index?
+        // 為了安全，我們在 renderList 時會傳遞原始 index
+        const r = list[editIdx]; 
+        
+        document.getElementById('inputDate').value = r.date;
+        document.getElementById('inputIncome').value = r.income;
+        document.getElementById('inputOrders').value = r.orders || 0;
+        document.getElementById('inputDist').value = r.km;
+        
+        // 時間轉換
+        const totalMin = Math.round(r.hours * 60);
+        document.getElementById('inputHr').value = Math.floor(totalMin / 60);
+        document.getElementById('inputMin').value = totalMin % 60;
+
+        title.innerText = "編輯紀錄";
+        btnDel.classList.remove('hidden');
+    } else {
+        // 新增模式
+        document.getElementById('inputDate').valueAsDate = new Date();
+        document.getElementById('inputIncome').value = '';
+        document.getElementById('inputOrders').value = '';
+        document.getElementById('inputDist').value = '';
+        document.getElementById('inputHr').value = '';
+        document.getElementById('inputMin').value = '';
+        
+        title.innerText = "新增紀錄";
+        btnDel.classList.add('hidden');
+    }
+}
+
+function closeModal() {
+    document.getElementById('inputModal').classList.add('hidden');
 }
 
 function saveRecord() {
-  const record = {
-    date: document.getElementById('recordDate').value,
-    income: parseFloat(document.getElementById('dayIncome').value || 0),
-    km: parseFloat(document.getElementById('dayDistance').value || 0),
-    hours: parseFloat(document.getElementById('workHours').value || 0),
-    oilType: document.getElementById('oilType').value,
-    oilPrice: globalOilPrice
-  };
+    const date = document.getElementById('inputDate').value;
+    if (!date) return alert('請選擇日期');
 
-  const all = JSON.parse(localStorage.getItem('history') || '[]');
-  all.push(record);
-  localStorage.setItem('history', JSON.stringify(all));
+    const income = parseFloat(document.getElementById('inputIncome').value) || 0;
+    const orders = parseFloat(document.getElementById('inputOrders').value) || 0;
+    const km = parseFloat(document.getElementById('inputDist').value) || 0;
+    const hr = parseFloat(document.getElementById('inputHr').value) || 0;
+    const min = parseFloat(document.getElementById('inputMin').value) || 0;
+    
+    // 時間轉小數點小時
+    const totalHours = hr + (min / 60);
 
-  alert('紀錄已儲存');
-  loadHistory();
+    // 取得當前設定參數 snapshot (紀錄當下成本結構)
+    const settings = getSettings();
+
+    const record = {
+        id: Date.now(), // 唯一ID
+        date: date,
+        income: income,
+        orders: orders,
+        km: km,
+        hours: totalHours,
+        // 儲存當時的成本參數，讓歷史計算更精準
+        oilPrice: globalOilPrice,
+        fuelRate: settings.fuelRate,
+        maintCost: settings.maintCost
+    };
+
+    const list = getHistory();
+    const editIdx = parseInt(document.getElementById('editIndex').value);
+
+    if (editIdx >= 0) {
+        // 更新
+        list[editIdx] = record;
+    } else {
+        // 新增
+        list.push(record);
+    }
+
+    // 排序：日期新到舊
+    list.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    saveToHistory(list);
+    closeModal();
+    refreshDashboard();
 }
 
-function loadHistory() {
-  const list = document.getElementById('historyList');
-  list.innerHTML = "";
-
-  const all = JSON.parse(localStorage.getItem('history') || '[]');
-
-  all.forEach((r, idx) => {
-    const div = document.createElement('div');
-    div.className = "border border-gray-600 p-3 rounded-lg bg-gray-700 text-gray-200";
-    div.innerHTML = `
-      <div>📅 ${r.date}</div>
-      <div>⛽ 油品：${r.oilType}</div>
-      <div>💲 油價：${r.oilPrice}</div>
-      <div>營業額：$${r.income}</div>
-      <div>公里數：${r.km} km</div>
-      <div>時數：${r.hours} 小時</div>
-      <div class='flex space-x-2 mt-2'>
-          <button class='btn-sub' onclick='editRecord(${idx})'>編輯</button>
-          <button class='btn-sub' onclick='deleteRecord(${idx})'>刪除</button>
-      </div>`;
-    list.appendChild(div);
-  });
+function deleteCurrentRecord() {
+    const idx = parseInt(document.getElementById('editIndex').value);
+    if (confirm('確定要刪除這筆紀錄嗎？')) {
+        const list = getHistory();
+        list.splice(idx, 1);
+        saveToHistory(list);
+        closeModal();
+        refreshDashboard();
+    }
 }
 
-function editRecord(i) {
-  const all = JSON.parse(localStorage.getItem('history') || '[]');
-  const r = all[i];
-  document.getElementById('recordDate').value = r.date;
-  document.getElementById('dayIncome').value = r.income;
-  document.getElementById('dayDistance').value = r.km;
-  document.getElementById('workHours').value = r.hours;
-  document.getElementById('oilType').value = r.oilType;
-  alert('已載入至輸入欄位，可修改後重新儲存。');
+// === 篩選邏輯 ===
+function setFilter(type, btn) {
+    currentFilter = type;
+    
+    // UI 更新
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // 自訂區間顯示
+    const customRange = document.getElementById('customDateRange');
+    if (type === 'custom') {
+        customRange.style.display = 'flex';
+    } else {
+        customRange.style.display = 'none';
+        refreshDashboard();
+    }
 }
 
-function deleteRecord(i) {
-  const all = JSON.parse(localStorage.getItem('history') || '[]');
-  all.splice(i, 1);
-  localStorage.setItem('history', JSON.stringify(all));
-  loadHistory();
+function getFilteredData() {
+    const list = getHistory();
+    const now = new Date();
+    let filtered = [];
+
+    const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    
+    // 輔助：取得本週第一天 (週一)
+    const getMonday = (d) => {
+        const day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1); 
+        return new Date(d.setDate(diff));
+    };
+
+    switch (currentFilter) {
+        case 'day':
+            const todayStr = now.toISOString().split('T')[0];
+            filtered = list.filter(r => r.date === todayStr);
+            break;
+        case 'week':
+            const monday = getMonday(new Date());
+            monday.setHours(0,0,0,0);
+            filtered = list.filter(r => new Date(r.date) >= monday);
+            break;
+        case 'month':
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            filtered = list.filter(r => new Date(r.date) >= firstDay);
+            break;
+        case 'year':
+            const firstDayYear = new Date(now.getFullYear(), 0, 1);
+            filtered = list.filter(r => new Date(r.date) >= firstDayYear);
+            break;
+        case 'custom':
+            const s = document.getElementById('startDate').value;
+            const e = document.getElementById('endDate').value;
+            if(s && e) {
+                filtered = list.filter(r => r.date >= s && r.date <= e);
+            } else {
+                filtered = list; // 未選完則顯示全部
+            }
+            break;
+        default:
+            filtered = list;
+    }
+    return filtered;
 }
 
-window.onload = () => {
-  loadSettings();
-  loadHistory();
-  fetchOilPrice();
-};
+// === 儀表板核心計算 ===
+function refreshDashboard() {
+    const data = getFilteredData();
+    
+    let totalIncome = 0;
+    let totalKm = 0;
+    let totalOrders = 0;
+    let totalHours = 0;
+    let totalCost = 0;
+
+    // 渲染列表字串 HTML
+    let listHtml = '';
+    const allHistory = getHistory(); // 用來找原始 index
+
+    data.forEach(r => {
+        // 計算單筆成本
+        // 油錢 = (公里 / 油耗) * 油價
+        const fuelCost = (r.km / r.fuelRate) * r.oilPrice;
+        // 耗材 = 公里 * 耗材單價
+        const maintCost = r.km * r.maintCost;
+        const thisCost = fuelCost + maintCost;
+        const thisNet = r.income - thisCost;
+
+        totalIncome += r.income;
+        totalKm += r.km;
+        totalOrders += r.orders;
+        totalHours += r.hours;
+        totalCost += thisCost;
+
+        // 尋找原始 index 以便編輯
+        // 這裡簡單用 ID 或參照比對，這邊用簡單迴圈找 index
+        const originalIdx = allHistory.findIndex(item => item.id === r.id);
+
+        // 列表項目
+        listHtml += `
+            <div class="bg-[#1f2128] border border-gray-800 p-3 rounded-xl flex justify-between items-center" onclick="openModal(${originalIdx})">
+                <div>
+                    <div class="text-gray-400 text-xs mb-1">📅 ${r.date}</div>
+                    <div class="font-bold text-white">$${r.income} <span class="text-xs font-normal text-gray-500">(${r.orders}單)</span></div>
+                </div>
+                <div class="text-right">
+                    <div class="text-purple-400 text-sm font-bold">淨利 $${Math.round(thisNet)}</div>
+                    <div class="text-gray-500 text-xs">${r.km}km / ${r.hours.toFixed(1)}hr</div>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('historyList').innerHTML = listHtml || '<div class="text-center text-gray-600 py-4">無資料</div>';
+
+    // 計算衍生數據
+    const netProfit = totalIncome - totalCost;
+    const nominalHourly = totalHours > 0 ? (totalIncome / totalHours) : 0;
+    const realHourly = totalHours > 0 ? (netProfit / totalHours) : 0;
+    const perOrderProfit = totalOrders > 0 ? (netProfit / totalOrders) : 0;
+
+    // 轉換時間顯示 (小時 分鐘)
+    const dispHr = Math.floor(totalHours);
+    const dispMin = Math.round((totalHours - dispHr) * 60);
+
+    // 更新 DOM
+    document.getElementById('dashTotalIncome').innerText = Math.round(totalIncome);
+    document.getElementById('dashDistance').innerText = Math.round(totalKm);
+    document.getElementById('dashOrders').innerText = totalOrders;
+    document.getElementById('dashHours').innerText = dispHr;
+    document.getElementById('dashMinutes').innerText = dispMin;
+    
+    document.getElementById('dashNominalHourly').innerText = '$' + Math.round(nominalHourly);
+    document.getElementById('dashRealHourly').innerText = '$' + Math.round(realHourly);
+    
+    document.getElementById('dashNetProfit').innerText = Math.round(netProfit);
+    document.getElementById('dashTotalCost').innerText = '-$' + Math.round(totalCost);
+    document.getElementById('dashPerOrder').innerText = '$' + Math.round(perOrderProfit);
+
+    // 若圖表區是開著的，就更新圖表
+    if(document.getElementById('chartsPanel').style.display === 'block') {
+        updateCharts(data);
+    }
+}
+
+// === 圖表功能 ===
+function toggleCharts() {
+    const p = document.getElementById('chartsPanel');
+    const isHidden = p.style.display === 'none' || p.style.display === '';
+    p.style.display = isHidden ? 'block' : 'none';
+    
+    if (isHidden) {
+        updateCharts(getFilteredData());
+        // 滾動到圖表
+        p.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function updateCharts(data) {
+    // 資料整理：按日期排序 (舊 -> 新) 給圖表用
+    const sortedData = [...data].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const labels = sortedData.map(r => r.date.slice(5)); // 取 MM-DD
+    const incomes = sortedData.map(r => r.income);
+    
+    // 計算淨利陣列
+    const profits = sortedData.map(r => {
+        const cost = (r.km/r.fuelRate)*r.oilPrice + (r.km*r.maintCost);
+        return Math.round(r.income - cost);
+    });
+
+    // 總成本結構
+    let sumFuel = 0;
+    let sumMaint = 0;
+    let sumNet = 0;
+    data.forEach(r => {
+        const f = (r.km/r.fuelRate)*r.oilPrice;
+        const m = r.km*r.maintCost;
+        sumFuel += f;
+        sumMaint += m;
+        sumNet += (r.income - f - m);
+    });
+
+    // 1. 收入 Bar Chart
+    drawChart('chartIncome', 'bar', {
+        labels: labels,
+        datasets: [{
+            label: '營業額',
+            data: incomes,
+            backgroundColor: '#6366f1',
+            borderRadius: 5
+        }]
+    });
+
+    // 2. 淨利 Line Chart
+    drawChart('chartProfit', 'line', {
+        labels: labels,
+        datasets: [{
+            label: '實際淨利',
+            data: profits,
+            borderColor: '#a855f7',
+            backgroundColor: 'rgba(168, 85, 247, 0.2)',
+            fill: true,
+            tension: 0.4
+        }]
+    });
+
+    // 3. 成本 Pie Chart
+    drawChart('chartCost', 'doughnut', {
+        labels: ['淨利', '油錢', '耗材'],
+        datasets: [{
+            data: [Math.round(sumNet), Math.round(sumFuel), Math.round(sumMaint)],
+            backgroundColor: ['#10b981', '#ef4444', '#f59e0b'],
+            borderWidth: 0
+        }]
+    });
+}
+
+function drawChart(canvasId, type, dataConfig) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    
+    // 如果已有舊圖表，先銷毀
+    if (chartsInstances[canvasId]) {
+        chartsInstances[canvasId].destroy();
+    }
+
+    chartsInstances[canvasId] = new Chart(ctx, {
+        type: type,
+        data: dataConfig,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#9ca3af' } }
+            },
+            scales: type !== 'doughnut' ? {
+                x: { ticks: { color: '#6b7280' }, grid: { color: '#374151' } },
+                y: { ticks: { color: '#6b7280' }, grid: { color: '#374151' } }
+            } : {}
+        }
+    });
+}
+
 </script>
 </body>
 </html>
