@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.13</title>
+<title>UberEat Salary Calculator V1.2.14</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.13 (UI/UX 優化)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與收合功能。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.14 (圖示優化)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與收合圖示。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.13" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.14" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -184,7 +184,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.13 UI/UX Optimized</div>
+                <div class="text-[10px] text-gray-500">V1.2.14 Icon Optimized</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -256,7 +256,7 @@
             <h3 class="font-bold text-white flex items-center gap-2 text-base">
                 <span id="editorTitle">📝 新增紀錄</span>
             </h3>
-            <span id="editorToggleIcon" class="text-xl text-gray-400">🔽</span>
+            <span id="editorToggleIcon" class="text-xl text-gray-400">▼</span>
         </div>
         
         <div id="editorContent" class="pt-4">
@@ -312,7 +312,7 @@
                 <div class="w-1.5 h-4 bg-green-500 rounded-full"></div>
                 區間總營收儀表板
             </h3>
-            <span id="dashboardToggleIcon" class="text-xl text-gray-400">🔽</span>
+            <span id="dashboardToggleIcon" class="text-xl text-gray-400">▼</span>
         </div>
         
         <div id="dashboardContent" class="pt-4">
@@ -433,7 +433,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.13 (UI/UX Optimized)</div>
+        <div>UberEat 外送薪資計算器 V1.2.14 (Icon Optimized)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -530,7 +530,7 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === V1.2.13: 收合/展開相關函數 ===
+// === V1.2.14: 收合/展開相關函數 (圖示更新) ===
 /**
  * 處理單一區塊的收合與展開邏輯，並儲存狀態。
  */
@@ -541,12 +541,12 @@ function togglePanel(panelId, iconId, storageKey) {
     if (content.classList.contains('hidden')) {
         // 展開 (Expand)
         content.classList.remove('hidden');
-        icon.innerText = '🔽';
+        icon.innerText = '▼'; // V1.2.14: 使用簡潔的黑色實心三角形
         localStorage.removeItem(storageKey); 
     } else {
         // 收合 (Collapse)
         content.classList.add('hidden');
-        icon.innerText = '▶️';
+        icon.innerText = '▶'; // V1.2.14: 使用簡潔的黑色實心三角形
         localStorage.setItem(storageKey, 'true');
     }
 }
@@ -568,13 +568,17 @@ function loadCollapseStates() {
     // 編輯器狀態
     if (localStorage.getItem('editorCollapsed') === 'true') {
         document.getElementById('editorContent').classList.add('hidden');
-        document.getElementById('editorToggleIcon').innerText = '▶️';
+        document.getElementById('editorToggleIcon').innerText = '▶'; // V1.2.14: 使用簡潔圖示
+    } else {
+        document.getElementById('editorToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
     }
 
     // 儀表板狀態
     if (localStorage.getItem('dashboardCollapsed') === 'true') {
         document.getElementById('dashboardContent').classList.add('hidden');
-        document.getElementById('dashboardToggleIcon').innerText = '▶️';
+        document.getElementById('dashboardToggleIcon').innerText = '▶'; // V1.2.14: 使用簡潔圖示
+    } else {
+        document.getElementById('dashboardToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
     }
 }
 
@@ -828,7 +832,7 @@ function loadRecordToEditor(id) {
     
     // V1.2.13: 確保在編輯時，編輯器是展開的
     document.getElementById('editorContent').classList.remove('hidden');
-    document.getElementById('editorToggleIcon').innerText = '🔽';
+    document.getElementById('editorToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
     localStorage.removeItem('editorCollapsed');
     
     document.getElementById('editId').value = r.id;
