@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat 外送薪資計算器 V1.2.1</title>
+<title>UberEat 外送薪資計算器 V1.2.2</title>
 
 <!-- === App 化專用 Meta 設定 === --><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing (V1.2.1) === --><meta property="og:title" content="UberEat 外送薪資計算器 V1.2.1" />
+<!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing (V1.2.2) === --><meta property="og:title" content="UberEat 外送薪資計算器 V1.2.2" />
 <meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援多維度圖表分析，是您優化跑單效率的專業工具。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.1" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.2" />
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -54,7 +54,6 @@
 
     /* === 日期選擇器 (優化手機顯示，確保日期不被裁切) === */
     input[type="date"] { position: relative; font-size: 0.95rem; }
-    /* 修正 iOS/Android 上日期選擇器的箭頭位置 */
     input[type="date"]::-webkit-calendar-picker-indicator {
         position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
         color: transparent; background: transparent; cursor: pointer;
@@ -75,7 +74,6 @@
         width: 100%;
         overflow-x: auto;
         padding-bottom: 0.5rem;
-        /* 隱藏滾動條 */
         scrollbar-width: none; 
         -ms-overflow-style: none;
     }
@@ -84,8 +82,8 @@
     .tab-scroll-content {
         display: flex;
         gap: 0.6rem;
-        padding-right: 1.5rem; /* 關鍵：右側留白，避免按鈕貼邊 */
-        min-width: max-content; /* 確保內容撐開 */
+        padding-right: 1.5rem; 
+        min-width: max-content; 
     }
 
     .tab-btn {
@@ -93,14 +91,13 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 V1.2.1 調整: 淨利字體縮小並移除「淨」字 === */
+    /* === 歷史列表 V1.2.2 調整: 重新設計三欄式佈局，資訊更清晰 === */
     .history-item {
         background-color: #111216; 
         border-bottom: 1px solid #222; 
-        padding: 1.25rem 1rem; /* 上下左右增加間距 */
+        padding: 1.25rem 1rem; 
         cursor: pointer; 
         transition: background 0.2s;
-        /* 確保元素高度相同 */
         display: flex;
         align-items: center; 
     }
@@ -111,14 +108,16 @@
         flex-direction: column;
         justify-content: center;
         align-items: flex-start;
-    }
-    .history-col-center {
-        align-items: center;
-        text-align: center;
+        padding: 0 0.5rem;
     }
     .history-col-right {
         align-items: flex-end;
         text-align: right;
+    }
+    .stat-label-small {
+        font-size: 0.7rem; /* 比 0.75rem 更小 */
+        color: #6b7280; 
+        margin-top: 2px;
     }
 
     /* === 字體與標籤 === */
@@ -139,12 +138,12 @@
 </head>
 <body class="max-w-md mx-auto p-3">
 
-    <!-- 標題 (V1.2.1) --><div class="flex justify-between items-center mb-4 px-1 pt-2">
+    <!-- 標題 (V1.2.2) --><div class="flex justify-between items-center mb-4 px-1 pt-2">
         <div class="flex items-center gap-2">
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.1 Stable</div>
+                <div class="text-[10px] text-gray-500">V1.2.2 Layout Optimized</div>
             </div>
         </div>
         <button onclick="toggleSettings()" class="p-2 bg-[#1a1c23] rounded-full text-gray-400 border border-[#333] text-xs active:bg-gray-800">
@@ -286,7 +285,8 @@
             <button class="tab-btn" onclick="setFilter('month', this)">本月</button>
             <button class="tab-btn" onclick="setFilter('year', this)">本年</button>
             <button class="tab-btn" onclick="setFilter('all', this)">全部</button>
-            <button class="tab-btn" onclick="setFilter('custom', this)">自定義</button> <!-- NEW --><button class="tab-btn border-green-500 text-green-400" onclick="toggleCharts()">📈 進階圖表分析</button>
+            <button class="tab-btn" onclick="setFilter('custom', this)">自定義</button> 
+            <button class="tab-btn border-green-500 text-green-400" onclick="toggleCharts()">📈 進階圖表分析</button>
         </div>
     </div>
     
@@ -334,8 +334,8 @@
         <div id="historyList" class="rounded-xl overflow-hidden border border-[#2a2d36]"></div>
     </div>
 
-    <!-- 6. 版權 Footer (V1.2.1) --><div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.1</div>
+    <!-- 6. 版權 Footer (V1.2.2) --><div class="footer-credit">
+        <div>UberEat 外送薪資計算器 V1.2.2</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -636,32 +636,30 @@ function refreshDashboard() {
     document.getElementById('dashGrossHourly').innerText = formatCurrency(totalGrossHourly);
     document.getElementById('dashNetHourly').innerText = formatCurrency(totalNetHourly);
 
-    // 更新歷史列表
+    // 更新歷史列表 - V1.2.2 樣式調整
     const listHtml = filtered.map(r => `
-        <div class="history-item flex justify-between gap-3" onclick="loadRecordToEditor(${r.id})">
-            <!-- Col 1: 日期與單數 -->
-            <div class="history-col w-1/4">
-                <div class="font-semibold text-white text-sm">${r.date.slice(5)}</div>
-                <div class="stat-label mt-1">單數: ${r.orders}</div>
+        <div class="history-item flex justify-between gap-1" onclick="loadRecordToEditor(${r.id})">
+            <!-- Col 1: 日期與營收 (黃色) -->
+            <div class="history-col w-[30%]">
+                <div class="font-semibold text-white text-base">${r.date.slice(5)}</div>
+                <div class="font-bold text-amber-soft text-xl mt-1">$${formatCurrency(r.income)}</div>
+                <div class="stat-label-small text-amber-soft">營收</div>
             </div>
             
-            <!-- Col 2: 營收與里程 -->
-            <div class="history-col w-1/4">
-                <div class="font-bold text-amber-soft text-base">$${formatCurrency(r.income)}</div>
-                <div class="stat-label mt-1">${r.km.toFixed(1)} KM</div>
+            <!-- Col 2: 中間數據 (里程, 單數, 工時, 成本) -->
+            <div class="history-col w-[35%] text-left">
+                <div class="text-sm text-gray-400">${r.km.toFixed(1)} KM / ${r.orders} 單</div>
+                <div class="text-xs text-gray-500 mt-1">${formatDuration(r.hours)}</div>
+                <div class="font-semibold text-red-400 text-base mt-2">總成本: $${formatCurrency(r.totalCost)}</div>
+                <div class="text-xs text-gray-500 mt-1">油: $${formatCurrency(r.oilCost)} | 耗: $${formatCurrency(r.maintenanceCost)}</div>
             </div>
 
-            <!-- Col 3: 成本與工時 -->
-            <div class="history-col w-1/4 text-center">
-                <div class="font-bold text-red-400 text-base">-$${formatCurrency(r.totalCost)}</div>
-                <div class="stat-label mt-1">${formatDuration(r.hours)}</div>
-            </div>
-
-            <!-- Col 4: 淨利與淨時薪 -->
-            <div class="history-col history-col-right w-1/4">
-                <!-- V1.2.1 修正: 縮小字體並移除「淨」字 -->
-                <div class="font-bold text-green-400 text-lg">$${formatCurrency(r.netProfit)}</div>
-                <div class="stat-label mt-1 text-green-600">時薪 $${formatCurrency(r.netHourly)}</div>
+            <!-- Col 3: 淨利與淨時薪 (綠色) -->
+            <div class="history-col history-col-right w-[35%]">
+                <div class="font-bold text-green-400 text-xl">$${formatCurrency(r.netProfit)}</div>
+                <div class="stat-label-small text-green-500">淨利</div>
+                <div class="text-xs text-green-600 mt-2">時薪 $${formatCurrency(r.netHourly)}</div>
+                <div class="stat-label-small mt-1"></div>
             </div>
         </div>
     `).join('');
