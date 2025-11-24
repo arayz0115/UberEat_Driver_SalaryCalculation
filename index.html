@@ -95,7 +95,7 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 V1.2.17 圖示樣式修正 === */
+    /* === 歷史列表 V1.2.17 圖示樣式修正 (此區為重點修改) === */
     .history-item {
         background-color: #111216; 
         border-bottom: 1px solid #222; 
@@ -666,12 +666,12 @@ function toggleCharts(force, initialLoad = false) {
 }
 
 
-// 歷史明細收合/展開
+// 歷史明細收合/展開 (此函式已修正圖示選擇器)
 let historyCollapseStates = {}; // 儲存明細的展開狀態
 
 function toggleHistoryDetails(id, element) {
     const subStats = document.getElementById('sub-stats-' + id);
-    // V1.2.17: 修正圖示選擇器
+    // V1.2.16/17: 修正圖示選擇器
     // 透過點擊的 history-item 元素，找到其子元素中的 history-toggle-icon
     const icon = element.querySelector('.history-toggle-icon'); 
 
@@ -757,7 +757,7 @@ async function fetchOilPrice() {
 }
 
 
-// === 資料處理與計算函式 (V1.2.16 邏輯) ===
+// === 資料處理與計算函式 (V1.2.16 邏輯 - 未更動) ===
 
 function calculateCosts(dist, oilPrice, fuelRate, maintCost) {
     if (dist <= 0) return { oilCost: 0, maintenanceCost: 0, totalCost: 0 };
@@ -1121,13 +1121,11 @@ function renderHistoryList(data) {
         // 判斷淨利顏色
         const netProfitColor = record.netProfit >= 0 ? 'text-green-400' : 'text-red-400';
         
-        const detailId = `detail-${record.id}`;
-        
-        const isExpanded = historyCollapseStates[detailId] === true;
+        const isExpanded = historyCollapseStates[record.id] === true;
         const subStatsClass = isExpanded ? '' : 'hidden';
         const iconRotate = isExpanded ? 'transform: rotate(180deg);' : 'transform: rotate(0deg);';
         
-        // V1.2.17: 修正列表 HTML 結構，將圖示單獨放置，並調整點擊區域
+        // V1.2.16 (Icon Fixed): 修正列表 HTML 結構，將圖示單獨放置，並調整點擊區域
         const itemHtml = `
             <div class="history-item" onclick="toggleHistoryDetails('${record.id}', this)">
                 
@@ -1210,7 +1208,7 @@ function renderHistoryList(data) {
 }
 
 
-// === 圖表相關函式 (V1.2.16 邏輯) ===
+// === 圖表相關函式 (V1.2.16 邏輯 - 未更動) ===
 
 function switchChartType(type) {
     chartType = type;
@@ -1346,7 +1344,7 @@ function renderPieChart(ctx, chartData) {
     const totalMaintCost = chartData.reduce((sum, r) => sum + r.maintenanceCost, 0);
     const totalNetProfit = chartData.reduce((sum, r) => sum + r.netProfit, 0);
     
-    // V1.2.16: 直接使用原始淨利 (不處理負值)
+    // V1.2.16 邏輯: 直接使用原始淨利 (允許負值在圖表中顯示)
     
     chartInstance = new Chart(ctx, {
         type: 'pie',
@@ -1370,7 +1368,8 @@ function renderPieChart(ctx, chartData) {
                     callbacks: {
                         label: (context) => {
                             // V1.2.16 原始 tooltip 邏輯
-                            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            const dataSet = context.dataset.data;
+                            const total = dataSet.reduce((a, b) => a + b, 0);
                             const value = context.raw;
                             // 修正：如果總和為0，避免 NaN
                             const percentage = total === 0 ? '0.0%' : ((value / total) * 100).toFixed(1) + '%';
