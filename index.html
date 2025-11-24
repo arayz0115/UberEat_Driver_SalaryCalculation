@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.16</title>
+<title>UberEat Salary Calculator V1.2.16 (Icon Fixed)</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.16 (明細圖示優化)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與明細列表收合功能。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.16 (圖示修正)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，修正了列表圖示風格。" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.16" />
 
@@ -95,7 +95,7 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 V1.2.16 樣式修正 (主要區域與圖示分離) === */
+    /* === 歷史列表 V1.2.17 圖示樣式修正 === */
     .history-item {
         background-color: #111216; 
         border-bottom: 1px solid #222; 
@@ -108,7 +108,6 @@
         flex-direction: column; 
     }
     
-    /* V1.2.16: 新增容器包裹主區域與圖示 */
     .history-header-wrapper {
         display: flex;
         justify-content: space-between;
@@ -116,7 +115,7 @@
         width: 100%;
     }
 
-    /* V1.2.16: 主數據區，佔用大部分寬度，用於點擊編輯 */
+    /* 歷史紀錄主要顯示區域 (用於點擊觸發) */
     .history-main-area {
         display: flex;
         width: calc(100% - 30px); /* 留出圖示的空間 */
@@ -126,26 +125,18 @@
     }
     .history-main-area:active { background-color: #1c1e24; } 
 
-    .history-top-row {
-        /* 保持原來的三欄佈局 */
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        width: 100%;
-    }
-
-    /* V1.2.16: 獨立的收合/展開圖示區域 */
+    /* V1.2.17: 獨立的收合/展開圖示區域 - 顏色改為灰色，微調 padding-top 實現垂直置中對齊 */
     .history-toggle-icon {
-        width: 30px; /* 固定圖示寬度 */
-        height: 100%; /* 與主區域高度對齊 */
-        padding-top: 5px; /* 調整圖示與日期/營收的垂直對齊 */
-        color: #6ee7b7; /* 調整顏色，使其更清晰 */
+        width: 30px; 
+        height: 100%;
+        padding-top: 1px; /* 調整對齊 */
+        color: #9ca3af; /* 統一為灰色 */
         cursor: pointer;
         z-index: 10;
         font-size: 1rem;
         transition: transform 0.2s;
         text-align: right;
-        flex-shrink: 0; /* 防止被擠壓 */
+        flex-shrink: 0;
     }
     
     .history-stat-group {
@@ -179,21 +170,19 @@
     
     /* === 歷史列表底部詳細區塊 (預設隱藏) === */
     .history-sub-stats {
-        /* V1.2.15: 詳細數據區域 */
         width: 100%;
         padding-top: 0.75rem; 
-        padding-bottom: 1.25rem; /* 底部間距移到這裡 */
+        padding-bottom: 1.25rem; 
         font-size: 0.8rem;
         color: #9ca3af;
         margin-top: 0.75rem; 
-        border-top: 1px solid #222; /* 讓詳細數據與主數據分隔 */
+        border-top: 1px solid #222; 
     }
     
     .history-sub-stats.hidden {
         display: none;
     }
 
-    /* 內部 Performance Summary 區塊也移除 border-top */
     .history-sub-stats .performance-summary {
         margin-top: 0.75rem;
         padding-top: 0.75rem;
@@ -204,6 +193,11 @@
     /* === 字體與標籤 === */
     .stat-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
     .text-amber-soft { color: #fcd34d; }
+
+    /* 編輯器和儀表板圖示顏色統一 */
+    #editorToggleIcon, #dashboardToggleIcon {
+        color: #9ca3af; /* 統一為灰色 */
+    }
     
     /* === 版權 Footer === */
     .footer-credit {
@@ -224,7 +218,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.16 History Icon Optimized</div>
+                <div class="text-[10px] text-gray-500">V1.2.16 History Icon Fixed</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -296,7 +290,7 @@
             <h3 class="font-bold text-white flex items-center gap-2 text-base">
                 <span id="editorTitle">📝 新增紀錄</span>
             </h3>
-            <span id="editorToggleIcon" class="text-xl text-gray-400">▼</span>
+            <span id="editorToggleIcon" class="text-xl">▼</span>
         </div>
         
         <div id="editorContent" class="pt-4">
@@ -352,7 +346,7 @@
                 <div class="w-1.5 h-4 bg-green-500 rounded-full"></div>
                 區間總營收儀表板
             </h3>
-            <span id="dashboardToggleIcon" class="text-xl text-gray-400">▼</span>
+            <span id="dashboardToggleIcon" class="text-xl">▼</span>
         </div>
         
         <div id="dashboardContent" class="pt-4">
@@ -473,14 +467,13 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.16 (History Icon Optimized)</div>
+        <div>UberEat 外送薪資計算器 V1.2.16 (History Icon Fixed)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
 
 <script>
-// === V1.2.8 修正版：Firebase 配置與初始化 (最穩定的結構) ===
-// ⚠️ 請務必確認這個 API Key 是您專案的有效密鑰！
+// === Firebase 配置與初始化 (V1.2.7/V1.2.16 結構) ===
 const firebaseConfig = {
     apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 您的 Key
     authDomain: "uber-driver-tracker.firebaseapp.com",
@@ -490,17 +483,12 @@ const firebaseConfig = {
     appId: "1:333010467554:web:86f6a5067253fa433878b2"
 };
 
-let db; // 全域變數用於 Firestore 存取
-let firebaseUnsubscribe = null; // V1.2.12: 用來儲存實時監聽的取消函式
+let db; 
+let firebaseUnsubscribe = null; 
 
-// 💡 修正：移除多餘的 projectId 檢查，只檢查 SDK 是否載入且 Key 是否存在
 if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    console.log("Firebase 初始化成功。");
-} else {
-    // 如果因為某些原因導致初始化失敗 (例如 SDK 載入問題或配置錯誤)
-    console.error("Firebase SDK 載入失敗或配置錯誤。雲端同步功能將不會啟用。");
 }
 
 
@@ -510,866 +498,979 @@ let globalOilPrice = 30.0;
 let currentFilter = 'day';
 let chartInstance = null;
 let chartType = 'bar'; 
+let records = []; 
 
 window.onload = async () => {
-    // V1.2.13: 優先載入收合狀態，確保 UI 正確顯示
     loadCollapseStates(); 
-    
     resetEditor();
     loadSettings();
     
     const today = getLocalDateString();
     
-    // 初始化自定義篩選器日期為今天
+    // 初始化日期範圍
     document.getElementById('filterStart').value = today;
     document.getElementById('filterEnd').value = today;
 
-    // 初始化圖表日期範圍
     const now = new Date();
     document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
     document.getElementById('chartEnd').value = today;
 
-    // 啟動 Firebase 登入狀態監聽 (V1.2.12: 替換為實時監聽邏輯)
     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                // 使用者已登入
                 document.getElementById('authStatusText').innerText = "已登入"; 
                 document.getElementById('userEmailDisplay').innerText = user.email;
                 document.getElementById('authForm').classList.add('hidden');
                 document.getElementById('userInfo').classList.remove('hidden');
-                
-                // V1.2.12: 啟用實時監聽
-                setupRealtimeListener(user);
-
+                setupRealtimeListener(user); // 啟用實時監聽
             } else {
-                // 使用者已登出
                 document.getElementById('authStatusText').innerText = "未登入"; 
                 document.getElementById('authForm').classList.remove('hidden');
                 document.getElementById('userInfo').classList.add('hidden');
-                
-                // V1.2.12: 取消實時監聽 (如果有的話)
                 if (firebaseUnsubscribe) {
                     firebaseUnsubscribe();
                     firebaseUnsubscribe = null;
                 }
-                
-                // 登出後，顯示本地資料
-                refreshDashboard(); 
+                refreshDashboard(); // 登出後，顯示本地資料
             }
         });
     } else {
         refreshDashboard();
     }
     
-    await fetchOilPrice();
-};
+    await fetchOilPrice(); // 獲取當前油價
+    refreshDashboard();
+    updateChart(); // 初始化圖表
+}; 
 
-function getLocalDateString() {
-    const offset = new Date().getTimezoneOffset() * 60000;
-    return new Date(Date.now() - offset).toISOString().split('T')[0];
+// === 通用工具函式 ===
+function getLocalDateString(date = new Date()) {
+    return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 }
 
-// === V1.2.14: 收合/展開相關函數 (圖示更新) ===
-/**
- * 處理單一區塊的收合與展開邏輯，並儲存狀態。
- */
-function togglePanel(panelId, iconId, storageKey) {
-    const content = document.getElementById(panelId + 'Content');
-    const icon = document.getElementById(iconId);
-    
-    if (content.classList.contains('hidden')) {
-        // 展開 (Expand)
-        content.classList.remove('hidden');
-        icon.innerText = '▼'; // V1.2.14: 使用簡潔的黑色實心三角形
-        localStorage.removeItem(storageKey); 
-    } else {
-        // 收合 (Collapse)
-        content.classList.add('hidden');
-        icon.innerText = '▶'; // V1.2.14: 使用簡潔的黑色實心三角形
-        localStorage.setItem(storageKey, 'true');
-    }
+function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // 調整為週一為起始日
+    return new Date(d.setDate(diff));
 }
 
-function toggleEditor() {
-    // V1.2.13: 編輯區塊收合
-    togglePanel('editor', 'editorToggleIcon', 'editorCollapsed');
+function toggleElement(id) {
+    document.getElementById(id).classList.toggle('hidden');
 }
 
-function toggleDashboard() {
-    // V1.2.13: 儀表板區塊收合
-    togglePanel('dashboard', 'dashboardToggleIcon', 'dashboardCollapsed');
+// 展開/收合狀態本地儲存
+let collapseStates = JSON.parse(localStorage.getItem('collapseStates') || '{}');
+
+function saveCollapseStates() {
+    localStorage.setItem('collapseStates', JSON.stringify(collapseStates));
 }
 
-/**
- * 載入並應用 Local Storage 中儲存的收合狀態。
- */
 function loadCollapseStates() {
-    // 編輯器狀態
-    if (localStorage.getItem('editorCollapsed') === 'true') {
-        document.getElementById('editorContent').classList.add('hidden');
-        document.getElementById('editorToggleIcon').innerText = '▶'; // V1.2.14: 使用簡潔圖示
+    // 載入儀表板和編輯器狀態
+    if (collapseStates.editor === false) toggleEditor(false, true);
+    if (collapseStates.dashboard === false) toggleDashboard(false, true);
+    if (collapseStates.settings === true) toggleSettings(true, true);
+    if (collapseStates.auth === true) toggleAuthPanel(true, true);
+    if (collapseStates.charts === true) toggleCharts(true, true);
+}
+
+
+// === UI 切換函式 ===
+
+function toggleEditor(force, initialLoad = false) {
+    const editorContent = document.getElementById('editorContent');
+    const editorIcon = document.getElementById('editorToggleIcon');
+    const isHidden = editorContent.classList.contains('hidden');
+
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        editorContent.classList.remove('hidden');
+        editorIcon.innerText = '▼';
+        collapseStates.editor = true;
     } else {
-        document.getElementById('editorToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
+        editorContent.classList.add('hidden');
+        editorIcon.innerText = '▲';
+        collapseStates.editor = false;
     }
+    if (!initialLoad) saveCollapseStates();
+}
 
-    // 儀表板狀態
-    if (localStorage.getItem('dashboardCollapsed') === 'true') {
-        document.getElementById('dashboardContent').classList.add('hidden');
-        document.getElementById('dashboardToggleIcon').innerText = '▶'; // V1.2.14: 使用簡潔圖示
+function toggleDashboard(force, initialLoad = false) {
+    const dashboardContent = document.getElementById('dashboardContent');
+    const dashboardIcon = document.getElementById('dashboardToggleIcon');
+    const isHidden = dashboardContent.classList.contains('hidden');
+    
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        dashboardContent.classList.remove('hidden');
+        dashboardIcon.innerText = '▼';
+        collapseStates.dashboard = true;
     } else {
-        document.getElementById('dashboardToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
+        dashboardContent.classList.add('hidden');
+        dashboardIcon.innerText = '▲';
+        collapseStates.dashboard = false;
     }
+    if (!initialLoad) saveCollapseStates();
 }
 
-// === V1.2.15: 歷史明細的收合/展開邏輯 (V1.2.16 修正：確保點擊不會觸發編輯) ===
-function toggleHistoryDetails(id) {
-    const content = document.getElementById(`detail-${id}`);
-    const icon = document.getElementById(`icon-detail-${id}`);
+function toggleSettings(force, initialLoad = false) {
+    const settingsPanel = document.getElementById('settingsPanel');
+    const isHidden = settingsPanel.classList.contains('hidden');
 
-    if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        icon.innerText = '▼'; // 展開狀態
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        settingsPanel.classList.remove('hidden');
+        collapseStates.settings = true;
     } else {
-        content.classList.add('hidden');
-        icon.innerText = '▶'; // 收合狀態
+        settingsPanel.classList.add('hidden');
+        collapseStates.settings = false;
+    }
+    if (!initialLoad) saveCollapseStates();
+}
+
+function toggleAuthPanel(force, initialLoad = false) {
+    const authPanel = document.getElementById('authPanel');
+    const isHidden = authPanel.classList.contains('hidden');
+    
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        authPanel.classList.remove('hidden');
+        collapseStates.auth = true;
+    } else {
+        authPanel.classList.add('hidden');
+        collapseStates.auth = false;
+    }
+    if (!initialLoad) saveCollapseStates();
+}
+
+function toggleCharts(force, initialLoad = false) {
+    const chartsPanel = document.getElementById('chartsPanel');
+    const isHidden = chartsPanel.classList.contains('hidden');
+    
+    const shouldOpen = (force !== undefined) ? force : isHidden;
+
+    if (shouldOpen) {
+        chartsPanel.classList.remove('hidden');
+        collapseStates.charts = true;
+        updateChart(); // 展開時更新圖表
+    } else {
+        chartsPanel.classList.add('hidden');
+        collapseStates.charts = false;
+    }
+    if (!initialLoad) saveCollapseStates();
+}
+
+
+// 歷史明細收合/展開
+let historyCollapseStates = {}; // 儲存明細的展開狀態
+
+function toggleHistoryDetails(id, element) {
+    const subStats = document.getElementById('sub-stats-' + id);
+    // V1.2.17: 修正圖示選擇器
+    // 透過點擊的 history-item 元素，找到其子元素中的 history-toggle-icon
+    const icon = element.querySelector('.history-toggle-icon'); 
+
+    if (subStats.classList.contains('hidden')) {
+        subStats.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+        historyCollapseStates[id] = true;
+    } else {
+        subStats.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+        historyCollapseStates[id] = false;
     }
 }
 
 
-// === V1.2.12: 新增 Firebase 實時監聽功能 (取代 syncDataOnLogin) ===
+// === 設置與油價相關函式 (V1.2.16 邏輯) ===
 
-/**
- * 啟用 Firestore 上的實時監聽，任何雲端資料的變動都會立即反映到本地。
- */
-function setupRealtimeListener(user) {
-    if (!user || !db) return;
+function loadSettings() {
+    const settings = JSON.parse(localStorage.getItem('uberEatSettings')) || {
+        fuelRate: 35,
+        maintCost: 3.5,
+        oilType: '95'
+    };
     
-    // V1.2.12: 如果已經在監聽，先取消舊的監聽
-    if (firebaseUnsubscribe) {
-        firebaseUnsubscribe();
-        firebaseUnsubscribe = null;
-    }
-
-    const userRef = db.collection('records').doc(user.uid);
-
-    // 設定新的實時監聽
-    firebaseUnsubscribe = userRef.onSnapshot((doc) => {
-        if (doc.exists) {
-            const cloudList = doc.data().data || [];
-            
-            // 檢查雲端資料是否與本地資料不同，避免無限循環或不必要的刷新
-            const currentLocalList = getHistory();
-            
-            if (JSON.stringify(cloudList) !== JSON.stringify(currentLocalList)) {
-                console.log(`[Realtime Sync] 偵測到雲端資料更新，共 ${cloudList.length} 筆。`);
-                
-                // 1. 更新本地儲存 (覆蓋)
-                saveToHistory(cloudList); 
-                
-                // 2. 更新儀表板 UI
-                refreshDashboard(); 
-                
-            } else {
-                // V1.2.12 修正: 即使資料相同，也刷新儀表板以確保 UI 狀態正確
-                console.log('[Realtime Sync] 雲端資料與本地一致，刷新儀表板確保一致性。');
-                refreshDashboard();
-            }
-        } else {
-            // 雲端文件不存在 (可能是新用戶或已清除資料)
-            const localList = getHistory();
-            if (localList.length > 0) {
-                // 雲端無資料，但本地有資料：執行單次上傳 (將本地資料作為雲端初始資料)
-                console.log("雲端文件不存在，但偵測到本地紀錄，執行單次上傳。");
-                uploadHistory(localList, user);
-            } else {
-                console.log("雲端與本地均無紀錄。");
-                refreshDashboard();
-            }
-        }
-    }, (error) => {
-        console.error("[Realtime Listener Error]", error);
-        alert(`實時同步發生錯誤: ${error.message}，請嘗試重新整理。`);
-        // 監聽失敗，至少顯示本地資料
-        refreshDashboard(); 
-    });
+    document.getElementById('settingFuelRate').value = settings.fuelRate;
+    document.getElementById('settingMaint').value = settings.maintCost;
+    document.getElementById('oilType').value = settings.oilType;
 }
 
-
-// === 身份驗證相關函數 (保持不變) ===
-
-function toggleAuthPanel() { document.getElementById('authPanel').classList.toggle('hidden'); }
-
-function registerUser() {
-    const email = document.getElementById('authEmail').value;
-    const password = document.getElementById('authPassword').value;
-    if (email.length < 5 || password.length < 6) {
-        return alert("Email 或密碼格式不正確 (密碼需至少6位)");
-    }
-    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+function saveSettings() {
+    const settings = {
+        fuelRate: parseFloat(document.getElementById('settingFuelRate').value),
+        maintCost: parseFloat(document.getElementById('settingMaint').value),
+        oilType: document.getElementById('oilType').value
+    };
     
-    firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-            console.log("註冊成功，已自動登入:", userCredential.user.email);
-            // 💡 修正：註冊成功後，自動隱藏面板
-            document.getElementById('authPanel').classList.add('hidden');
-        })
-        .catch((error) => {
-            console.error("註冊失敗:", error.message);
-            alert(`註冊失敗: ${error.message}`);
-        });
-}
-
-function loginUser() {
-    const email = document.getElementById('authEmail').value;
-    const password = document.getElementById('authPassword').value;
-    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
-
-    firebase.auth().signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-            console.log("登入成功:", userCredential.user.email);
-            // 💡 修正：登入成功後，立刻隱藏面板，解決狀態顯示延遲的問題
-            document.getElementById('authPanel').classList.add('hidden');
-        })
-        .catch((error) => {
-            console.error("登入失敗:", error.message);
-            alert(`登入失敗: ${error.message}`);
-        });
-}
-
-function logoutUser() {
-    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
-    
-    // V1.2.12: 登出前取消實時監聽
-    if (firebaseUnsubscribe) {
-        firebaseUnsubscribe();
-        firebaseUnsubscribe = null;
-    }
-    
-    firebase.auth().signOut()
-        .then(() => {
-            console.log("登出成功");
-            // 登出後，將本機資料清空 (確保下次登入能拉取雲端資料，實現跨裝置一致性)
-            localStorage.removeItem('uber_ray_v1');
-            document.getElementById('authPanel').classList.add('hidden'); // 隱藏面板
-            alert("登出成功，本機紀錄已清除。下次登入將自動同步雲端資料。");
-            // onAuthStateChanged 會自動呼叫 refreshDashboard()
-        })
-        .catch((error) => {
-            console.error("登出失敗:", error.message);
-            alert(`登出失敗: ${error.message}`);
-        });
-}
-
-function resetPassword() {
-    const email = document.getElementById('authEmail').value;
-    if (!email) return alert("請先輸入您的 Email！");
-    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
-    
-    firebase.auth().sendPasswordResetEmail(email)
-        .then(() => {
-            alert("密碼重設郵件已寄出，請檢查您的信箱！");
-        })
-        .catch((error) => {
-            console.error("密碼重設失敗:", error.message);
-            alert(`密碼重設失敗: ${error.message}`);
-        });
-}
-
-// === 雲端資料上傳 (uploadHistory) 保持不變) ===
-
-/**
- * 將 Local Storage 中的資料上傳到 Firestore。
- */
-async function uploadHistory(data, user) {
-    user = user || firebase.auth().currentUser;
-    if (!user || !db) {
-        console.warn("未登入使用者或資料庫未初始化，無法執行雲端上傳。");
+    if (isNaN(settings.fuelRate) || settings.fuelRate <= 0) {
+        alert("油耗 (km/L) 必須是有效的正數！");
         return;
     }
-    
-    try {
-        await db.collection('records').doc(user.uid).set({
-            data: data,
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        console.log(`雲端上傳成功，共 ${data.length} 筆紀錄。`);
-    } catch (e) {
-        console.error("雲端資料上傳失敗:", e);
-        // 不彈出 alert，避免干擾，讓實時監聽機制處理
+    if (isNaN(settings.maintCost) || settings.maintCost < 0) {
+        alert("耗材 ($/km) 必須是有效的正數或零！");
+        return;
     }
+
+    localStorage.setItem('uberEatSettings', JSON.stringify(settings));
+    alert("設定已儲存！");
+    refreshDashboard(); 
 }
 
-
-// === 設定處理 (不變) ===
-function loadSettings() {
-    document.getElementById('settingFuelRate').value = localStorage.getItem('fuelRate') || 12;
-    document.getElementById('settingMaint').value = localStorage.getItem('maintCost') || 1.5;
-    document.getElementById('oilType').value = localStorage.getItem('oilType') || '95';
-}
-function saveSettings() {
-    localStorage.setItem('fuelRate', document.getElementById('settingFuelRate').value);
-    localStorage.setItem('maintCost', document.getElementById('settingMaint').value);
-    localStorage.setItem('oilType', document.getElementById('oilType').value);
-    document.getElementById('settingsPanel').classList.add('hidden');
-    refreshDashboard();
-}
-function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
-
-// === 油價獲取 (使用代理 API - 不變) ===
 async function fetchOilPrice() {
+    const oilType = document.getElementById('oilType').value;
+    const oilDisplay = document.getElementById('oilPriceDisplay');
+    oilDisplay.innerHTML = '讀取中...';
+    
     try {
-        const type = document.getElementById('oilType').value;
-        // 使用 try-catch 確保即使 API 失敗也能使用預設值
-        const res = await fetch(workerAPI);
-        const data = await res.json();
-        if(data[type]) {
-            globalOilPrice = parseFloat(data[type]);
-            document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice}`;
+        const response = await fetch(workerAPI + '?oilType=' + oilType);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        const price = data.price; 
+        
+        if (price) {
+            globalOilPrice = parseFloat(price);
+            oilDisplay.innerHTML = `$${globalOilPrice.toFixed(2)}`;
+            localStorage.setItem('globalOilPrice', globalOilPrice.toFixed(2));
         } else {
-            document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice} (預設/API錯誤)`;
+            throw new Error('API returned no price data');
         }
-    } catch(e) { 
-        document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice} (預設/網路錯誤)`;
+    } catch (error) {
+        console.error("獲取油價失敗，使用上次紀錄值或預設值。", error);
+        
+        const storedPrice = localStorage.getItem('globalOilPrice');
+        if (storedPrice) {
+            globalOilPrice = parseFloat(storedPrice);
+            oilDisplay.innerHTML = `$${globalOilPrice.toFixed(2)} (本地備用)`;
+        } else {
+            globalOilPrice = 30.0;
+            oilDisplay.innerHTML = `$30.00 (預設值)`;
+        }
     }
+    document.getElementById('recordOilPrice').value = globalOilPrice.toFixed(2);
 }
 
-// === 歷史資料 CRUD (重點：save/delete 後，透過 uploadHistory 觸發實時監聽) ===
-function getHistory() { try { return JSON.parse(localStorage.getItem('uber_ray_v1') || '[]'); } catch { return []; } }
-function saveToHistory(data) { localStorage.setItem('uber_ray_v1', JSON.stringify(data)); }
 
-// V1.2.12: saveRecord() 儲存後，透過 uploadHistory 觸發實時監聽
-function saveRecord() {
-    const date = document.getElementById('inputDate').value;
-    const income = parseFloat(document.getElementById('inputIncome').value);
-    const orders = parseFloat(document.getElementById('inputOrders').value);
-    const km = parseFloat(document.getElementById('inputDist').value);
-    const hr = parseFloat(document.getElementById('inputHr').value) || 0;
-    const min = parseFloat(document.getElementById('inputMin').value) || 0;
-    const editId = document.getElementById('editId').value;
-    const lockedOil = document.getElementById('recordOilPrice').value;
+// === 資料處理與計算函式 (V1.2.16 邏輯) ===
 
-    if(!date) return console.error('請選日期');
-    if(isNaN(income) || isNaN(km)) return console.error('請填寫金額與里程');
-
-    const finalOil = (editId && lockedOil) ? parseFloat(lockedOil) : globalOilPrice;
-    const rec = {
-        id: editId ? parseInt(editId) : Date.now(),
-        date: date, income: income, orders: orders||0, km: km, hours: hr+(min/60),
-        oilPrice: finalOil,
-        fuelRate: parseFloat(document.getElementById('settingFuelRate').value),
-        maintCost: parseFloat(document.getElementById('settingMaint').value)
-    };
-
-    const list = getHistory();
-    if(editId) {
-        const idx = list.findIndex(r => r.id == editId);
-        if(idx!==-1) list[idx] = rec;
-    } else {
-        list.push(rec);
-        // 如果是新增今日紀錄，自動切換到今日篩選
-        if(date === getLocalDateString()) { currentFilter = 'day'; updateTabs(); }
-    }
-    list.sort((a,b) => new Date(b.date)-new Date(a.date));
-    saveToHistory(list);
+function calculateCosts(dist, oilPrice, fuelRate, maintCost) {
+    if (dist <= 0) return { oilCost: 0, maintenanceCost: 0, totalCost: 0 };
     
-    // V1.2.12: 資料儲存後，立即上傳到雲端，這將觸發所有連線設備的 onSnapshot 實時監聽
-    uploadHistory(list);
+    const oilCost = (dist / fuelRate) * oilPrice;
+    const maintenanceCost = dist * maintCost;
+    const totalCost = oilCost + maintenanceCost;
+    
+    return {
+        oilCost: parseFloat(oilCost.toFixed(2)),
+        maintenanceCost: parseFloat(maintenanceCost.toFixed(2)),
+        totalCost: parseFloat(totalCost.toFixed(2))
+    };
+}
 
-    resetEditor();
-    // 實時監聽器會自動呼叫 refreshDashboard，這裡可以不用手動呼叫
+function createRecordObject(id = null) {
+    const income = parseFloat(document.getElementById('inputIncome').value) || 0;
+    const orders = parseInt(document.getElementById('inputOrders').value) || 0;
+    const dist = parseFloat(document.getElementById('inputDist').value) || 0;
+    const hr = parseInt(document.getElementById('inputHr').value) || 0;
+    const min = parseInt(document.getElementById('inputMin').value) || 0;
+    const date = document.getElementById('inputDate').value;
+    const fuelRate = parseFloat(document.getElementById('settingFuelRate').value);
+    const maintCost = parseFloat(document.getElementById('settingMaint').value);
+    const recordOilPrice = parseFloat(document.getElementById('recordOilPrice').value);
+    const totalMinutes = hr * 60 + min;
+    const totalHours = totalMinutes / 60;
+
+    const costs = calculateCosts(dist, recordOilPrice, fuelRate, maintCost);
+    const netProfit = income - costs.totalCost;
+    
+    return {
+        id: id || Date.now().toString(),
+        date: date,
+        income: income,
+        orders: orders,
+        distance: dist,
+        hours: totalHours,
+        totalMinutes: totalMinutes,
+        oilPrice: recordOilPrice,
+        fuelRate: fuelRate,
+        maintCost: maintCost,
+        oilCost: costs.oilCost,
+        maintenanceCost: costs.maintenanceCost,
+        totalCost: costs.totalCost,
+        netProfit: parseFloat(netProfit.toFixed(2)),
+    };
+}
+
+
+// === 編輯器函式 (V1.2.16 邏輯) ===
+
+function resetEditor() {
+    document.getElementById('editId').value = '';
+    document.getElementById('editorTitle').innerText = '📝 新增紀錄';
+    document.getElementById('inputDate').value = getLocalDateString();
+    document.getElementById('inputIncome').value = '';
+    document.getElementById('inputOrders').value = '';
+    document.getElementById('inputDist').value = '';
+    document.getElementById('inputHr').value = '';
+    document.getElementById('inputMin').value = '';
+    document.getElementById('btnDelete').classList.add('hidden');
+    document.getElementById('btnCancel').classList.add('hidden');
+    document.getElementById('editorOilHint').classList.add('hidden');
+    
+    document.getElementById('recordOilPrice').value = globalOilPrice.toFixed(2);
 }
 
 function loadRecordToEditor(id) {
-    const r = getHistory().find(i => i.id === id);
-    if(!r) return;
-    
-    // V1.2.13: 確保在編輯時，編輯器是展開的
-    document.getElementById('editorContent').classList.remove('hidden');
-    document.getElementById('editorToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
-    localStorage.removeItem('editorCollapsed');
-    
-    document.getElementById('editId').value = r.id;
-    document.getElementById('recordOilPrice').value = r.oilPrice || globalOilPrice;
-    document.getElementById('inputDate').value = r.date;
-    document.getElementById('inputIncome').value = r.income;
-    document.getElementById('inputOrders').value = r.orders;
-    document.getElementById('inputDist').value = r.km;
-    const h = Math.floor(r.hours);
-    document.getElementById('inputHr').value = h;
-    document.getElementById('inputMin').value = Math.round((r.hours-h)*60);
+    const record = records.find(r => r.id === id);
+    if (!record) return;
 
-    const hint = document.getElementById('editorOilHint');
-    hint.classList.remove('hidden');
-    hint.innerText = `鎖定油價: $${r.oilPrice||globalOilPrice}`;
+    toggleEditor(true); // 展開編輯器
     
-    document.getElementById('editorTitle').innerText = "✏️ 編輯紀錄";
-    document.getElementById('editorCard').classList.add('card-glow');
-    document.getElementById('btnSave').innerText = "確認修改";
+    document.getElementById('editId').value = record.id;
+    document.getElementById('editorTitle').innerText = `✏️ 編輯 ${record.date}`;
+    document.getElementById('inputDate').value = record.date;
+    document.getElementById('inputIncome').value = record.income;
+    document.getElementById('inputOrders').value = record.orders;
+    document.getElementById('inputDist').value = record.distance;
+    
+    const hr = Math.floor(record.totalMinutes / 60);
+    const min = record.totalMinutes % 60;
+    document.getElementById('inputHr').value = hr;
+    document.getElementById('inputMin').value = min;
+
+    document.getElementById('recordOilPrice').value = record.oilPrice;
+    document.getElementById('editorOilHint').innerText = `鎖定油價: $${record.oilPrice.toFixed(2)}`;
+    document.getElementById('editorOilHint').classList.remove('hidden');
+
     document.getElementById('btnDelete').classList.remove('hidden');
     document.getElementById('btnCancel').classList.remove('hidden');
-    document.getElementById('editorCard').scrollIntoView({behavior:'smooth'});
+    document.getElementById('btnSave').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-// V1.2.12: deleteCurrentRecord() 刪除後，透過 uploadHistory 觸發實時監聽
-function deleteCurrentRecord() {
-    // ⚠️ 根據平台規範，不使用 window.confirm/alert。
-    console.warn('執行刪除操作。'); 
-    
+function saveRecord() {
     const id = document.getElementById('editId').value;
-    if (!id) return;
+    const newRecord = createRecordObject(id);
     
-    const list = getHistory();
-    const originalLength = list.length;
-    
-    const newList = list.filter(r => r.id != id);
-    if(newList.length === originalLength) {
-        console.error(`刪除失敗：找不到 ID 為 ${id} 的紀錄。`);
+    if (newRecord.income <= 0 || newRecord.orders <= 0) {
+        alert("請輸入有效的營業額和單數！");
+        return;
+    }
+    if (newRecord.distance <= 0) {
+        alert("請輸入有效的里程！");
+        return;
+    }
+    if (newRecord.totalMinutes <= 0) {
+        alert("請輸入有效的工時！");
         return;
     }
 
-    saveToHistory(newList);
+    if (id) {
+        // 編輯模式
+        const index = records.findIndex(r => r.id === id);
+        if (index !== -1) {
+            records[index] = newRecord;
+        }
+    } else {
+        // 新增模式
+        records.push(newRecord);
+    }
     
-    // V1.2.12: 資料刪除後，立即上傳到雲端，這將觸發所有連線設備的 onSnapshot 實時監聽
-    uploadHistory(newList);
-    
+    saveRecordsToLocal();
+    saveRecordsToCloud();
     resetEditor();
-    // 實時監聽器會自動呼叫 refreshDashboard，這裡可以不用手動呼叫
+    refreshDashboard();
+    toggleEditor(false); // 儲存後收起編輯器
 }
 
-function resetEditor() {
-    document.getElementById('editId').value = "";
-    document.getElementById('recordOilPrice').value = "";
-    document.getElementById('inputDate').value = getLocalDateString();
-    document.getElementById('inputIncome').value = "";
-    document.getElementById('inputOrders').value = "";
-    document.getElementById('inputDist').value = "";
-    document.getElementById('inputHr').value = "";
-    document.getElementById('inputMin').value = "";
-    document.getElementById('editorTitle').innerText = "📝 新增紀錄";
-    document.getElementById('editorOilHint').classList.add('hidden');
-    document.getElementById('editorCard').classList.remove('card-glow');
-    document.getElementById('btnSave').innerText = "儲存";
-    document.getElementById('btnDelete').classList.add('hidden');
-    document.getElementById('btnCancel').classList.add('hidden');
-}
+function deleteCurrentRecord() {
+    const id = document.getElementById('editId').value;
+    if (!id) return;
+    
+    if (confirm("確定要刪除這筆紀錄嗎？")) {
+        // 刪除本地
+        records = records.filter(r => r.id !== id);
+        saveRecordsToLocal();
+        
+        // 刪除雲端 (如果已登入)
+        if (firebase.auth().currentUser) {
+            // V1.2.16 刪除邏輯
+            db.collection("users").doc(firebase.auth().currentUser.uid).collection("records").doc(id).delete().then(() => {
+                console.log("雲端紀錄刪除成功");
+            }).catch((error) => {
+                console.error("雲端紀錄刪除失敗:", error);
+            });
+        }
 
-// === 篩選與儀表板更新 (不變) ===
-function updateTabs(btn) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    if(btn) btn.classList.add('active');
-    else {
-        // 確保重新載入時，能正確激活目前的 filter 按鈕
-        const buttons = document.querySelectorAll('.tab-scroll-content .tab-btn');
-        const map = {'day':0, 'week':1, 'month':2, 'year':3, 'all':4, 'custom':5};
-        buttons[map[currentFilter]]?.classList.add('active');
+        resetEditor();
+        refreshDashboard();
+        toggleEditor(false);
     }
 }
 
-function applyCustomFilter() {
-    // 只有在 'custom' 模式下，改變日期才觸發更新
-    if (currentFilter === 'custom') {
-        const start = document.getElementById('filterStart').value;
-        const end = document.getElementById('filterEnd').value;
-        if (start && end) {
-            refreshDashboard();
+
+// === 資料儲存與載入 (本地/雲端) (V1.2.16 邏輯) ===
+
+function saveRecordsToLocal() {
+    // 排序紀錄 (日期由近到遠)
+    records.sort((a, b) => new Date(b.date) - new Date(a.date));
+    localStorage.setItem('uberEatRecords', JSON.stringify(records));
+}
+
+function saveRecordsToCloud() {
+    const user = firebase.auth().currentUser;
+    if (!user) return; // 未登入則不執行雲端寫入
+
+    // V1.2.16 寫入邏輯：依賴實時監聽處理大部分同步，但新增/編輯時主動寫入
+    const id = document.getElementById('editId').value;
+    if (id) {
+        const recordToSave = records.find(r => r.id === id);
+        if (recordToSave) {
+            db.collection("users").doc(user.uid).collection("records").doc(id).set(recordToSave)
+            .then(() => console.log("雲端紀錄更新成功:", recordToSave.id))
+            .catch(error => console.error("雲端更新失敗:", error));
+        }
+    } else {
+        const latestRecord = records[0]; 
+        if(latestRecord && !latestRecord.synced) { 
+             db.collection("users").doc(user.uid).collection("records").doc(latestRecord.id).set({...latestRecord, synced: true})
+            .then(() => console.log("雲端紀錄新增成功:", latestRecord.id))
+            .catch(error => console.error("雲端新增失敗:", error));
         }
     }
 }
 
-function setFilter(type, btn) {
-    currentFilter = type;
-    updateTabs(btn);
-    const customPanel = document.getElementById('customDateFilter');
+// 實時監聽 (核心同步邏輯)
+function setupRealtimeListener(user) {
+    if (firebaseUnsubscribe) {
+        firebaseUnsubscribe(); // 取消舊的監聽
+    }
     
-    // 顯示/隱藏自定義區間輸入框
-    if (type === 'custom') {
-        customPanel.classList.remove('hidden');
-        applyCustomFilter(); 
+    // 監聽該用戶的所有紀錄
+    firebaseUnsubscribe = db.collection("users").doc(user.uid).collection("records")
+        .orderBy("date", "desc") // 確保排序
+        .onSnapshot(snapshot => {
+            records = []; // 清空現有紀錄
+            snapshot.forEach(doc => {
+                records.push(doc.data());
+            });
+            
+            // 將雲端資料同步至本地儲存
+            saveRecordsToLocal(); 
+            
+            // 更新儀表板和列表
+            refreshDashboard();
+            
+        }, error => {
+            console.error("實時監聽錯誤:", error);
+            refreshDashboard(); 
+        });
+}
+
+function loadRecordsFromLocal() {
+    const storedRecords = localStorage.getItem('uberEatRecords');
+    if (storedRecords) {
+        records = JSON.parse(storedRecords);
     } else {
-        customPanel.classList.add('hidden');
-        refreshDashboard();
+        records = [];
     }
 }
 
 
-function getFilteredData() {
-    const list = getHistory();
-    const todayStr = getLocalDateString();
+// === 儀表板與列表刷新函式 (V1.2.16 邏輯) ===
+
+function filterRecords(data) {
+    let startDate, endDate;
+    const today = new Date(getLocalDateString()); 
+    today.setHours(0, 0, 0, 0);
+
+    const isCustom = currentFilter === 'custom';
     
-    if(currentFilter==='day') return list.filter(r=>r.date===todayStr);
-
-    if(currentFilter==='week') {
-        const d = new Date();
-        // (d.getDay() + 6) % 7: 0=週一, 1=週二, ..., 6=週日
-        const dayOfWeek = (d.getDay() + 6) % 7; 
-        
-        const startDate = new Date(d);
-        startDate.setDate(d.getDate() - dayOfWeek); // 回到本週一
-        
-        // 確保只比對 YYYY-MM-DD
-        const startDateStr = startDate.toISOString().split('T')[0];
-
-        // 篩選從本週一到今天(或篩選區間內的所有日期)的紀錄
-        return list.filter(r => r.date >= startDateStr);
-    }
-    
-    if(currentFilter==='month') return list.filter(r=>r.date.startsWith(todayStr.slice(0,7)));
-    if(currentFilter==='year') return list.filter(r=>r.date.startsWith(todayStr.slice(0,4)));
-    if(currentFilter==='all') return list;
-
-    if(currentFilter==='custom') {
+    if (isCustom) {
         const start = document.getElementById('filterStart').value;
         const end = document.getElementById('filterEnd').value;
-        return list.filter(r => r.date >= start && r.date <= end);
+        
+        if (!start || !end) return [];
+
+        startDate = new Date(start);
+        endDate = new Date(end);
+        endDate.setHours(23, 59, 59, 999); 
+        
+    } else if (currentFilter === 'day') {
+        startDate = new Date(today);
+        endDate = new Date(today);
+        endDate.setHours(23, 59, 59, 999);
+        
+    } else if (currentFilter === 'week') {
+        startDate = getWeekStart(today);
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+
+    } else if (currentFilter === 'month') {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+    } else if (currentFilter === 'year') {
+        startDate = new Date(today.getFullYear(), 0, 1);
+        endDate = new Date(today.getFullYear(), 11, 31);
+        endDate.setHours(23, 59, 59, 999);
+
+    } else { // 'all'
+        return data; 
     }
     
-    return list; // Default to return all if filter type is unknown/unhandled
+    const filtered = data.filter(record => {
+        const recordDate = new Date(record.date);
+        recordDate.setHours(0, 0, 0, 0); 
+        
+        return recordDate >= startDate && recordDate <= endDate;
+    });
+
+    return filtered;
 }
 
-function calculateRecordStats(record) {
-    const { income, orders, km, hours, oilPrice, fuelRate, maintCost } = record;
+function setFilter(filterType, element = null) {
+    currentFilter = filterType;
     
-    // 1. 成本計算
-    const oilCost = (km / fuelRate) * oilPrice;
-    const maintenanceCost = km * maintCost;
-    const totalCost = oilCost + maintenanceCost;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     
-    // 2. 淨利計算
-    const netProfit = income - totalCost;
+    if (element) {
+        element.classList.add('active');
+    } else {
+        document.querySelector(`.tab-scroll-content button[onclick="setFilter('${filterType}', this)"]`)?.classList.add('active');
+    }
+    
+    if (filterType === 'custom') {
+        document.getElementById('customDateFilter').classList.remove('hidden');
+    } else {
+        document.getElementById('customDateFilter').classList.add('hidden');
+    }
+    
+    refreshDashboard();
+}
 
-    // 3. 時薪計算
-    const grossHourly = hours > 0 ? income / hours : 0;
-    const netHourly = hours > 0 ? netProfit / hours : 0;
-
-    // 4. 單價計算
-    const grossPerOrder = orders > 0 ? income / orders : 0;
-    const netPerOrder = orders > 0 ? netProfit / orders : 0;
-
-
-    return {
-        ...record,
-        oilCost: oilCost,
-        maintenanceCost: maintenanceCost,
-        totalCost: totalCost,
-        netProfit: netProfit,
-        grossHourly: grossHourly,
-        netHourly: netHourly,
-        grossPerOrder: grossPerOrder,
-        netPerOrder: netPerOrder
-    };
+function applyCustomFilter() {
+    setFilter('custom', document.querySelector('.tab-scroll-content button[onclick="setFilter(\'custom\', this)"]'));
 }
 
 function refreshDashboard() {
-    const filtered = getFilteredData().map(calculateRecordStats);
+    loadRecordsFromLocal();
+    const filteredRecords = filterRecords(records);
+
+    // 彙總數據
+    const totalIncome = filteredRecords.reduce((sum, r) => sum + r.income, 0);
+    const totalOrders = filteredRecords.reduce((sum, r) => sum + r.orders, 0);
+    const totalDist = filteredRecords.reduce((sum, r) => sum + r.distance, 0);
+    const totalOilCost = filteredRecords.reduce((sum, r) => sum + r.oilCost, 0);
+    const totalMaintCost = filteredRecords.reduce((sum, r) => sum + r.maintenanceCost, 0);
+    const totalMinutes = filteredRecords.reduce((sum, r) => sum + r.totalMinutes, 0);
     
-    // 總計數據
-    const totals = filtered.reduce((acc, r) => {
-        acc.totalIncome += r.income;
-        acc.totalCost += r.totalCost;
-        acc.netProfit += r.netProfit;
-        acc.totalOilCost += r.oilCost;
-        acc.totalMaintCost += r.maintenanceCost;
-        acc.totalOrders += r.orders;
-        acc.totalHours += r.hours;
-        return acc;
-    }, {
-        totalIncome: 0,
-        totalCost: 0,
-        netProfit: 0,
-        totalOilCost: 0,
-        totalMaintCost: 0,
-        totalOrders: 0,
-        totalHours: 0
-    });
+    const totalCost = totalOilCost + totalMaintCost;
+    const netProfit = totalIncome - totalCost;
+    const totalHours = totalMinutes / 60;
     
-    // 計算平均時薪與單價
-    const totalMinutes = totals.totalHours * 60;
-    const totalGrossHourly = totals.totalHours > 0 ? totals.totalIncome / totals.totalHours : 0;
-    const totalNetHourly = totals.totalHours > 0 ? totals.netProfit / totals.totalHours : 0;
-    const totalGrossPerOrder = totals.totalOrders > 0 ? totals.totalIncome / totals.totalOrders : 0;
-    const totalNetPerOrder = totals.totalOrders > 0 ? totals.netProfit / totals.totalOrders : 0;
+    // 計算平均值
+    const avgGrossHourly = totalHours > 0 ? (totalIncome / totalHours) : 0;
+    const avgNetHourly = totalHours > 0 ? (netProfit / totalHours) : 0;
+    const avgGrossPerOrder = totalOrders > 0 ? (totalIncome / totalOrders) : 0;
+    const avgNetPerOrder = totalOrders > 0 ? (netProfit / totalOrders) : 0;
 
+    // 更新儀表板 UI
+    document.getElementById('dashTotalIncome').innerText = totalIncome.toFixed(0);
+    document.getElementById('dashTotalCost').innerText = totalCost.toFixed(0);
+    document.getElementById('dashNetProfit').innerText = netProfit.toFixed(0);
+    document.getElementById('dashOilCost').innerText = totalOilCost.toFixed(0);
+    document.getElementById('dashMaintCost').innerText = totalMaintCost.toFixed(0);
+    document.getElementById('dashOrders').innerText = totalOrders;
+    document.getElementById('dashHours').innerText = Math.floor(totalHours);
+    document.getElementById('dashMinutes').innerText = Math.round((totalHours % 1) * 60);
+    document.getElementById('dashGrossHourly').innerText = avgGrossHourly.toFixed(0);
+    document.getElementById('dashNetHourly').innerText = avgNetHourly.toFixed(0);
+    document.getElementById('dashGrossPerOrder').innerText = avgGrossPerOrder.toFixed(0);
+    document.getElementById('dashNetPerOrder').innerText = avgNetPerOrder.toFixed(0);
 
-    // 更新儀表板
-    document.getElementById('dashTotalIncome').innerText = formatCurrency(totals.totalIncome);
-    document.getElementById('dashTotalCost').innerText = formatCurrency(totals.totalCost);
-    document.getElementById('dashNetProfit').innerText = formatCurrency(totals.netProfit);
-    document.getElementById('dashOilCost').innerText = formatCurrency(totals.totalOilCost);
-    document.getElementById('dashMaintCost').innerText = formatCurrency(totals.totalMaintCost);
-    document.getElementById('dashOrders').innerText = totals.totalOrders.toFixed(0);
-    document.getElementById('dashHours').innerText = Math.floor(totals.totalHours);
-    document.getElementById('dashMinutes').innerText = Math.round((totals.totalHours - Math.floor(totals.totalHours)) * 60);
-    document.getElementById('dashGrossHourly').innerText = formatCurrency(totalGrossHourly);
-    document.getElementById('dashNetHourly').innerText = formatCurrency(totalNetHourly);
-    document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
-    document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
-
-    // V1.2.16: 更新歷史列表結構，圖示與主數據分離
-    const listHtml = filtered.map(r => `
-        <div class="history-item">
-            <div class="history-header-wrapper">
-                <div class="history-main-area" onclick="loadRecordToEditor(${r.id})">
-                    <div class="history-top-row">
-                        <div class="history-stat-group w-1/3">
-                            <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
-                            <div class="history-main-value text-amber-soft">$${formatCurrency(r.income)}</div>
-                            <div class="stat-label-small text-amber-soft">總營收</div>
-                        </div>
-                        
-                        <div class="history-stat-group center w-1/3">
-                            <div class="text-sm font-semibold text-red-300">成本</div>
-                            <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
-                            <div class="stat-label-small text-red-500">油耗 + 耗材</div>
-                        </div>
-
-                        <div class="history-stat-group right w-1/3">
-                            <div class="text-sm font-semibold text-green-300">淨利</div>
-                            <div class="history-main-value text-green-400">$${formatCurrency(r.netProfit)}</div>
-                            <div class="stat-label-small text-green-500">實賺</div>
-                        </div>
-                    </div>
-                </div>
-                <span id="icon-detail-${r.id}" class="history-toggle-icon" onclick="event.stopPropagation(); toggleHistoryDetails(${r.id});">▶</span>
-            </div>
-
-            <div id="detail-${r.id}" class="history-sub-stats hidden">
-                <div class="flex flex-col gap-1 w-full">
-                    <div class="flex justify-between items-center">
-                        <span class="stat-label-small text-gray-400">單數/里程</span>
-                        <span class="text-white">${r.orders} 單 / ${r.km.toFixed(1)} KM</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="stat-label-small text-gray-400">工時</span>
-                        <span class="text-white">${formatDuration(r.hours)}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="stat-label-small text-red-500">油/耗材成本</span>
-                        <span class="text-red-400">$${formatCurrency(r.oilCost)} / $${formatCurrency(r.maintenanceCost)}</span>
-                    </div>
-                </div>
-                
-                <div class="w-full performance-summary flex flex-col gap-1">
-                     <div class="flex justify-between items-center">
-                        <span class="stat-label-small text-green-500">已扣成本時薪</span>
-                        <span class="text-green-400 font-bold">$${formatCurrency(r.netHourly)}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="stat-label-small text-amber-soft">每單平均營收</span>
-                        <span class="text-amber-soft">$${formatCurrency(r.grossPerOrder)}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="stat-label-small text-green-500">每單平均淨利</span>
-                        <span class="text-green-400 font-bold">$${formatCurrency(r.netPerOrder)}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `).join('');
+    // 刷新歷史列表
+    renderHistoryList(filteredRecords);
     
-    document.getElementById('historyList').innerHTML = listHtml || `
-        <div class="p-5 text-center text-gray-500 text-sm">
-            --- 此區間暫無紀錄 ---
-        </div>
-    `;
-    
-    // 更新圖表 (如果已開啟)
+    // 刷新圖表 (如果已展開)
     if (!document.getElementById('chartsPanel').classList.contains('hidden')) {
         updateChart();
     }
 }
 
-// === 輔助函數 (Utility Functions - 不變) ===
+function renderHistoryList(data) {
+    const list = document.getElementById('historyList');
+    list.innerHTML = ''; 
 
-function formatCurrency(num) {
-    if (isNaN(num)) return '0';
-    // 負數取絕對值後格式化，再加回負號
-    const isNegative = num < 0;
-    const formatted = Math.abs(num).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    return isNegative ? `-${formatted}` : formatted;
-}
-
-function formatDuration(totalHours) {
-    const hours = Math.floor(totalHours);
-    const minutes = Math.round((totalHours - hours) * 60);
-    let str = '';
-    if (hours > 0) str += `${hours}h`;
-    if (minutes > 0) str += `${minutes}m`;
-    if (hours === 0 && minutes === 0) return '0m';
-    return str.trim();
-}
-
-// === 圖表相關函數 (Charts - 不變) ===
-
-function toggleCharts() {
-    const panel = document.getElementById('chartsPanel');
-    panel.classList.toggle('hidden');
-    if (!panel.classList.contains('hidden')) {
-        updateChart();
-    } else {
-        destroyChart();
+    if (data.length === 0) {
+        list.innerHTML = '<div class="text-center py-6 text-gray-500">此區間暫無紀錄。</div>';
+        return;
     }
+
+    data.forEach(record => {
+        const netHourly = record.totalMinutes > 0 ? (record.netProfit / (record.totalMinutes / 60)) : 0;
+        const netPerOrder = record.orders > 0 ? (record.netProfit / record.orders) : 0;
+        
+        // 判斷淨利顏色
+        const netProfitColor = record.netProfit >= 0 ? 'text-green-400' : 'text-red-400';
+        
+        const detailId = `detail-${record.id}`;
+        
+        const isExpanded = historyCollapseStates[detailId] === true;
+        const subStatsClass = isExpanded ? '' : 'hidden';
+        const iconRotate = isExpanded ? 'transform: rotate(180deg);' : 'transform: rotate(0deg);';
+        
+        // V1.2.17: 修正列表 HTML 結構，將圖示單獨放置，並調整點擊區域
+        const itemHtml = `
+            <div class="history-item" onclick="toggleHistoryDetails('${record.id}', this)">
+                
+                <div class="history-header-wrapper">
+                    <div class="history-main-area" onclick="loadRecordToEditor('${record.id}')">
+                        <div class="grid grid-cols-3 gap-3 w-full">
+                            
+                            <div class="history-stat-group">
+                                <span class="stat-label-small text-gray-400">${record.date.substring(5).replace('-', '/')}</span>
+                                <div class="history-main-value text-gray-200">
+                                    ${record.orders} <span class="text-xs font-normal text-gray-400">單</span>
+                                </div>
+                            </div>
+                            
+                            <div class="history-stat-group center">
+                                <span class="stat-label-small text-gray-400">總營收</span>
+                                <div class="history-main-value text-amber-soft">
+                                    $${record.income.toFixed(0)}
+                                </div>
+                            </div>
+
+                            <div class="history-stat-group right">
+                                <span class="stat-label-small text-gray-400">淨利</span>
+                                <div class="history-main-value ${netProfitColor}">
+                                    $${record.netProfit.toFixed(0)}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    <div class="history-toggle-icon" style="${iconRotate}">▼</div>
+                </div>
+
+                <div id="sub-stats-${record.id}" class="history-sub-stats ${subStatsClass}">
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div>
+                            <div class="text-xs text-gray-400">實發淨時薪</div>
+                            <div class="text-base font-bold text-green-400">$${netHourly.toFixed(0)}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400">平均淨單利</div>
+                            <div class="text-base font-bold text-green-400">$${netPerOrder.toFixed(0)}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400">總成本</div>
+                            <div class="text-base font-bold text-red-400">$${record.totalCost.toFixed(0)}</div>
+                        </div>
+                    </div>
+
+                    <div class="performance-summary">
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex justify-between">
+                                <span>里程 (km):</span>
+                                <span class="font-bold">${record.distance.toFixed(1)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>工時 (h:m):</span>
+                                <span class="font-bold">${Math.floor(record.totalMinutes / 60)}h ${record.totalMinutes % 60}m</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>油耗成本:</span>
+                                <span class="font-bold text-red-400">$${record.oilCost.toFixed(0)}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>耗材成本:</span>
+                                <span class="font-bold text-red-400">$${record.maintenanceCost.toFixed(0)}</span>
+                            </div>
+                            <div class="col-span-2 text-right text-gray-500 mt-2">
+                                <span> (油價: $${record.oilPrice.toFixed(2)}, 油耗: ${record.fuelRate}km/L, 耗材: $${record.maintCost.toFixed(1)}/km)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        `;
+        list.insertAdjacentHTML('beforeend', itemHtml);
+    });
 }
+
+
+// === 圖表相關函式 (V1.2.16 邏輯) ===
 
 function switchChartType(type) {
     chartType = type;
     document.getElementById('btnChartBar').classList.remove('active');
     document.getElementById('btnChartPie').classList.remove('active');
-    document.getElementById(`btnChart${type.charAt(0).toUpperCase() + type.slice(1)}`).classList.add('active');
+    document.getElementById('chartGroupBy').closest('div').style.display = (type === 'bar' ? 'flex' : 'none');
+    
+    if (type === 'bar') {
+        document.getElementById('btnChartBar').classList.add('active');
+    } else {
+        document.getElementById('btnChartPie').classList.add('active');
+    }
     updateChart();
 }
 
-function destroyChart() {
+function updateChart() {
     if (chartInstance) {
-        chartInstance.destroy();
-        chartInstance = null;
+        chartInstance.destroy(); // 銷毀舊圖表
+    }
+    
+    const chartStart = document.getElementById('chartStart').value;
+    const chartEnd = document.getElementById('chartEnd').value;
+    const groupBy = document.getElementById('chartGroupBy').value;
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    
+    // 根據圖表日期範圍過濾數據 (獨立於儀表板篩選)
+    const chartStartDate = new Date(chartStart);
+    const chartEndDate = new Date(chartEnd);
+    chartEndDate.setHours(23, 59, 59, 999);
+    
+    const chartData = records.filter(record => {
+        const recordDate = new Date(record.date);
+        recordDate.setHours(0, 0, 0, 0); // 確保日期基準一致
+        return recordDate >= chartStartDate && recordDate <= chartEndDate;
+    });
+
+    if (chartData.length === 0) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        return; 
+    }
+
+    if (chartType === 'bar') {
+        renderBarChart(ctx, chartData, groupBy);
+    } else {
+        renderPieChart(ctx, chartData);
     }
 }
 
-function updateChart() {
-    destroyChart();
-    
-    const start = document.getElementById('chartStart').value;
-    const end = document.getElementById('chartEnd').value;
-    const groupBy = document.getElementById('chartGroupBy').value;
+function renderBarChart(ctx, chartData, groupBy) {
+    // 數據分組
+    const groupedData = {};
 
-    if (!start || !end) return;
+    chartData.forEach(record => {
+        let key;
+        const date = new Date(record.date);
 
-    // 篩選圖表區間數據
-    const allData = getHistory().map(calculateRecordStats);
-    const chartData = allData.filter(r => r.date >= start && r.date <= end);
+        if (groupBy === 'month') {
+            key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        } else if (groupBy === 'year') {
+            key = date.getFullYear().toString();
+        } else { // 'day'
+            key = record.date;
+        }
+
+        if (!groupedData[key]) {
+            groupedData[key] = {
+                income: 0,
+                netProfit: 0,
+                totalCost: 0,
+            };
+        }
+        groupedData[key].income += record.income;
+        groupedData[key].netProfit += record.netProfit;
+        groupedData[key].totalCost += record.totalCost;
+    });
+
+    // 準備圖表數據
+    const sortedKeys = Object.keys(groupedData).sort();
+    const labels = sortedKeys;
+    const netProfits = sortedKeys.map(key => groupedData[key].netProfit.toFixed(0));
+    const totalCosts = sortedKeys.map(key => groupedData[key].totalCost.toFixed(0));
+
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '淨利潤',
+                    data: netProfits,
+                    backgroundColor: '#10b981', // 綠色
+                    borderColor: '#059669',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '總成本',
+                    data: totalCosts,
+                    backgroundColor: '#ef4444', // 紅色
+                    borderColor: '#dc2626',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#e5e5e5' }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    ticks: { color: '#9ca3af' },
+                    grid: { color: 'rgba(51,51,51,0.5)' }
+                },
+                y: {
+                    stacked: false,
+                    ticks: { color: '#9ca3af' },
+                    grid: { color: 'rgba(51,51,51,0.5)' }
+                }
+            }
+        }
+    });
+}
+
+function renderPieChart(ctx, chartData) {
+    // 彙總總淨利、總油耗成本、總耗材成本
+    const totalOilCost = chartData.reduce((sum, r) => sum + r.oilCost, 0);
+    const totalMaintCost = chartData.reduce((sum, r) => sum + r.maintenanceCost, 0);
+    const totalNetProfit = chartData.reduce((sum, r) => sum + r.netProfit, 0);
     
-    if (chartData.length === 0) {
-        // 清除 Canvas 上的殘留圖形
-        const ctx = document.getElementById('mainChart').getContext('2d');
-        if (ctx) ctx.clearRect(0, 0, 300, 300);
+    // V1.2.16: 直接使用原始淨利 (不處理負值)
+    
+    chartInstance = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['總淨利', '總油耗成本', '總耗材成本'],
+            datasets: [{
+                data: [totalNetProfit, totalOilCost, totalMaintCost],
+                backgroundColor: ['#10b981', '#fcd34d', '#ef4444'],
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { color: '#e5e5e5' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            // V1.2.16 原始 tooltip 邏輯
+                            const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            const value = context.raw;
+                            // 修正：如果總和為0，避免 NaN
+                            const percentage = total === 0 ? '0.0%' : ((value / total) * 100).toFixed(1) + '%';
+                            
+                            return `${context.label}: $${value.toFixed(0)} (${percentage})`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+// === Firebase 驗證函式 (V1.2.16 邏輯) ===
+
+async function registerUser() {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    
+    if (!email || password.length < 6) {
+        alert("Email 或密碼格式不正確 (密碼需至少6位)。");
         return;
     }
-
-    let groupedData = {};
-
-    if (groupBy === 'day') {
-        chartData.forEach(r => {
-            const label = r.date.slice(5); // M-D
-            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
-            groupedData[label].income += r.income;
-            groupedData[label].netProfit += r.netProfit;
-            groupedData[label].cost += r.totalCost;
-            groupedData[label].orders += r.orders;
-        });
-    } else if (groupBy === 'month') {
-        chartData.forEach(r => {
-            const label = r.date.slice(0, 7); // YYYY-MM
-            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
-            groupedData[label].income += r.income;
-            groupedData[label].netProfit += r.netProfit;
-            groupedData[label].cost += r.totalCost;
-            groupedData[label].orders += r.orders;
-        });
-    } else if (groupBy === 'year') {
-        chartData.forEach(r => {
-            const label = r.date.slice(0, 4); // YYYY
-            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
-            groupedData[label].income += r.income;
-            groupedData[label].netProfit += r.netProfit;
-            groupedData[label].cost += r.totalCost;
-            groupedData[label].orders += r.orders;
-        });
+    
+    try {
+        const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+        await syncLocalToCloud(userCredential.user.uid);
+        alert("註冊成功！資料已同步。");
+    } catch (error) {
+        alert("註冊失敗: " + error.message);
     }
+}
 
-    const labels = Object.keys(groupedData).sort();
+async function loginUser() {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    
+    if (!email || password.length < 6) {
+        alert("Email 或密碼格式不正確 (密碼需至少6位)。");
+        return;
+    }
+    
+    try {
+        await firebase.auth().signInWithEmailAndPassword(email, password);
+        alert("登入成功！雲端資料將自動同步。");
+    } catch (error) {
+        alert("登入失敗: " + error.message);
+    }
+}
 
-    const ctx = document.getElementById('mainChart').getContext('2d');
-
-    if (chartType === 'bar') {
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: '淨利潤',
-                        data: labels.map(l => groupedData[l].netProfit),
-                        backgroundColor: '#10b981', // 綠色
-                        borderRadius: 4,
-                    },
-                    {
-                        label: '總成本',
-                        data: labels.map(l => groupedData[l].cost),
-                        backgroundColor: '#ef4444', // 紅色
-                        borderRadius: 4,
-                    },
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        stacked: true,
-                        grid: { display: false, color: '#333' },
-                        ticks: { color: '#9ca3af' }
-                    },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
-                        grid: { color: '#333' },
-                        ticks: { color: '#9ca3af' }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        labels: { color: '#e5e5e5' }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => {
-                                let label = context.dataset.label || '';
-                                if (label) { label += ': '; }
-                                if (context.parsed.y !== null) { label += `$${context.parsed.y.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`; }
-                                return label;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    } else if (chartType === 'pie') {
-        const totalOilCost = chartData.reduce((sum, r) => sum + r.oilCost, 0);
-        const totalMaintCost = chartData.reduce((sum, r) => sum + r.maintenanceCost, 0);
-        const totalNetProfit = chartData.reduce((sum, r) => sum + r.netProfit, 0);
+async function logoutUser() {
+    if (confirm("確定要登出並清除本機所有紀錄嗎？(清除後將只顯示雲端資料)")) {
+        localStorage.removeItem('uberEatRecords');
+        records = [];
         
-        chartInstance = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['總淨利', '總油耗成本', '總耗材成本'],
-                datasets: [{
-                    data: [totalNetProfit, totalOilCost, totalMaintCost],
-                    backgroundColor: ['#10b981', '#fcd34d', '#ef4444'],
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: { color: '#e5e5e5' }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => {
-                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                const value = context.raw;
-                                const percentage = ((value / total) * 100).toFixed(1) + '%';
-                                return `${context.label}: $${value.toFixed(0)} (${percentage})`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        try {
+            await firebase.auth().signOut();
+            alert("登出成功，本機紀錄已清除。");
+        } catch (error) {
+            alert("登出失敗: " + error.message);
+        }
+    }
+}
+
+async function resetPassword() {
+    const email = document.getElementById('authEmail').value;
+    if (!email) {
+        alert("請輸入您註冊的 Email！");
+        return;
+    }
+    
+    try {
+        await firebase.auth().sendPasswordResetEmail(email);
+        alert(`密碼重設郵件已發送至 ${email}，請檢查您的信箱。`);
+    } catch (error) {
+        alert("密碼重設失敗: " + error.message);
+    }
+}
+
+// 首次註冊/登入時，將本地資料推送到雲端 (僅執行一次)
+async function syncLocalToCloud(uid) {
+    if (records.length === 0) return;
+
+    const batch = db.batch();
+    const userRef = db.collection("users").doc(uid).collection("records");
+    let count = 0;
+    
+    records.forEach(record => {
+        if (count >= 499) return; 
+        const docRef = userRef.doc(record.id);
+        batch.set(docRef, record);
+        count++;
+    });
+
+    try {
+        await batch.commit();
+        console.log(`成功將 ${count} 筆本地紀錄同步到雲端。`);
+    } catch (error) {
+        console.error("同步本地數據到雲端失敗:", error);
     }
 }
 </script>
