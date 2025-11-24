@@ -434,13 +434,12 @@ const firebaseConfig = {
     appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
 };
 
-// 只有在配置存在時才初始化
-if (firebaseConfig.apiKey !== "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w") {
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-} else {
-    console.warn("Firebase 配置尚未設定。雲端同步功能將不會啟用。");
-}
+// 💡 移除判斷式，直接初始化
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// (可選) 移除原有的 else 區塊
+// 程式碼中不需要這個 if/else 檢查了
 
 
 // === 變數與初始化 ===
