@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/components.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/utilities.min.css">
 <style>
-input, button { outline: none; }
+input, button, select { outline: none; }
 .card { @apply bg-white shadow-md rounded-xl p-5 mb-5; }
 .btn-main { @apply bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 transition w-full; }
 .btn-sub { @apply bg-gray-200 text-gray-700 rounded-lg px-4 py-2 hover:bg-gray-300 transition; }
@@ -16,19 +16,18 @@ input, button { outline: none; }
 </head>
 <body class="bg-gray-100 p-4">
 <h1 class="text-2xl font-bold text-center mb-4">Uber Driver 計算器（最終版）</h1>
-<div id="oilPriceDisplayMain" class="text-center text-blue-600 font-semibold mb-4">讀取中...</div>
 
-<!-- 油品種類選擇 -->
-<div class="card">
-  <h2 class="text-xl font-semibold mb-3">油品種類</h2>
-  <label>選擇油品</label>
-  <select id="oilType" class="w-full border p-2 rounded mb-3" onchange="fetchOilPrice()">
-      <option value="92" selected>無鉛汽油92</option>
-      <option value="95">無鉛汽油95</option>
-      <option value="98">無鉛汽油98</option>
-      <option value="91">無鉛汽油91</option>
+<div class="text-center mb-4">
+  <label class="font-semibold mr-2">選擇油品：</label>
+  <select id="oilType" class="border p-2 rounded" onchange="fetchOilPrice()">
+    <option value="92" selected>92 無鉛汽油</option>
+    <option value="95">95 無鉛汽油</option>
+    <option value="98">98 無鉛汽油</option>
+    <option value="diesel">超級柴油</option>
   </select>
 </div>
+
+<div id="oilPriceDisplayMain" class="text-center text-blue-600 font-semibold mb-4">讀取中...</div>
 
 <!-- 成本設定區 -->
 <div class="card">
@@ -54,7 +53,7 @@ input, button { outline: none; }
 <button class="btn-main" onclick="saveRecord()">儲存紀錄</button>
 </div>
 
-<!-- 當日計算結果 -->
+<!-- 當日預估 -->
 <div class="card">
 <h2 class="text-xl font-semibold mb-3">即時預估</h2>
 <div id="previewResult" class="text-gray-800">尚無資料</div>
@@ -67,109 +66,105 @@ input, button { outline: none; }
 </div>
 
 <script>
-const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev";
+const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
 let globalOilPrice = 27.1;
 
 async function fetchOilPrice() {
-    try {
-        const res = await fetch(workerAPI);
-        const data = await res.json();
+  try {
+    const res = await fetch(workerAPI);
+    const data = await res.json();
 
-        const oilType = document.getElementById('oilType').value;
+    const oilType = document.getElementById('oilType').value;
+    const price = data[oilType];
 
-        // 防呆：沒有油品陣列就 fallback
-        if (!data.oils) {
-            document.getElementById('oilPriceDisplayMain').textContent = `油價讀取失敗，使用預設 $${globalOilPrice}/L`;
-            return;
-        }
+    if (price === undefined) throw new Error("油品無資料");
 
-        const item = data.oils.find(o => o.type === oilType);
+    globalOilPrice = price;
+    document.getElementById('oilPriceDisplayMain').textContent = `油價 (${oilType})：$${price}/L`;
 
-        if (!item) {
-            document.getElementById('oilPriceDisplayMain').textContent = `查無 ${oilType} 油價，使用預設 $${globalOilPrice}/L`;
-            return;
-        }
-
-        globalOilPrice = parseFloat(item.price);
-        document.getElementById('oilPriceDisplayMain').textContent = `${item.name}：$${item.price}/L`;
-
-    } catch (err) {
-        document.getElementById('oilPriceDisplayMain').textContent = `油價讀取失敗，使用預設 $${globalOilPrice}/L`;
-    }
+  } catch (err) {
+    document.getElementById('oilPriceDisplayMain').textContent = `油價讀取失敗，使用預設 $${globalOilPrice}/L`;
+    console.error(err);
+  }
 }
 
 function saveSettings() {
-    const fuelRate = document.getElementById('fuelRate').value;
-    const maint = document.getElementById('maintCost').value;
-    localStorage.setItem('fuelRate', fuelRate);
-    localStorage.setItem('maintCost', maint);
-    alert('設定已儲存');
+  const fuelRate = document.getElementById('fuelRate').value;
+  const maint = document.getElementById('maintCost').value;
+  localStorage.setItem('fuelRate', fuelRate);
+  localStorage.setItem('maintCost', maint);
+  alert('設定已儲存');
 }
 
 function loadSettings() {
-    document.getElementById('fuelRate').value = localStorage.getItem('fuelRate') || 40;
-    document.getElementById('maintCost').value = localStorage.getItem('maintCost') || 0.6;
+  document.getElementById('fuelRate').value = localStorage.getItem('fuelRate') || 40;
+  document.getElementById('maintCost').value = localStorage.getItem('maintCost') || 0.6;
 }
 
 function saveRecord() {
-    const record = {
-        date: document.getElementById('recordDate').value,
-        income: parseFloat(document.getElementById('dayIncome').value || 0),
-        km: parseFloat(document.getElementById('dayDistance').value || 0),
-        hours: parseFloat(document.getElementById('workHours').value || 0)
-    };
+  const record = {
+    date: document.getElementById('recordDate').value,
+    income: parseFloat(document.getElementById('dayIncome').value || 0),
+    km: parseFloat(document.getElementById('dayDistance').value || 0),
+    hours: parseFloat(document.getElementById('workHours').value || 0),
+    oilType: document.getElementById('oilType').value,
+    oilPrice: globalOilPrice
+  };
 
-    const all = JSON.parse(localStorage.getItem('history') || '[]');
-    all.push(record);
-    localStorage.setItem('history', JSON.stringify(all));
+  const all = JSON.parse(localStorage.getItem('history') || '[]');
+  all.push(record);
+  localStorage.setItem('history', JSON.stringify(all));
 
-    alert('紀錄已儲存');
-    loadHistory();
+  alert('紀錄已儲存');
+  loadHistory();
 }
 
 function loadHistory() {
-    const list = document.getElementById('historyList');
-    list.innerHTML = "";
+  const list = document.getElementById('historyList');
+  list.innerHTML = "";
 
-    const all = JSON.parse(localStorage.getItem('history') || '[]');
+  const all = JSON.parse(localStorage.getItem('history') || '[]');
 
-    all.forEach((r, idx) => {
-        const div = document.createElement('div');
-        div.className = "border p-3 rounded-lg bg-gray-50";
-        div.innerHTML = `
-            <div>📅 ${r.date}</div>
-            <div>營業額：$${r.income}</div>
-            <div>公里數：${r.km} km</div>
-            <div>時數：${r.hours} 小時</div>
-            <div class='flex space-x-2 mt-2'>
-                <button class='btn-sub' onclick='editRecord(${idx})'>編輯</button>
-                <button class='btn-sub' onclick='deleteRecord(${idx})'>刪除</button>
-            </div>`;
-        list.appendChild(div);
-    });
+  all.forEach((r, idx) => {
+    const div = document.createElement('div');
+    div.className = "border p-3 rounded-lg bg-gray-50";
+    div.innerHTML = `
+      <div>📅 ${r.date}</div>
+      <div>🚗 油品：${r.oilType}</div>
+      <div>💲 當時油價：${r.oilPrice}</div>
+      <div>營業額：$${r.income}</div>
+      <div>公里數：${r.km} km</div>
+      <div>時數：${r.hours} 小時</div>
+      <div class='flex space-x-2 mt-2'>
+          <button class='btn-sub' onclick='editRecord(${idx})'>編輯</button>
+          <button class='btn-sub' onclick='deleteRecord(${idx})'>刪除</button>
+      </div>`;
+    list.appendChild(div);
+  });
 }
 
 function editRecord(i) {
-    const all = JSON.parse(localStorage.getItem('history') || '[]');
-    const r = all[i];
-    document.getElementById('recordDate').value = r.date;
-    document.getElementById('dayIncome').value = r.income;
-    document.getElementById('dayDistance').value = r.km;
-    document.getElementById('workHours').value = r.hours;
-    alert('已載入至輸入欄位，可修改後重新儲存。');
+  const all = JSON.parse(localStorage.getItem('history') || '[]');
+  const r = all[i];
+  document.getElementById('recordDate').value = r.date;
+  document.getElementById('dayIncome').value = r.income;
+  document.getElementById('dayDistance').value = r.km;
+  document.getElementById('workHours').value = r.hours;
+  document.getElementById('oilType').value = r.oilType;
+  alert('已載入至輸入欄位，可修改後重新儲存。');
 }
 
 function deleteRecord(i) {
-    const all = JSON.parse(localStorage.getItem('history') || '[]');
-    all.splice(i, 1);
-    localStorage.setItem('history', JSON.stringify(all));
-    loadHistory();
+  const all = JSON.parse(localStorage.getItem('history') || '[]');
+  all.splice(i, 1);
+  localStorage.setItem('history', JSON.stringify(all));
+  loadHistory();
 }
 
 window.onload = () => {
-    fetchOilPrice();
-    loadSettings();
-    loadHistory();
+  loadSettings();
+  loadHistory();
+  fetchOilPrice();
 };
 </script>
 </body>
