@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat 外送薪資計算器 V1.1</title>
+<title>UberEat 外送薪資計算器 V1.2</title>
 
 <!-- === App 化專用 Meta 設定 === -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,11 +11,11 @@
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing (V1.1) === -->
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.1" />
+<!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing (V1.2) === -->
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2" />
 <meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援多維度圖表分析，是您優化跑單效率的專業工具。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.1" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2" />
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -95,12 +95,33 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 === */
+    /* === 歷史列表 V1.2 調整: 增加 padding, 減少內部擁擠感 === */
     .history-item {
-        background-color: #111216; border-bottom: 1px solid #222; padding: 1rem;
-        cursor: pointer; transition: background 0.2s;
+        background-color: #111216; 
+        border-bottom: 1px solid #222; 
+        padding: 1.25rem 1rem; /* 上下左右增加間距 */
+        cursor: pointer; 
+        transition: background 0.2s;
+        /* 確保元素高度相同 */
+        display: flex;
+        align-items: center; 
     }
     .history-item:active { background-color: #1c1e24; }
+    
+    .history-col {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+    }
+    .history-col-center {
+        align-items: center;
+        text-align: center;
+    }
+    .history-col-right {
+        align-items: flex-end;
+        text-align: right;
+    }
 
     /* === 字體與標籤 === */
     .stat-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -120,13 +141,13 @@
 </head>
 <body class="max-w-md mx-auto p-3">
 
-    <!-- 標題 (V1.1) -->
+    <!-- 標題 (V1.2) -->
     <div class="flex justify-between items-center mb-4 px-1 pt-2">
         <div class="flex items-center gap-2">
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.1 Stable</div>
+                <div class="text-[10px] text-gray-500">V1.2 Stable</div>
             </div>
         </div>
         <button onclick="toggleSettings()" class="p-2 bg-[#1a1c23] rounded-full text-gray-400 border border-[#333] text-xs active:bg-gray-800">
@@ -167,7 +188,7 @@
 
     <!-- 1. 儀表板 (Dashboard) -->
     <div class="card bg-gradient-to-br from-[#111216] to-[#064e3b20] border-green-500/30 p-5 mb-4">
-        <!-- TOP ROW: 營收 / 淨利 / 成本 -->
+        <!-- TOP ROW: 營收 / 成本 / 淨利 -->
         <div class="grid grid-cols-3 gap-2 items-start mb-4">
             <div>
                 <label class="stat-label text-gray-400">區間總營收</label>
@@ -175,7 +196,6 @@
             </div>
             <div class="text-center">
                 <label class="stat-label text-red-400">總成本</label>
-                <!-- NEW: 總成本顯示 -->
                 <div class="text-3xl font-bold text-red-400 mt-1">$<span id="dashTotalCost">0</span></div> 
             </div>
             <div class="text-right">
@@ -335,9 +355,9 @@
         <div id="historyList" class="rounded-xl overflow-hidden border border-[#2a2d36]"></div>
     </div>
 
-    <!-- 6. 版權 Footer (V1.1) -->
+    <!-- 6. 版權 Footer (V1.2) -->
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.1</div>
+        <div>UberEat 外送薪資計算器 V1.2</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -579,7 +599,7 @@ function refreshDashboard() {
     
     let tInc=0, tNet=0, tOrders=0, tHr=0;
     let tOilCost = 0, tMaintCost = 0; 
-    let tTotalCost = 0; // NEW: 總成本計算變數
+    let tTotalCost = 0; 
 
     let html = '';
 
@@ -603,26 +623,31 @@ function refreshDashboard() {
             tHr+=r.hours;
             tOilCost += oilCost; 
             tMaintCost += maintCost; 
-            tTotalCost += cost; // 累計總成本
+            tTotalCost += cost; 
 
-            // 區間明細 (每筆顯示成本細項)
+            // 區間明細 V1.2 (三欄佈局，更寬鬆)
             html += `
-            <div class="history-item" onclick="loadRecordToEditor(${r.id})">
-                <div class="flex justify-between items-center mb-1">
+            <div class="history-item grid grid-cols-3 gap-1" onclick="loadRecordToEditor(${r.id})">
+                
+                <!-- Col 1: 日期 & 營收 -->
+                <div class="history-col justify-start">
                     <div class="text-gray-500 text-xs">${r.date}</div>
-                    <div class="text-green-400 font-bold text-lg">淨 $${Math.round(net).toLocaleString()}</div>
+                    <div class="text-amber-soft font-bold text-xl mt-1">$${Math.round(r.income).toLocaleString()}</div>
+                    <div class="text-[10px] text-gray-600">營收</div>
                 </div>
-                <div class="flex justify-between items-end">
-                    <div class="flex items-end gap-1">
-                        <div class="text-amber-soft font-bold text-xl">$${Math.round(r.income).toLocaleString()}</div>
-                        <div class="text-xs text-gray-400">營收</div>
-                    </div>
-                    <div class="text-right text-xs">
-                        <div class="text-red-400 font-bold">總成本: $${Math.round(cost).toLocaleString()}</div>
-                        <div class="text-gray-600 mt-1">油: $${Math.round(oilCost)} | 耗: $${Math.round(maintCost)}</div>
-                    </div>
+
+                <!-- Col 2: 里程, 單數, 工時 (居中對齊) -->
+                <div class="history-col history-col-center">
+                    <div class="text-sm text-gray-400 font-medium">${r.km.toFixed(1)} km / ${r.orders} 單</div>
+                    <div class="text-xs text-gray-500 mt-1">${r.hours.toFixed(2)} hr</div>
                 </div>
-                <div class="text-gray-600 text-xs mt-1 text-right">${r.km}km / ${r.orders}單 | ${r.hours.toFixed(2)}h</div>
+
+                <!-- Col 3: 淨利 & 成本細項 (右側對齊) -->
+                <div class="history-col history-col-right">
+                    <div class="text-green-400 font-bold text-xl">淨 $${Math.round(net).toLocaleString()}</div>
+                    <div class="text-red-400 font-semibold text-xs mt-1">成本 $${Math.round(cost).toLocaleString()}</div>
+                    <div class="text-[10px] text-gray-600 mt-1">油: $${Math.round(oilCost)} | 耗: $${Math.round(maintCost)}</div>
+                </div>
             </div>`;
         });
     }
