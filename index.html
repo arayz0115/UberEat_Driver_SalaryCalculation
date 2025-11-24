@@ -10,17 +10,18 @@
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.7" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援每單平均收益分析，優化跑單效率。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.7 (雲端同步)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援每單平均收益分析，現在新增 Firebase 雲端同步功能。" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.7" />
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script> 
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 <style>
     /* === 全局設定 === */
     body { 
@@ -180,16 +181,40 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.7 Cloud Sync Fix</div>
+                <div class="text-[10px] text-gray-500">V1.2.7 Cloud Sync Enabled</div>
             </div>
         </div>
         <div class="flex gap-2">
-            <button onclick="toggleCloudSyncPanel()" class="p-2 bg-[#1a1c23] rounded-full text-gray-400 border border-[#333] text-xs active:bg-gray-800">
-                ☁️ 同步
+            <button onclick="toggleAuthPanel()" class="p-2 bg-[#1a1c23] rounded-full text-gray-400 border border-[#333] text-xs active:bg-gray-800">
+                ☁️ <span id="authStatusText">未登入</span>
             </button>
             <button onclick="toggleSettings()" class="p-2 bg-[#1a1c23] rounded-full text-gray-400 border border-[#333] text-xs active:bg-gray-800">
                 ⚙️ 設定
             </button>
+        </div>
+    </div>
+
+    <div id="authPanel" class="hidden mb-4 card border-blue-500/50">
+        <h3 class="text-blue-500 font-bold mb-3 text-sm uppercase">Firebase 雲端驗證</h3>
+        <div id="authContent">
+            <div id="authForm" class="grid grid-cols-1 gap-3 mb-3">
+                <div>
+                    <label class="stat-label mb-1">Email</label>
+                    <input id="authEmail" type="email" class="input-field" placeholder="your@email.com" />
+                </div>
+                <div>
+                    <label class="stat-label mb-1">密碼</label>
+                    <input id="authPassword" type="password" class="input-field" placeholder="密碼 (至少6位)" />
+                </div>
+                <button onclick="registerUser()" class="btn btn-primary text-sm">註冊 (新帳號)</button>
+                <button onclick="loginUser()" class="btn btn-ghost text-sm border-blue-600 text-blue-400">登入 (已有帳號)</button>
+                <button onclick="resetPassword()" class="text-xs text-gray-500 hover:text-gray-400 mt-2">忘記密碼？</button>
+            </div>
+            
+            <div id="userInfo" class="hidden">
+                <p class="text-white mb-3">歡迎，<span id="userEmailDisplay" class="font-semibold text-amber-soft"></span></p>
+                <button onclick="logoutUser()" class="btn btn-danger text-sm">登出並清除本機狀態</button>
+            </div>
         </div>
     </div>
 
@@ -222,33 +247,6 @@
         </div>
         <button onclick="saveSettings()" class="btn btn-primary text-sm">儲存設定</button>
     </div>
-
-    <div id="cloudSyncPanel" class="mb-4 card border-blue-500/50">
-        <h3 class="text-blue-400 font-bold mb-3 text-sm uppercase">☁️ 雲端同步設定 (EMAIL/密碼)</h3>
-        <div class="flex flex-col gap-3 mb-4">
-            <div>
-                <label class="stat-label mb-1">輸入 Email</label>
-                <input id="inputSyncEmail" type="email" class="input-field" placeholder="Email" />
-            </div>
-            <div>
-                <label class="stat-label mb-1">輸入密碼 (至少6位數)</label>
-                <input id="inputSyncPassword" type="password" class="input-field" placeholder="密碼" />
-            </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 mb-3">
-            <button onclick="registerNewAccount()" class="btn btn-primary bg-green-600 hover:bg-green-700" id="btnRegister">註冊新帳號</button>
-            <button onclick="loginAccount()" class="btn btn-primary" id="btnLogin">登入現有帳號</button>
-            <button onclick="logoutAccount()" class="btn btn-danger col-span-2 hidden" id="btnLogout">登出</button>
-        </div>
-        
-        <div class="pt-3 border-t border-gray-800">
-            <div id="syncStatusDisplay" class="text-xs text-gray-400">
-                當前狀態：<span class="text-red-400 font-bold">載入中...</span>
-            </div>
-        </div>
-    </div>
-
 
     <div class="card bg-gradient-to-br from-[#111216] to-[#064e3b20] border-green-500/30 p-5 mb-4">
         
@@ -418,15 +416,14 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.7</div>
+        <div>UberEat 外送薪資計算器 V1.2.7 (Cloud Sync)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
 
 <script>
-// === NEW: Firebase V1.2.7 雲端同步與身份驗證代碼 ===
-
-// Firebase 配置 (來自 image_93d83b.jpg)
+// === V1.2.7 新增：Firebase 配置與初始化 ===
+// ⚠️ 請務必替換為您專案的實際配置資訊 ⚠️
 const firebaseConfig = {
     apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
     authDomain: "uber-driver-tracker.firebaseapp.com",
@@ -436,142 +433,13 @@ const firebaseConfig = {
     appId: "1:665088105970:web:d2c73e4e43ee4cf9545f6b"
 };
 
-let firebaseApp = null;
-let firebaseAuth = null;
-let firebaseDB = null;
-
-try {
-    // 初始化 Firebase
-    firebaseApp = firebase.initializeApp(firebaseConfig);
-    firebaseAuth = firebaseApp.auth();
-    firebaseDB = firebaseApp.firestore();
-    console.log("Firebase 服務初始化成功。");
-
-    // 登入狀態監聽
-    firebaseAuth.onAuthStateChanged(user => {
-        if (user) {
-            updateCloudSyncUI(true, user);
-            // V1.3.0 TODO: 在這裡加入從 Firestore 載入資料的邏輯
-        } else {
-            updateCloudSyncUI(false);
-        }
-    });
-
-} catch (e) {
-    console.error("Firebase 初始化失敗 (請檢查 CDN 引入和 API 金鑰設定):", e);
-    // 讓本地計算器功能繼續運行
-    document.getElementById('syncStatusDisplay').innerHTML = '當前狀態：<span class="text-red-400 font-bold">載入失敗</span> (本地功能正常)';
+// 只有在配置存在時才初始化
+if (firebaseConfig.apiKey !== "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w") {
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+} else {
+    console.warn("Firebase 配置尚未設定。雲端同步功能將不會啟用。");
 }
-
-
-function displayAuthError(message) {
-    // 模擬 image_93e69f.png 的錯誤彈窗樣式
-    const errorBox = document.createElement('div');
-    errorBox.id = 'authErrorModal';
-    errorBox.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4';
-    errorBox.innerHTML = `
-        <div class="bg-[#1a1c23] rounded-lg p-6 max-w-sm w-full shadow-2xl">
-            <h3 class="text-lg font-bold text-red-400 mb-4">註冊/登入失敗</h3>
-            <div class="text-sm text-gray-300 whitespace-pre-wrap">${message}</div>
-            <button onclick="document.getElementById('authErrorModal').remove()" class="mt-4 w-full btn btn-primary bg-blue-600 hover:bg-blue-700">確定</button>
-        </div>
-    `;
-    document.body.appendChild(errorBox);
-}
-
-function handleFirebaseError(error) {
-    let userMessage = error.message;
-
-    if (error.code === 'auth/invalid-email') {
-        userMessage = '電子郵件格式無效。';
-    } else if (error.code === 'auth/weak-password') {
-        userMessage = '密碼強度不足，請使用至少 6 個字元。';
-    } else if (error.code === 'auth/email-already-in-use') {
-        userMessage = '此電子郵件已被註冊。請使用其他郵件或直接登入。';
-    } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        userMessage = '電子郵件或密碼錯誤。';
-    } else if (error.code === 'auth/operation-not-allowed') {
-        userMessage = '電子郵件/密碼登入功能尚未啟用，請聯繫開發者。'; 
-    } else if (error.code === 'auth/network-request-failed') {
-        userMessage = '網路連線失敗，請檢查您的網路。';
-    } else {
-        // 捕捉未知的或核心 API 錯誤
-        userMessage = `發生連線錯誤 (代碼: ${error.code})。這可能是由於 API 金鑰無效或網路設置錯誤。原始訊息: ${error.message}`;
-    }
-
-    displayAuthError(userMessage);
-    console.error("Firebase 錯誤:", error);
-}
-
-function updateCloudSyncUI(isLoggedIn, user = null) {
-    const statusDiv = document.getElementById('syncStatusDisplay');
-    const registerBtn = document.getElementById('btnRegister');
-    const loginBtn = document.getElementById('btnLogin');
-    const logoutBtn = document.getElementById('btnLogout');
-    const emailInput = document.getElementById('inputSyncEmail');
-    const passwordInput = document.getElementById('inputSyncPassword');
-    const panel = document.getElementById('cloudSyncPanel');
-
-    if (!panel) return; // 確保元素存在
-
-    if (isLoggedIn) {
-        const displayEmail = user.email || 'N/A';
-        const displayUID = user.uid ? user.uid.slice(0, 5) + '...' : 'N/A';
-        statusDiv.innerHTML = `當前狀態：<span class="text-green-400 font-bold">已登入</span> (Email: ${displayEmail} | UID: ${displayUID})`;
-        registerBtn.classList.add('hidden');
-        loginBtn.classList.add('hidden');
-        logoutBtn.classList.remove('hidden');
-        emailInput.disabled = true;
-        passwordInput.disabled = true;
-    } else {
-        statusDiv.innerHTML = `當前狀態：<span class="text-red-400 font-bold">未登入</span>`;
-        registerBtn.classList.remove('hidden');
-        loginBtn.classList.remove('hidden');
-        logoutBtn.classList.add('hidden');
-        emailInput.disabled = false;
-        passwordInput.disabled = false;
-    }
-}
-
-function registerNewAccount() {
-    if (!firebaseAuth) { return handleFirebaseError({code: 'app/no-auth', message: 'Firebase Authentication 服務未啟用。'}); }
-    const email = document.getElementById('inputSyncEmail').value;
-    const password = document.getElementById('inputSyncPassword').value;
-
-    if (!email || password.length < 6) { return displayAuthError("請輸入有效的電子郵件，且密碼至少需為 6 位數。"); }
-
-    firebaseAuth.createUserWithEmailAndPassword(email, password)
-        .then(() => {
-            console.log('註冊成功！');
-        })
-        .catch(handleFirebaseError);
-}
-
-function loginAccount() {
-    if (!firebaseAuth) { return handleFirebaseError({code: 'app/no-auth', message: 'Firebase Authentication 服務未啟用。'}); }
-    const email = document.getElementById('inputSyncEmail').value;
-    const password = document.getElementById('inputSyncPassword').value;
-
-    if (!email || !password) { return displayAuthError("請輸入電子郵件和密碼。"); }
-
-    firebaseAuth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-            console.log('登入成功！');
-        })
-        .catch(handleFirebaseError);
-}
-
-function logoutAccount() {
-    if (!firebaseAuth) return;
-    firebaseAuth.signOut().then(() => {
-        console.log('登出成功！');
-    }).catch(handleFirebaseError);
-}
-
-function toggleCloudSyncPanel() {
-    document.getElementById('cloudSyncPanel').classList.toggle('hidden');
-}
-// === Firebase 程式碼結束 ===
 
 
 // === 變數與初始化 ===
@@ -596,7 +464,28 @@ window.onload = async () => {
     document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
     document.getElementById('chartEnd').value = today;
 
-    refreshDashboard();
+    // 啟動 Firebase 登入狀態監聽 (V1.2.7 新增)
+    if (typeof firebase !== 'undefined' && firebaseConfig.apiKey !== "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w") {
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                // 使用者已登入，執行雲端下載
+                document.getElementById('authStatusText').innerText = "已登入";
+                document.getElementById('userEmailDisplay').innerText = user.email;
+                document.getElementById('authForm').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                syncDataOnLogin(user);
+            } else {
+                // 使用者已登出
+                document.getElementById('authStatusText').innerText = "未登入";
+                document.getElementById('authForm').classList.remove('hidden');
+                document.getElementById('userInfo').classList.add('hidden');
+                refreshDashboard(); // 登出後僅顯示本機資料
+            }
+        });
+    } else {
+        refreshDashboard();
+    }
+    
     await fetchOilPrice();
 };
 
@@ -605,7 +494,136 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === 設定處理 ===
+// === V1.2.7 新增：身份驗證相關函數 ===
+
+function toggleAuthPanel() { document.getElementById('authPanel').classList.toggle('hidden'); }
+
+function registerUser() {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    if (email.length < 5 || password.length < 6) {
+        return console.error("Email 或密碼格式不正確 (密碼需至少6位)");
+    }
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            console.log("註冊成功，已自動登入:", userCredential.user.email);
+            // 註冊成功後，會觸發 onAuthStateChanged，並自動同步 (第一次同步即上傳空資料)
+        })
+        .catch((error) => {
+            console.error("註冊失敗:", error.message);
+            alert(`註冊失敗: ${error.message}`);
+        });
+}
+
+function loginUser() {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+            console.log("登入成功:", userCredential.user.email);
+            // 登入成功後，會觸發 onAuthStateChanged，並自動同步 (下載雲端資料)
+            document.getElementById('authPanel').classList.add('hidden');
+        })
+        .catch((error) => {
+            console.error("登入失敗:", error.message);
+            alert(`登入失敗: ${error.message}`);
+        });
+}
+
+function logoutUser() {
+    firebase.auth().signOut()
+        .then(() => {
+            console.log("登出成功");
+            // 登出後，將本機資料清空 (可選，但為了明確跨裝置體驗，建議清空)
+            localStorage.removeItem('uber_ray_v1');
+            refreshDashboard();
+            alert("登出成功，本機紀錄已清除。");
+        })
+        .catch((error) => {
+            console.error("登出失敗:", error.message);
+        });
+}
+
+function resetPassword() {
+    const email = document.getElementById('authEmail').value;
+    if (!email) return alert("請先輸入您的 Email！");
+    firebase.auth().sendPasswordResetEmail(email)
+        .then(() => {
+            alert("密碼重設郵件已寄出，請檢查您的信箱！");
+        })
+        .catch((error) => {
+            console.error("密碼重設失敗:", error.message);
+            alert(`密碼重設失敗: ${error.message}`);
+        });
+}
+
+
+// === V1.2.7 新增：雲端資料同步函數 ===
+
+/**
+ * 登入成功後，從 Firestore 下載資料並更新本機 Local Storage。
+ * @param {firebase.User} user - 當前登入的使用者物件。
+ */
+async function syncDataOnLogin(user) {
+    if (!user) return;
+
+    try {
+        const doc = await db.collection('records').doc(user.uid).get();
+        const localList = getHistory();
+
+        if (doc.exists) {
+            const cloudList = doc.data().data || [];
+            if (cloudList.length > 0) {
+                // 雲端有資料，覆蓋本機資料
+                saveToHistory(cloudList);
+                console.log(`雲端資料下載成功，共 ${cloudList.length} 筆紀錄。`);
+            } else if (localList.length > 0) {
+                // 雲端無資料，但本機有資料，執行一次上傳
+                console.log("雲端無資料，執行本機資料上傳...");
+                await uploadHistory(localList, user);
+            }
+        } else if (localList.length > 0) {
+            // Firestore 找不到文件，但本機有資料，執行一次上傳
+            console.log("Firestore 找不到文件，執行本機資料上傳...");
+            await uploadHistory(localList, user);
+        } else {
+            console.log("本機與雲端均無資料。");
+        }
+        
+        refreshDashboard();
+
+    } catch (e) {
+        console.error("雲端資料同步 (下載) 失敗:", e);
+        alert("雲端資料下載失敗，將僅顯示本機資料。");
+        refreshDashboard();
+    }
+}
+
+/**
+ * 將 Local Storage 中的資料上傳到 Firestore。
+ * @param {Array} data - 要上傳的紀錄列表。
+ * @param {firebase.User} user - 當前登入的使用者物件。
+ */
+async function uploadHistory(data, user) {
+    user = user || firebase.auth().currentUser;
+    if (!user) {
+        console.warn("未登入使用者，無法執行雲端上傳。");
+        return;
+    }
+    
+    try {
+        await db.collection('records').doc(user.uid).set({
+            data: data,
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        console.log(`雲端上傳成功，共 ${data.length} 筆紀錄。`);
+    } catch (e) {
+        console.error("雲端資料上傳失敗:", e);
+    }
+}
+
+
+// === 設定處理 (不變) ===
 function loadSettings() {
     document.getElementById('settingFuelRate').value = localStorage.getItem('fuelRate') || 12;
     document.getElementById('settingMaint').value = localStorage.getItem('maintCost') || 1.5;
@@ -620,7 +638,7 @@ function saveSettings() {
 }
 function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
 
-// === 油價獲取 (使用代理 API) ===
+// === 油價獲取 (使用代理 API - 不變) ===
 async function fetchOilPrice() {
     try {
         const type = document.getElementById('oilType').value;
@@ -638,10 +656,11 @@ async function fetchOilPrice() {
     }
 }
 
-// === 歷史資料 CRUD ===
+// === 歷史資料 CRUD (Local Storage 部份不變) ===
 function getHistory() { try { return JSON.parse(localStorage.getItem('uber_ray_v1') || '[]'); } catch { return []; } }
 function saveToHistory(data) { localStorage.setItem('uber_ray_v1', JSON.stringify(data)); }
 
+// V1.2.7: saveRecord() 新增雲端同步邏輯
 function saveRecord() {
     const date = document.getElementById('inputDate').value;
     const income = parseFloat(document.getElementById('inputIncome').value);
@@ -675,6 +694,10 @@ function saveRecord() {
     }
     list.sort((a,b) => new Date(b.date)-new Date(a.date));
     saveToHistory(list);
+    
+    // V1.2.7 新增：資料儲存後，立即上傳到雲端
+    uploadHistory(list);
+
     resetEditor();
     refreshDashboard();
 }
@@ -704,6 +727,7 @@ function loadRecordToEditor(id) {
     document.getElementById('editorCard').scrollIntoView({behavior:'smooth'});
 }
 
+// V1.2.7: deleteCurrentRecord() 新增雲端同步邏輯
 function deleteCurrentRecord() {
     // ⚠️ 根據平台規範，不使用 window.confirm/alert。
     // 點擊刪除按鈕後，直接執行刪除操作。
@@ -722,6 +746,10 @@ function deleteCurrentRecord() {
     }
 
     saveToHistory(newList);
+    
+    // V1.2.7 新增：資料刪除後，立即上傳到雲端
+    uploadHistory(newList);
+    
     resetEditor();
     refreshDashboard();
 }
@@ -743,7 +771,7 @@ function resetEditor() {
     document.getElementById('btnCancel').classList.add('hidden');
 }
 
-// === 篩選與儀表板更新 ===
+// === 篩選與儀表板更新 (不變) ===
 function updateTabs(btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -963,7 +991,7 @@ function refreshDashboard() {
     }
 }
 
-// === 輔助函數 (Utility Functions) ===
+// === 輔助函數 (Utility Functions - 不變) ===
 
 function formatCurrency(num) {
     if (isNaN(num)) return '0';
@@ -983,7 +1011,7 @@ function formatDuration(totalHours) {
     return str.trim();
 }
 
-// === 圖表相關函數 (Charts) ===
+// === 圖表相關函數 (Charts - 不變) ===
 
 function toggleCharts() {
     const panel = document.getElementById('chartsPanel');
