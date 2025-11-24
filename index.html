@@ -563,3 +563,313 @@ function getFilteredData() {
 
     if(currentFilter==='custom') {
         const start = document.getElementById('filterStart').value;
+        const end = document.getElementById('filterEnd').value;
+        return list.filter(r => r.date >= start && r.date <= end);
+    }
+    
+    return list; // Default to return all if filter type is unknown/unhandled
+}
+
+function calculateRecordStats(record) {
+    const { income, km, hours, oilPrice, fuelRate, maintCost } = record;
+    
+    // 1. 成本計算
+    const oilCost = (km / fuelRate) * oilPrice;
+    const maintenanceCost = km * maintCost;
+    const totalCost = oilCost + maintenanceCost;
+    
+    // 2. 淨利計算
+    const netProfit = income - totalCost;
+
+    // 3. 時薪計算
+    const grossHourly = hours > 0 ? income / hours : 0;
+    const netHourly = hours > 0 ? netProfit / hours : 0;
+
+    return {
+        ...record,
+        oilCost: oilCost,
+        maintenanceCost: maintenanceCost,
+        totalCost: totalCost,
+        netProfit: netProfit,
+        grossHourly: grossHourly,
+        netHourly: netHourly
+    };
+}
+
+function refreshDashboard() {
+    const filtered = getFilteredData().map(calculateRecordStats);
+    
+    // 總計數據
+    const totals = filtered.reduce((acc, r) => {
+        acc.totalIncome += r.income;
+        acc.totalCost += r.totalCost;
+        acc.netProfit += r.netProfit;
+        acc.totalOilCost += r.oilCost;
+        acc.totalMaintCost += r.maintenanceCost;
+        acc.totalOrders += r.orders;
+        acc.totalHours += r.hours;
+        return acc;
+    }, {
+        totalIncome: 0,
+        totalCost: 0,
+        netProfit: 0,
+        totalOilCost: 0,
+        totalMaintCost: 0,
+        totalOrders: 0,
+        totalHours: 0
+    });
+    
+    // 計算平均時薪
+    const totalMinutes = totals.totalHours * 60;
+    const totalGrossHourly = totals.totalHours > 0 ? totals.totalIncome / totals.totalHours : 0;
+    const totalNetHourly = totals.totalHours > 0 ? totals.netProfit / totals.totalHours : 0;
+
+    // 更新儀表板
+    document.getElementById('dashTotalIncome').innerText = formatCurrency(totals.totalIncome);
+    document.getElementById('dashTotalCost').innerText = formatCurrency(totals.totalCost);
+    document.getElementById('dashNetProfit').innerText = formatCurrency(totals.netProfit);
+    document.getElementById('dashOilCost').innerText = formatCurrency(totals.totalOilCost);
+    document.getElementById('dashMaintCost').innerText = formatCurrency(totals.totalMaintCost);
+    document.getElementById('dashOrders').innerText = totals.totalOrders.toFixed(0);
+    document.getElementById('dashHours').innerText = Math.floor(totals.totalHours);
+    document.getElementById('dashMinutes').innerText = Math.round((totals.totalHours - Math.floor(totals.totalHours)) * 60);
+    document.getElementById('dashGrossHourly').innerText = formatCurrency(totalGrossHourly);
+    document.getElementById('dashNetHourly').innerText = formatCurrency(totalNetHourly);
+
+    // 更新歷史列表
+    const listHtml = filtered.map(r => `
+        <div class="history-item flex justify-between gap-3" onclick="loadRecordToEditor(${r.id})">
+            <!-- Col 1: 日期與單數 -->
+            <div class="history-col w-1/4">
+                <div class="font-semibold text-white text-sm">${r.date.slice(5)}</div>
+                <div class="stat-label mt-1">單數: ${r.orders}</div>
+            </div>
+            
+            <!-- Col 2: 營收與里程 -->
+            <div class="history-col w-1/4">
+                <div class="font-bold text-amber-soft text-base">$${formatCurrency(r.income)}</div>
+                <div class="stat-label mt-1">${r.km.toFixed(1)} KM</div>
+            </div>
+
+            <!-- Col 3: 成本與工時 -->
+            <div class="history-col w-1/4 text-center">
+                <div class="font-bold text-red-400 text-base">-$${formatCurrency(r.totalCost)}</div>
+                <div class="stat-label mt-1">${formatDuration(r.hours)}</div>
+            </div>
+
+            <!-- Col 4: 淨利與淨時薪 -->
+            <div class="history-col history-col-right w-1/4">
+                <!-- V1.2.1 修正: 縮小字體並移除「淨」字 -->
+                <div class="font-bold text-green-400 text-lg">$${formatCurrency(r.netProfit)}</div>
+                <div class="stat-label mt-1 text-green-600">時薪 $${formatCurrency(r.netHourly)}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('historyList').innerHTML = listHtml || `
+        <div class="p-5 text-center text-gray-500 text-sm">
+            --- 此區間暫無紀錄 ---
+        </div>
+    `;
+    
+    // 更新圖表 (如果已開啟)
+    if (!document.getElementById('chartsPanel').classList.contains('hidden')) {
+        updateChart();
+    }
+}
+
+// === 輔助函數 (Utility Functions) ===
+
+function formatCurrency(num) {
+    if (isNaN(num)) return '0';
+    // 負數取絕對值後格式化，再加回負號
+    const isNegative = num < 0;
+    const formatted = Math.abs(num).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return isNegative ? `-${formatted}` : formatted;
+}
+
+function formatDuration(totalHours) {
+    const hours = Math.floor(totalHours);
+    const minutes = Math.round((totalHours - hours) * 60);
+    let str = '';
+    if (hours > 0) str += `${hours}h`;
+    if (minutes > 0) str += `${minutes}m`;
+    if (hours === 0 && minutes === 0) return '0m';
+    return str.trim();
+}
+
+// === 圖表相關函數 (Charts) ===
+
+function toggleCharts() {
+    const panel = document.getElementById('chartsPanel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+        updateChart();
+    } else {
+        destroyChart();
+    }
+}
+
+function switchChartType(type) {
+    chartType = type;
+    document.getElementById('btnChartBar').classList.remove('active');
+    document.getElementById('btnChartPie').classList.remove('active');
+    document.getElementById(`btnChart${type.charAt(0).toUpperCase() + type.slice(1)}`).classList.add('active');
+    updateChart();
+}
+
+function destroyChart() {
+    if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+    }
+}
+
+function updateChart() {
+    destroyChart();
+    
+    const start = document.getElementById('chartStart').value;
+    const end = document.getElementById('chartEnd').value;
+    const groupBy = document.getElementById('chartGroupBy').value;
+
+    if (!start || !end) return;
+
+    // 篩選圖表區間數據
+    const allData = getHistory().map(calculateRecordStats);
+    const chartData = allData.filter(r => r.date >= start && r.date <= end);
+    
+    if (chartData.length === 0) {
+        // 清除 Canvas 上的殘留圖形
+        document.getElementById('mainChart').getContext('2d').clearRect(0, 0, 300, 300);
+        return;
+    }
+
+    let groupedData = {};
+
+    if (groupBy === 'day') {
+        chartData.forEach(r => {
+            const label = r.date.slice(5); // M-D
+            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
+            groupedData[label].income += r.income;
+            groupedData[label].netProfit += r.netProfit;
+            groupedData[label].cost += r.totalCost;
+            groupedData[label].orders += r.orders;
+        });
+    } else if (groupBy === 'month') {
+        chartData.forEach(r => {
+            const label = r.date.slice(0, 7); // YYYY-MM
+            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
+            groupedData[label].income += r.income;
+            groupedData[label].netProfit += r.netProfit;
+            groupedData[label].cost += r.totalCost;
+            groupedData[label].orders += r.orders;
+        });
+    } else if (groupBy === 'year') {
+        chartData.forEach(r => {
+            const label = r.date.slice(0, 4); // YYYY
+            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
+            groupedData[label].income += r.income;
+            groupedData[label].netProfit += r.netProfit;
+            groupedData[label].cost += r.totalCost;
+            groupedData[label].orders += r.orders;
+        });
+    }
+
+    const labels = Object.keys(groupedData).sort();
+
+    const ctx = document.getElementById('mainChart').getContext('2d');
+
+    if (chartType === 'bar') {
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '淨利潤',
+                        data: labels.map(l => groupedData[l].netProfit),
+                        backgroundColor: '#10b981', // 綠色
+                        borderRadius: 4,
+                    },
+                    {
+                        label: '總成本',
+                        data: labels.map(l => groupedData[l].cost),
+                        backgroundColor: '#ef4444', // 紅色
+                        borderRadius: 4,
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false, color: '#333' },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: { color: '#333' },
+                        ticks: { color: '#9ca3af' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: { color: '#e5e5e5' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) { label += `$${context.parsed.y.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`; }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else if (chartType === 'pie') {
+        const totalOilCost = chartData.reduce((sum, r) => sum + r.oilCost, 0);
+        const totalMaintCost = chartData.reduce((sum, r) => sum + r.maintenanceCost, 0);
+        const totalNetProfit = chartData.reduce((sum, r) => sum + r.netProfit, 0);
+        
+        chartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['總淨利', '總油耗成本', '總耗材成本'],
+                datasets: [{
+                    data: [totalNetProfit, totalOilCost, totalMaintCost],
+                    backgroundColor: ['#10b981', '#fcd34d', '#ef4444'],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#e5e5e5' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = ((value / total) * 100).toFixed(1) + '%';
+                                return `${context.label}: $${value.toFixed(0)} (${percentage})`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+</script>
+</body>
+</html>
