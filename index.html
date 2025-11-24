@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.14</title>
+<title>UberEat Salary Calculator V1.2.15</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.14 (圖示優化)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與收合圖示。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.15 (明細列表優化)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與明細列表收合功能。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.14" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.15" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -95,33 +95,59 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 V1.2.10 樣式修正 (對齊優化) === */
+    /* === 歷史列表 V1.2.15 樣式修正 (主要區域可點擊) === */
     .history-item {
         background-color: #111216; 
         border-bottom: 1px solid #222; 
-        padding: 1.25rem 1rem; 
-        cursor: pointer; 
+        padding-top: 1.25rem; /* 保持與原版一致 */
+        padding-bottom: 0rem; /* 讓內容決定高度 */
+        padding-left: 1rem;
+        padding-right: 1rem;
         transition: background 0.2s;
         display: flex;
         flex-direction: column; 
     }
-    .history-item:active { background-color: #1c1e24; }
+    .history-item:active .history-main-area { background-color: #1c1e24; } /* 點擊主區域時變色 */
     
-    .history-top-row {
+    .history-main-area {
+        /* V1.2.15: 新增的主區域容器，用於點擊編輯 */
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         width: 100%;
-        margin-bottom: 0.5rem; 
+        padding-bottom: 1.25rem; /* 保持原來的底部間距 */
+        cursor: pointer;
+        transition: background 0.2s;
+        position: relative; /* 為了讓收合按鈕能精確定位 */
+    }
+
+    .history-top-row {
+        /* 保持原來的三欄佈局 */
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    /* V1.2.15: 收合/展開圖示專門區域 */
+    .history-toggle-icon {
+        position: absolute;
+        top: 0px; 
+        right: 0px; 
+        padding: 8px; /* 增加點擊區域 */
+        color: #9ca3af;
+        cursor: pointer;
+        z-index: 10;
+        font-size: 1rem;
+        transition: transform 0.2s;
     }
     
     .history-stat-group {
         display: flex;
         flex-direction: column;
-        align-items: flex-start; /* 預設靠左對齊 */
+        align-items: flex-start; 
         text-align: left;
     }
-    /* === 修正目標一：新增 Center 類別，用於成本欄位置中 === */
     .history-stat-group.center {
         align-items: center; 
         text-align: center;
@@ -145,19 +171,27 @@
         line-height: 1.2;
     }
     
-    /* === 修正目標二：歷史列表底部區塊移除多餘線條，改為間距分隔 === */
+    /* === 歷史列表底部詳細區塊 (預設隱藏) === */
     .history-sub-stats {
+        /* V1.2.15: 詳細數據區域 */
         width: 100%;
         padding-top: 0.75rem; 
+        padding-bottom: 1.25rem; /* 底部間距移到這裡 */
         font-size: 0.8rem;
         color: #9ca3af;
-        margin-top: 0.75rem; /* 增加頂部間距，取代線條 */
+        margin-top: 0.75rem; 
+        border-top: 1px solid #222; /* 讓詳細數據與主數據分隔 */
     }
+    
+    .history-sub-stats.hidden {
+        display: none;
+    }
+
     /* 內部 Performance Summary 區塊也移除 border-top */
     .history-sub-stats .performance-summary {
         margin-top: 0.75rem;
         padding-top: 0.75rem;
-        border-top: 1px solid #222; /* 仍然保留內部這條線，讓資訊有區隔 */
+        border-top: 1px solid #222; 
     }
 
 
@@ -184,7 +218,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.14 Icon Optimized</div>
+                <div class="text-[10px] text-gray-500">V1.2.15 History Detail Optimized</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -433,7 +467,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.14 (Icon Optimized)</div>
+        <div>UberEat 外送薪資計算器 V1.2.15 (History Detail Optimized)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -579,6 +613,21 @@ function loadCollapseStates() {
         document.getElementById('dashboardToggleIcon').innerText = '▶'; // V1.2.14: 使用簡潔圖示
     } else {
         document.getElementById('dashboardToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
+    }
+}
+
+// === V1.2.15: 歷史明細的收合/展開邏輯 ===
+function toggleHistoryDetails(id) {
+    const content = document.getElementById(`detail-${id}`);
+    const icon = document.getElementById(`icon-detail-${id}`);
+
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.innerText = '▼'; // 展開狀態
+        // 儲存狀態 (可選，但為了簡潔，這裡暫不存入 localStorage)
+    } else {
+        content.classList.add('hidden');
+        icon.innerText = '▶'; // 收合狀態
     }
 }
 
@@ -1051,30 +1100,33 @@ function refreshDashboard() {
     document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
     document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
 
-    // 更新歷史列表 - V1.2.10 樣式調整 (成本置中，減少線條干擾)
+    // V1.2.15: 更新歷史列表結構，加入收合功能
     const listHtml = filtered.map(r => `
-        <div class="history-item" onclick="loadRecordToEditor(${r.id})">
-            <div class="history-top-row">
-                <div class="history-stat-group w-1/3">
-                    <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
-                    <div class="history-main-value text-amber-soft">$${formatCurrency(r.income)}</div>
-                    <div class="stat-label-small text-amber-soft">總營收</div>
-                </div>
-                
-                <div class="history-stat-group center w-1/3">
-                    <div class="text-sm font-semibold text-red-300">成本</div>
-                    <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
-                    <div class="stat-label-small text-red-500">油耗 + 耗材</div>
-                </div>
+        <div class="history-item">
+            <div class="history-main-area" onclick="loadRecordToEditor(${r.id})">
+                <div class="history-top-row">
+                    <div class="history-stat-group w-1/3">
+                        <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
+                        <div class="history-main-value text-amber-soft">$${formatCurrency(r.income)}</div>
+                        <div class="stat-label-small text-amber-soft">總營收</div>
+                    </div>
+                    
+                    <div class="history-stat-group center w-1/3">
+                        <div class="text-sm font-semibold text-red-300">成本</div>
+                        <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
+                        <div class="stat-label-small text-red-500">油耗 + 耗材</div>
+                    </div>
 
-                <div class="history-stat-group right w-1/3">
-                    <div class="text-sm font-semibold text-green-300">淨利</div>
-                    <div class="history-main-value text-green-400">$${formatCurrency(r.netProfit)}</div>
-                    <div class="stat-label-small text-green-500">實賺</div>
+                    <div class="history-stat-group right w-1/3">
+                        <div class="text-sm font-semibold text-green-300">淨利</div>
+                        <div class="history-main-value text-green-400">$${formatCurrency(r.netProfit)}</div>
+                        <div class="stat-label-small text-green-500">實賺</div>
+                    </div>
                 </div>
+                <span id="icon-detail-${r.id}" class="history-toggle-icon" onclick="event.stopPropagation(); toggleHistoryDetails(${r.id});">▶</span>
             </div>
 
-            <div class="history-sub-stats">
+            <div id="detail-${r.id}" class="history-sub-stats hidden">
                 <div class="flex flex-col gap-1 w-full">
                     <div class="flex justify-between items-center">
                         <span class="stat-label-small text-gray-400">單數/里程</span>
