@@ -3,65 +3,68 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Uber Driver 計算器（最終版）</title>
+<title>Uber Driver 計算器（深灰版）</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/base.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/components.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.4/utilities.min.css">
 <style>
-input, button, select { outline: none; }
-.card { @apply bg-white shadow-md rounded-xl p-5 mb-5; }
-.btn-main { @apply bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 transition w-full; }
-.btn-sub { @apply bg-gray-200 text-gray-700 rounded-lg px-4 py-2 hover:bg-gray-300 transition; }
+body { @apply bg-gray-900 text-gray-200; }
+.card { @apply bg-gray-800 shadow-lg rounded-xl p-5 mb-5 border border-gray-700; }
+input, select { @apply bg-gray-700 text-gray-100 border border-gray-600 rounded-lg p-2 w-full; }
+.btn-main { @apply bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600 transition w-full font-semibold; }
+.btn-sub { @apply bg-gray-600 text-gray-200 rounded-lg px-3 py-2 hover:bg-gray-500 transition; }
+h1 { @apply text-gray-100; }
+label { @apply text-gray-300 font-medium; }
 </style>
 </head>
-<body class="bg-gray-100 p-4">
-<h1 class="text-2xl font-bold text-center mb-4">Uber Driver 計算器（最終版）</h1>
+<body class="p-4">
+<h1 class="text-3xl font-bold text-center mb-6 tracking-wide">Uber Driver 計算器（深灰版）</h1>
 
-<div class="text-center mb-4">
+<div class="text-center mb-6">
   <label class="font-semibold mr-2">選擇油品：</label>
-  <select id="oilType" class="border p-2 rounded" onchange="fetchOilPrice()">
-    <option value="92" selected>92 無鉛汽油</option>
+  <select id="oilType" class="border p-2 rounded w-40 bg-gray-700" onchange="fetchOilPrice()">
+    <option value="92">92 無鉛汽油</option>
     <option value="95">95 無鉛汽油</option>
     <option value="98">98 無鉛汽油</option>
     <option value="diesel">超級柴油</option>
   </select>
 </div>
 
-<div id="oilPriceDisplayMain" class="text-center text-blue-600 font-semibold mb-4">讀取中...</div>
+<div id="oilPriceDisplayMain" class="text-center text-blue-400 font-semibold mb-6 text-lg">讀取中...</div>
 
 <!-- 成本設定區 -->
 <div class="card">
-<h2 class="text-xl font-semibold mb-3">成本設定（雲端儲存）</h2>
+<h2 class="text-xl font-semibold mb-4 text-blue-300">成本設定</h2>
 <label>油耗設定 (km/L)</label>
-<input id="fuelRate" class="w-full border p-2 rounded mb-3" />
+<input id="fuelRate" class="mb-3" />
 <label>每公里耗材成本 ($/km)</label>
-<input id="maintCost" class="w-full border p-2 rounded mb-3" />
+<input id="maintCost" class="mb-4" />
 <button class="btn-main" onclick="saveSettings()">儲存設定</button>
 </div>
 
 <!-- 當日數據輸入 -->
 <div class="card">
-<h2 class="text-xl font-semibold mb-3">當日數據輸入</h2>
+<h2 class="text-xl font-semibold mb-4 text-blue-300">當日數據輸入</h2>
 <label>記錄日期</label>
-<input id="recordDate" type="date" class="w-full border p-2 rounded mb-3" />
+<input id="recordDate" type="date" class="mb-3" />
 <label>當日營業額</label>
-<input id="dayIncome" class="w-full border p-2 rounded mb-3" />
+<input id="dayIncome" class="mb-3" />
 <label>當日實際公里數</label>
-<input id="dayDistance" class="w-full border p-2 rounded mb-3" />
+<input id="dayDistance" class="mb-3" />
 <label>工作時數</label>
-<input id="workHours" class="w-full border p-2 rounded mb-3" />
+<input id="workHours" class="mb-4" />
 <button class="btn-main" onclick="saveRecord()">儲存紀錄</button>
 </div>
 
-<!-- 當日預估 -->
+<!-- 預估 -->
 <div class="card">
-<h2 class="text-xl font-semibold mb-3">即時預估</h2>
-<div id="previewResult" class="text-gray-800">尚無資料</div>
+<h2 class="text-xl font-semibold mb-4 text-blue-300">即時預估</h2>
+<div id="previewResult" class="text-gray-300">尚無資料</div>
 </div>
 
 <!-- 歷史紀錄 -->
 <div class="card">
-<h2 class="text-xl font-semibold mb-3">歷史紀錄</h2>
+<h2 class="text-xl font-semibold mb-4 text-blue-300">歷史紀錄</h2>
 <div id="historyList" class="space-y-3"></div>
 </div>
 
@@ -127,11 +130,11 @@ function loadHistory() {
 
   all.forEach((r, idx) => {
     const div = document.createElement('div');
-    div.className = "border p-3 rounded-lg bg-gray-50";
+    div.className = "border border-gray-600 p-3 rounded-lg bg-gray-700 text-gray-200";
     div.innerHTML = `
       <div>📅 ${r.date}</div>
-      <div>🚗 油品：${r.oilType}</div>
-      <div>💲 當時油價：${r.oilPrice}</div>
+      <div>⛽ 油品：${r.oilType}</div>
+      <div>💲 油價：${r.oilPrice}</div>
       <div>營業額：$${r.income}</div>
       <div>公里數：${r.km} km</div>
       <div>時數：${r.hours} 小時</div>
