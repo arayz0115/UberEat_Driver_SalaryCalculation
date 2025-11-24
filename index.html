@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.15</title>
+<title>UberEat Salary Calculator V1.2.16</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.15 (明細列表優化)" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.16 (明細圖示優化)" />
 <meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與明細列表收合功能。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.15" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.16" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -95,31 +95,36 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 V1.2.15 樣式修正 (主要區域可點擊) === */
+    /* === 歷史列表 V1.2.16 樣式修正 (主要區域與圖示分離) === */
     .history-item {
         background-color: #111216; 
         border-bottom: 1px solid #222; 
-        padding-top: 1.25rem; /* 保持與原版一致 */
-        padding-bottom: 0rem; /* 讓內容決定高度 */
+        padding-top: 1.25rem; 
+        padding-bottom: 0rem; 
         padding-left: 1rem;
         padding-right: 1rem;
         transition: background 0.2s;
         display: flex;
         flex-direction: column; 
     }
-    .history-item:active .history-main-area { background-color: #1c1e24; } /* 點擊主區域時變色 */
     
-    .history-main-area {
-        /* V1.2.15: 新增的主區域容器，用於點擊編輯 */
+    /* V1.2.16: 新增容器包裹主區域與圖示 */
+    .history-header-wrapper {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         width: 100%;
-        padding-bottom: 1.25rem; /* 保持原來的底部間距 */
+    }
+
+    /* V1.2.16: 主數據區，佔用大部分寬度，用於點擊編輯 */
+    .history-main-area {
+        display: flex;
+        width: calc(100% - 30px); /* 留出圖示的空間 */
+        padding-bottom: 1.25rem; 
         cursor: pointer;
         transition: background 0.2s;
-        position: relative; /* 為了讓收合按鈕能精確定位 */
     }
+    .history-main-area:active { background-color: #1c1e24; } 
 
     .history-top-row {
         /* 保持原來的三欄佈局 */
@@ -129,17 +134,18 @@
         width: 100%;
     }
 
-    /* V1.2.15: 收合/展開圖示專門區域 */
+    /* V1.2.16: 獨立的收合/展開圖示區域 */
     .history-toggle-icon {
-        position: absolute;
-        top: 0px; 
-        right: 0px; 
-        padding: 8px; /* 增加點擊區域 */
-        color: #9ca3af;
+        width: 30px; /* 固定圖示寬度 */
+        height: 100%; /* 與主區域高度對齊 */
+        padding-top: 5px; /* 調整圖示與日期/營收的垂直對齊 */
+        color: #6ee7b7; /* 調整顏色，使其更清晰 */
         cursor: pointer;
         z-index: 10;
         font-size: 1rem;
         transition: transform 0.2s;
+        text-align: right;
+        flex-shrink: 0; /* 防止被擠壓 */
     }
     
     .history-stat-group {
@@ -218,7 +224,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.15 History Detail Optimized</div>
+                <div class="text-[10px] text-gray-500">V1.2.16 History Icon Optimized</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -467,7 +473,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.15 (History Detail Optimized)</div>
+        <div>UberEat 外送薪資計算器 V1.2.16 (History Icon Optimized)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -616,7 +622,7 @@ function loadCollapseStates() {
     }
 }
 
-// === V1.2.15: 歷史明細的收合/展開邏輯 ===
+// === V1.2.15: 歷史明細的收合/展開邏輯 (V1.2.16 修正：確保點擊不會觸發編輯) ===
 function toggleHistoryDetails(id) {
     const content = document.getElementById(`detail-${id}`);
     const icon = document.getElementById(`icon-detail-${id}`);
@@ -624,7 +630,6 @@ function toggleHistoryDetails(id) {
     if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
         icon.innerText = '▼'; // 展開狀態
-        // 儲存狀態 (可選，但為了簡潔，這裡暫不存入 localStorage)
     } else {
         content.classList.add('hidden');
         icon.innerText = '▶'; // 收合狀態
@@ -1100,27 +1105,29 @@ function refreshDashboard() {
     document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
     document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
 
-    // V1.2.15: 更新歷史列表結構，加入收合功能
+    // V1.2.16: 更新歷史列表結構，圖示與主數據分離
     const listHtml = filtered.map(r => `
         <div class="history-item">
-            <div class="history-main-area" onclick="loadRecordToEditor(${r.id})">
-                <div class="history-top-row">
-                    <div class="history-stat-group w-1/3">
-                        <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
-                        <div class="history-main-value text-amber-soft">$${formatCurrency(r.income)}</div>
-                        <div class="stat-label-small text-amber-soft">總營收</div>
-                    </div>
-                    
-                    <div class="history-stat-group center w-1/3">
-                        <div class="text-sm font-semibold text-red-300">成本</div>
-                        <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
-                        <div class="stat-label-small text-red-500">油耗 + 耗材</div>
-                    </div>
+            <div class="history-header-wrapper">
+                <div class="history-main-area" onclick="loadRecordToEditor(${r.id})">
+                    <div class="history-top-row">
+                        <div class="history-stat-group w-1/3">
+                            <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
+                            <div class="history-main-value text-amber-soft">$${formatCurrency(r.income)}</div>
+                            <div class="stat-label-small text-amber-soft">總營收</div>
+                        </div>
+                        
+                        <div class="history-stat-group center w-1/3">
+                            <div class="text-sm font-semibold text-red-300">成本</div>
+                            <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
+                            <div class="stat-label-small text-red-500">油耗 + 耗材</div>
+                        </div>
 
-                    <div class="history-stat-group right w-1/3">
-                        <div class="text-sm font-semibold text-green-300">淨利</div>
-                        <div class="history-main-value text-green-400">$${formatCurrency(r.netProfit)}</div>
-                        <div class="stat-label-small text-green-500">實賺</div>
+                        <div class="history-stat-group right w-1/3">
+                            <div class="text-sm font-semibold text-green-300">淨利</div>
+                            <div class="history-main-value text-green-400">$${formatCurrency(r.netProfit)}</div>
+                            <div class="stat-label-small text-green-500">實賺</div>
+                        </div>
                     </div>
                 </div>
                 <span id="icon-detail-${r.id}" class="history-toggle-icon" onclick="event.stopPropagation(); toggleHistoryDetails(${r.id});">▶</span>
