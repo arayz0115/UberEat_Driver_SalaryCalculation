@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.10</title>
+<title>UberEat Salary Calculator V1.2.11</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.10 (Alignment Refined)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置同步，優化儀表板與列表排版。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.11 (Symmetry Refined)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置同步，優化儀表板與列表排版，修正儀表板高度不對稱問題。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.10" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.11" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -149,7 +149,6 @@
     .history-sub-stats {
         width: 100%;
         padding-top: 0.75rem; 
-        /* 移除 border-top，改在上方手動加入分隔線或僅靠 margin-top 區隔 */
         font-size: 0.8rem;
         color: #9ca3af;
         margin-top: 0.75rem; /* 增加頂部間距，取代線條 */
@@ -185,7 +184,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.10 Alignment Refined</div>
+                <div class="text-[10px] text-gray-500">V1.2.11 Symmetry Refined</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -256,31 +255,31 @@
         
         <div class="grid grid-cols-3 gap-2">
 
-            <div class="flex flex-col items-center pb-4 text-center">
+            <div class="flex flex-col items-center text-center">
                 <label class="stat-label text-gray-400">區間總營收</label>
                 <div class="text-3xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
             </div>
-            <div class="flex flex-col items-center pb-4 text-center"> 
+            <div class="flex flex-col items-center text-center"> 
                 <label class="stat-label text-red-400">總成本</label>
                 <div class="text-3xl font-bold text-red-400 mt-1 tracking-tight">$<span id="dashTotalCost">0</span></div> 
             </div>
-            <div class="flex flex-col items-center pb-4 text-center">
+            <div class="flex flex-col items-center text-center">
                 <label class="stat-label text-green-400">總淨利</label>
                 <div class="text-3xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetProfit">0</span></div>
             </div>
 
 
-            <div class="col-span-3 border-t border-white/10 pt-4"></div>
+            <div class="col-span-3 border-t border-white/10 pt-4 mt-4"></div>
 
-            <div class="flex flex-col items-center pt-2 text-center">
+            <div class="flex flex-col items-center text-center">
                 <label class="stat-label text-red-400">油耗成本</label>
                 <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashOilCost">0</span></div>
             </div>
-            <div class="flex flex-col items-center pt-2 text-center">
+            <div class="flex flex-col items-center text-center">
                 <label class="stat-label text-red-400">耗材成本</label>
                 <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashMaintCost">0</span></div>
             </div>
-            <div class="flex flex-col items-center pt-2 text-center">
+            <div class="flex flex-col items-center text-center">
                 <label class="stat-label text-gray-400">總單數 / 總工時</label>
                 <div class="text-lg font-bold text-white mt-1">
                     <span id="dashOrders">0</span>單 | 
@@ -289,25 +288,25 @@
             </div>
             
             
-            <div class="col-span-3 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
+            <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
                 <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-amber-soft">未扣成本實薪</label>
-                    <div class="text-2xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashGrossHourly">0</span></div>
+                    <div class="text-2xl font-bold text-amber-soft my-1 tracking-tight">$<span id="dashGrossHourly">0</span></div>
                 </div>
                 <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-green-400">已扣成本實薪</label>
-                    <div class="text-2xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetHourly">0</span></div>
+                    <div class="text-2xl font-bold text-green-400 my-1 tracking-tight">$<span id="dashNetHourly">0</span></div>
                 </div>
             </div>
 
-            <div class="col-span-3 border-t border-white/10 pt-4 grid grid-cols-2 gap-4">
+            <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
                 <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-amber-soft">每單平均營收</label>
-                    <div class="text-xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashGrossPerOrder">0</span></div>
+                    <div class="text-xl font-bold text-amber-soft my-1 tracking-tight">$<span id="dashGrossPerOrder">0</span></div>
                 </div>
                 <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-green-400">每單平均淨利</label>
-                    <div class="text-xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetPerOrder">0</span></div>
+                    <div class="text-xl font-bold text-green-400 my-1 tracking-tight">$<span id="dashNetPerOrder">0</span></div>
                 </div>
             </div>
 
@@ -420,7 +419,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.10 (Alignment Refined)</div>
+        <div>UberEat 外送薪資計算器 V1.2.11 (Symmetry Refined)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
