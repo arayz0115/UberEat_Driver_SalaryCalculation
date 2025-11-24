@@ -3,13 +3,20 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat 外送薪資計算器</title>
+<title>UberEat 外送薪資計算器 V1.0</title>
 
 <!-- === App 化專用 Meta 設定 === -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
+
+<!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing === -->
+<!-- 修正分享時的標題和說明 -->
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.0" />
+<meta property="og:description" content="Developed by Ray © 2025 - 專為 UberEat 外送員設計的薪資、成本、淨利計算與圖表分析工具。" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.0" />
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -293,7 +300,7 @@
     </div>
 
 <script>
-// === 變數 ===
+// === 變數與初始化 ===
 const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
 let globalOilPrice = 30.0;
 let currentFilter = 'day';
@@ -315,6 +322,7 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
+// === 設定處理 ===
 function loadSettings() {
     document.getElementById('settingFuelRate').value = localStorage.getItem('fuelRate') || 12;
     document.getElementById('settingMaint').value = localStorage.getItem('maintCost') || 1.5;
@@ -329,18 +337,25 @@ function saveSettings() {
 }
 function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
 
+// === 油價獲取 (使用代理 API) ===
 async function fetchOilPrice() {
     try {
         const type = document.getElementById('oilType').value;
+        // 使用 try-catch 確保即使 API 失敗也能使用預設值
         const res = await fetch(workerAPI);
         const data = await res.json();
         if(data[type]) {
             globalOilPrice = parseFloat(data[type]);
             document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice}`;
+        } else {
+            document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice} (預設/API錯誤)`;
         }
-    } catch(e) { document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice} (預設)`; }
+    } catch(e) { 
+        document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice} (預設/網路錯誤)`;
+    }
 }
 
+// === 歷史資料 CRUD ===
 function getHistory() { try { return JSON.parse(localStorage.getItem('uber_ray_v1') || '[]'); } catch { return []; } }
 function saveToHistory(data) { localStorage.setItem('uber_ray_v1', JSON.stringify(data)); }
 
@@ -406,7 +421,7 @@ function loadRecordToEditor(id) {
 }
 
 function deleteCurrentRecord() {
-    if(!confirm('刪除此紀錄?')) return;
+    if(!confirm('刪除此紀錄?')) return; // 雖然 Canvas 不支援 confirm，但先保留
     const id = document.getElementById('editId').value;
     saveToHistory(getHistory().filter(r => r.id != id));
     resetEditor();
@@ -430,6 +445,7 @@ function resetEditor() {
     document.getElementById('btnCancel').classList.add('hidden');
 }
 
+// === 篩選與儀表板更新 ===
 function setFilter(type, btn) {
     currentFilter = type;
     updateTabs(btn);
@@ -477,7 +493,7 @@ function refreshDashboard() {
             <div class="history-item" onclick="loadRecordToEditor(${r.id})">
                 <div>
                     <div class="text-gray-500 text-xs mb-1">${r.date}</div>
-                    <div class="text-amber-soft font-bold text-lg">$${r.income}</div>
+                    <div class="text-amber-soft font-bold text-lg">$${Math.round(r.income)}</div>
                 </div>
                 <div class="text-right">
                     <div class="text-green-400 font-bold text-sm">淨 $${Math.round(net)}</div>
@@ -498,6 +514,7 @@ function refreshDashboard() {
     if(!document.getElementById('chartsPanel').classList.contains('hidden')) updateChart(); 
 }
 
+// === 圖表功能 ===
 function toggleCharts() {
     const p = document.getElementById('chartsPanel');
     p.classList.toggle('hidden');
@@ -584,7 +601,7 @@ function updateChart() {
                 maintainAspectRatio: false,
                 plugins: { 
                     legend: { position: 'right', labels: { color: '#fff' } },
-                    title: { display: true, text: `區間總營收: $${totalIncome}`, color:'#fff' }
+                    title: { display: true, text: `區間總營收: $${Math.round(totalIncome).toLocaleString()}`, color:'#fff' }
                 }
             }
         });
