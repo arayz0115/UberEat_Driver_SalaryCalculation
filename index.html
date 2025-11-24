@@ -3,24 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.7 (Cloud Sync)</title>
+<title>UberEat 外送薪資計算器 V1.2.7 - 雲端同步</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.7 (雲端同步)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援每單平均收益分析，優化跑單效率。現已支援雲端同步。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.7" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援雲端同步與每單平均收益分析，優化跑單效率。" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.7" />
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
 <style>
     /* === 全局設定 === */
@@ -188,19 +188,24 @@
             ⚙️ 設定
         </button>
     </div>
-
+    
     <div class="card mb-4 border-blue-500/30">
-        <h3 class="text-blue-400 font-bold mb-3 text-sm uppercase">☁️ 雲端同步設定 (Email/密碼)</h3>
-        <div class="space-y-3">
-            <input id="authEmail" type="email" class="input-field" placeholder="請輸入 Email" />
-            <input id="authPassword" type="password" class="input-field" placeholder="請輸入密碼 (至少6位數)" />
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="handleAuth(true)" class="btn btn-primary text-sm">註冊新帳號</button>
-                <button onclick="handleAuth(false)" class="btn btn-ghost text-sm">登入現有帳號</button>
-            </div>
-            <button onclick="handleLogout()" class="btn btn-danger text-sm hidden" id="btnLogout">登出</button>
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-white text-sm">☁️ 雲端同步設定 (EMAIL/密碼)</h3>
         </div>
-        <div id="authStatus" class="text-xs mt-3 p-2 bg-[#1a1c23] rounded text-gray-400">當前狀態：正在檢查登入狀態...</div>
+        <div class="space-y-3 mb-4">
+            <input id="inputEmail" type="email" class="input-field" placeholder="請輸入 Email" />
+            <input id="inputPassword" type="password" class="input-field" placeholder="請輸入密碼 (至少6位數)" />
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="registerUser()" class="btn btn-primary bg-blue-600 hover:bg-blue-700" id="btnRegister">註冊新帳號</button>
+                <button onclick="loginUser()" class="btn btn-primary bg-gray-600 hover:bg-gray-700" id="btnLogin">登入現有帳號</button>
+            </div>
+            <button onclick="logoutUser()" class="btn btn-danger hidden" id="btnLogout">登出</button>
+        </div>
+        <div id="authStateDisplay" class="text-sm pt-2 border-t border-gray-800">
+            <span class="text-gray-500">當前狀態: </span>
+            <span id="authStatusText" class="text-yellow-400">未登入 (請先註冊或登入)</span>
+        </div>
     </div>
 
     <div id="settingsPanel" class="hidden mb-4 card border-green-900/50">
@@ -401,133 +406,256 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.7 (雲端同步版)</div>
+        <div>UberEat 外送薪資計算器 V1.2.7</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
 
 <script>
-// === Firebase 配置與初始化 (請替換為您的金鑰！) ===
+// ==========================================================
+// === Firebase 設定 (請替換為您的金鑰！) ===
+// ==========================================================
 const firebaseConfig = {
-    apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // <-- 替換為您的 API Key
+    apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID", // <-- 替換為您的 Project ID
+    projectId: "YOUR_PROJECT_ID",
     storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    messagingSenderId: "YOUR_SENDER_ID",
     appId: "YOUR_APP_ID"
 };
 
-// 初始化 Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-let currentUserId = null; // 用來存儲當前登入用戶的 ID
-let allHistoryRecords = []; // 雲端資料的本地快取
-
-// === 變數與初始化 (已更新為支援 Firebase) ===
+// ==========================================================
+// === 變數與初始化 (整合 Firebase) ===
+// ==========================================================
 const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
 let globalOilPrice = 30.0;
 let currentFilter = 'day';
 let chartInstance = null;
 let chartType = 'bar'; 
 
-window.onload = async () => {
-    // 檢查是否有現有登入狀態
-    auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            currentUserId = user.uid;
-            document.getElementById('authStatus').innerText = `當前狀態：已登入 (Email: ${user.email} | UID: ${currentUserId.substring(0, 6)}...)`;
-            document.getElementById('btnLogout').classList.remove('hidden');
-            // 登入成功後，載入雲端歷史資料
-            await fetchHistoryFromFirebase();
+let firebaseApp;
+let auth;
+let db;
+let currentUser = null; // 追蹤當前登入用戶
+
+function setupFirebase() {
+    try {
+        if (!firebase.apps.length) {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
         } else {
-            currentUserId = null;
-            document.getElementById('authStatus').innerText = `當前狀態：未登入，請登入或註冊以同步資料。`;
-            document.getElementById('btnLogout').classList.add('hidden');
-            allHistoryRecords = []; // 清除本地快取
+            firebaseApp = firebase.app();
+        }
+        auth = firebase.auth();
+        db = firebase.firestore();
+        console.log("Firebase 服務已初始化。");
+    } catch (error) {
+        console.error("Firebase 初始化失敗：", error);
+        alert("錯誤：Firebase 初始化失敗，請檢查您的 firebaseConfig 是否正確。");
+    }
+}
+
+// === 狀態監聽與 UI 更新 ===
+function updateAuthState(user) {
+    currentUser = user;
+    const authStatusText = document.getElementById('authStatusText');
+    const btnLogout = document.getElementById('btnLogout');
+    const authInputs = [document.getElementById('inputEmail'), document.getElementById('inputPassword')];
+    const authBtns = [document.getElementById('btnRegister'), document.getElementById('btnLogin')];
+
+    if (user) {
+        authStatusText.innerHTML = `已登入 (Email: ${user.email} | UID: ${user.uid.slice(0, 8)}...)`;
+        authStatusText.classList.remove('text-yellow-400', 'text-red-400');
+        authStatusText.classList.add('text-green-400');
+        btnLogout.classList.remove('hidden');
+        authBtns.forEach(btn => btn.classList.add('hidden'));
+        authInputs.forEach(input => input.setAttribute('disabled', 'true'));
+        // 登入後，從雲端載入資料
+        fetchHistoryFromFirebase();
+    } else {
+        authStatusText.innerText = "未登入 (請先註冊或登入)";
+        authStatusText.classList.remove('text-green-400', 'text-red-400');
+        authStatusText.classList.add('text-yellow-400');
+        btnLogout.classList.add('hidden');
+        authBtns.forEach(btn => btn.classList.remove('hidden'));
+        authInputs.forEach(input => input.removeAttribute('disabled'));
+        // 登出後，清空顯示的資料，並嘗試載入本地資料 (作為本機歷史紀錄)
+        refreshDashboard(true); 
+    }
+}
+
+// === 身份驗證函式 (Authentication) ===
+function getAuthCredentials() {
+    const email = document.getElementById('inputEmail').value.trim();
+    const password = document.getElementById('inputPassword').value.trim();
+    if (!email || password.length < 6) {
+        alert("請輸入有效的 Email，且密碼至少需為 6 位數。");
+        return null;
+    }
+    return { email, password };
+}
+
+async function registerUser() {
+    const credentials = getAuthCredentials();
+    if (!credentials) return;
+    try {
+        await auth.createUserWithEmailAndPassword(credentials.email, credentials.password);
+        alert("註冊成功！已自動登入。");
+    } catch (error) {
+        let msg = "註冊失敗：";
+        if (error.code === 'auth/email-already-in-use') msg += "此 Email 已被註冊。請直接登入或使用其他 Email。";
+        else if (error.code === 'auth/weak-password') msg += "密碼強度不足，請使用更複雜的密碼。";
+        else msg += error.message;
+        alert(msg);
+    }
+}
+
+async function loginUser() {
+    const credentials = getAuthCredentials();
+    if (!credentials) return;
+    try {
+        await auth.signInWithEmailAndPassword(credentials.email, credentials.password);
+        alert("登入成功！正在載入您的紀錄。");
+    } catch (error) {
+        let msg = "登入失敗：";
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') msg += "Email 或密碼錯誤。";
+        else msg += error.message;
+        alert(msg);
+    }
+}
+
+function logoutUser() {
+    if (confirm("確定要登出嗎？")) {
+        auth.signOut().then(() => {
+            alert("已登出。");
+            // 登出後，updateAuthState 會被觸發
+        }).catch((error) => {
+            alert("登出失敗：" + error.message);
+        });
+    }
+}
+
+// === Firestore 資料處理 ===
+
+// 替換原來的 getHistory()
+async function fetchHistoryFromFirebase() {
+    if (!currentUser) return; // 未登入則不執行
+    
+    // 1. 先嘗試從本地載入舊資料 (如果有的話)
+    let history = getHistoryLocal(); 
+
+    // 2. 從 Firestore 載入資料
+    try {
+        const docRef = db.collection('uberRecords').doc(currentUser.uid);
+        const doc = await docRef.get();
+        
+        if (doc.exists) {
+            const cloudRecords = doc.data().records || [];
+            
+            // 3. 處理本地資料：如果本地有資料，但雲端沒有，則將本地資料上傳
+            if (cloudRecords.length === 0 && history.length > 0) {
+                console.log("雲端無資料，正在上傳本地紀錄...");
+                // 直接儲存本地紀錄到雲端
+                await saveToFirebase(history);
+                // 上傳完成後，清除本地紀錄
+                localStorage.removeItem('uber_ray_v1');
+                history = history; // 使用剛剛上傳的資料
+            } else {
+                // 4. 使用雲端資料
+                history = cloudRecords;
+            }
+        } else if (history.length > 0) {
+             // 雲端無此用戶文件，但本地有資料，則上傳
+            console.log("雲端無用戶文件，正在上傳本地紀錄...");
+            await saveToFirebase(history);
+            localStorage.removeItem('uber_ray_v1');
+        } else {
+            // 雲端和本地都沒資料
+            history = [];
         }
         
-        // 確保所有設定都載入
-        resetEditor();
-        loadSettings();
-        
-        const today = getLocalDateString();
-        
-        // 初始化日期設定
-        document.getElementById('filterStart').value = today;
-        document.getElementById('filterEnd').value = today;
-        const now = new Date();
-        document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
-        document.getElementById('chartEnd').value = today;
-
-        // 更新儀表板
+        // 5. 將排序後的歷史紀錄儲存到一個全域變數或直接使用
+        allHistory = history.sort((a,b) => new Date(b.date)-new Date(a.date));
         refreshDashboard();
-    });
+        
+    } catch (error) {
+        console.error("從 Firebase 載入紀錄失敗：", error);
+        alert("錯誤：無法從雲端載入紀錄。請檢查網路連線或 Firebase 規則。");
+        // 如果雲端載入失敗，仍然嘗試使用本地資料
+        allHistory = history.sort((a,b) => new Date(b.date)-new Date(a.date));
+        refreshDashboard();
+    }
+}
+
+// 替換原來的 saveToHistory()
+async function saveToFirebase(records) {
+    if (!currentUser) {
+        // 未登入時，儲存到本地
+        saveToHistoryLocal(records);
+        return;
+    }
+
+    try {
+        const docRef = db.collection('uberRecords').doc(currentUser.uid);
+        await docRef.set({ records: records.map(r => ({...r, id: r.id.toString()})) }, { merge: false });
+        // 成功儲存後，更新全域歷史紀錄
+        allHistory = records.sort((a,b) => new Date(b.date)-new Date(a.date));
+        refreshDashboard();
+        console.log("紀錄已同步至雲端。");
+    } catch (error) {
+        console.error("同步紀錄到 Firebase 失敗：", error);
+        alert("錯誤：紀錄無法同步到雲端。請檢查網路連線。");
+        // 如果雲端儲存失敗，仍儲存到本地
+        saveToHistoryLocal(records);
+        allHistory = records.sort((a,b) => new Date(b.date)-new Date(a.date));
+        refreshDashboard();
+    }
+}
+
+// 為了處理本地資料到雲端資料的過渡，保留本地儲存的輔助函數
+function getHistoryLocal() { try { return JSON.parse(localStorage.getItem('uber_ray_v1') || '[]'); } catch { return []; } }
+function saveToHistoryLocal(data) { localStorage.setItem('uber_ray_v1', JSON.stringify(data)); }
+
+let allHistory = []; // 全域歷史紀錄變數
+
+// === 程式啟動點 ===
+window.onload = async () => {
+    // 1. 初始化 Firebase
+    setupFirebase();
     
-    // 獲取油價 (不依賴登入狀態)
+    // 2. 監聽身份驗證狀態變化
+    auth.onAuthStateChanged(user => {
+        updateAuthState(user);
+    });
+
+    // 3. 載入設定和油價
+    loadSettings();
     await fetchOilPrice();
+
+    // 4. 初始化編輯器和篩選器
+    resetEditor();
+    const today = getLocalDateString();
+    
+    document.getElementById('filterStart').value = today;
+    document.getElementById('filterEnd').value = today;
+
+    const now = new Date();
+    document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
+    document.getElementById('chartEnd').value = today;
+
+    // 第一次啟動時，如果未登入，先載入本地資料並顯示
+    if (!currentUser) {
+        allHistory = getHistoryLocal().sort((a,b) => new Date(b.date)-new Date(a.date));
+        refreshDashboard();
+    }
 };
+
 
 function getLocalDateString() {
     const offset = new Date().getTimezoneOffset() * 60000;
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === 身份驗證處理 (Email/密碼) ===
-async function handleAuth(isRegister) {
-    const email = document.getElementById('authEmail').value;
-    const password = document.getElementById('authPassword').value;
-    const authStatus = document.getElementById('authStatus');
-
-    if (!email || password.length < 6) {
-        authStatus.innerText = '錯誤: 請輸入有效的 Email 和至少 6 位數的密碼。';
-        return;
-    }
-
-    authStatus.innerText = isRegister ? '正在註冊...' : '正在登入...';
-    try {
-        if (isRegister) {
-            await auth.createUserWithEmailAndPassword(email, password);
-            authStatus.innerText = '註冊成功！您現在已登入並啟用雲端同步。';
-        } else {
-            await auth.signInWithEmailAndPassword(email, password);
-            authStatus.innerText = '登入成功！資料將自動同步。';
-        }
-        // onAuthStateChanged 會自動處理後續的資料載入和 UI 更新
-    } catch (error) {
-        let message = '';
-        switch(error.code) {
-            case 'auth/email-already-in-use':
-                message = '此 Email 已被註冊。請直接登入。';
-                break;
-            case 'auth/invalid-email':
-                message = 'Email 格式無效。';
-                break;
-            case 'auth/wrong-password':
-            case 'auth/user-not-found':
-                message = '登入失敗：Email 或密碼錯誤。';
-                break;
-            default:
-                message = `發生錯誤: ${error.message}`;
-        }
-        authStatus.innerText = `錯誤: ${message}`;
-        console.error("Auth Error:", error);
-    }
-}
-
-async function handleLogout() {
-    try {
-        await auth.signOut();
-        document.getElementById('authStatus').innerText = '您已登出。';
-        allHistoryRecords = []; // 清空本地資料
-        refreshDashboard(); // 更新儀表板為空
-    } catch (e) {
-        console.error("登出失敗:", e);
-    }
-}
-
-
-// === 設定處理 (保持使用 localStorage 儲存本地設定) ===
+// === 設定處理 (保持本地儲存) ===
 function loadSettings() {
     document.getElementById('settingFuelRate').value = localStorage.getItem('fuelRate') || 12;
     document.getElementById('settingMaint').value = localStorage.getItem('maintCost') || 1.5;
@@ -546,6 +674,7 @@ function toggleSettings() { document.getElementById('settingsPanel').classList.t
 async function fetchOilPrice() {
     try {
         const type = document.getElementById('oilType').value;
+        // 使用 try-catch 確保即使 API 失敗也能使用預設值
         const res = await fetch(workerAPI);
         const data = await res.json();
         if(data[type]) {
@@ -559,74 +688,13 @@ async function fetchOilPrice() {
     }
 }
 
-// === 歷史資料 CRUD (更新為使用 Firebase Firestore) ===
+// === 歷史資料 CRUD (更新為使用 allHistory 並呼叫 saveToFirebase) ===
 
-// 從 Firebase 載入資料並更新本地快取
-async function fetchHistoryFromFirebase() {
-    if (!currentUserId) return [];
-    try {
-        const path = `uberRecords/${currentUserId}/records`;
-        const snapshot = await db.collection(path).get();
-        
-        allHistoryRecords = snapshot.docs.map(doc => {
-            const data = doc.data();
-            // 將 Firestore 的文件 ID 存為 firebaseId，同時保留本地的 id (時間戳)
-            return { firebaseId: doc.id, id: data.id || Date.now(), ...data }; 
-        });
-        
-        // 依日期排序 (最新的在前)
-        allHistoryRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        console.log(`成功從 Firebase 載入 ${allHistoryRecords.length} 筆紀錄。`);
-        return allHistoryRecords;
+// getHistory() 現在直接返回全域變數 allHistory
+function getHistory() { return allHistory; }
 
-    } catch (e) {
-        console.error("從 Firebase 讀取歷史資料失敗:", e);
-        return [];
-    }
-}
-
-// 獲取歷史紀錄 (從本地快取)
-function getHistory() { 
-    return allHistoryRecords; 
-}
-
-
-// Firebase 的儲存/更新函數
-async function saveRecordToFirebase(record) {
-    if (!currentUserId) {
-        console.error('未登入，無法儲存到雲端。');
-        alert('請先登入帳號才能儲存資料到雲端！');
-        return false;
-    }
-    
-    // 移除用於編輯器追蹤的屬性，但保留 id
-    const { firebaseId, id, ...dataToSave } = record; 
-    
-    try {
-        const recordRef = db.collection(`uberRecords/${currentUserId}/records`);
-        if (firebaseId) {
-            // 更新現有紀錄
-            await recordRef.doc(firebaseId).update({...dataToSave, id: id});
-            console.log("Firebase 紀錄更新成功:", firebaseId);
-        } else {
-            // 新增紀錄，需要給予本地的 id 屬性
-            const docRef = await recordRef.add({...dataToSave, id: id}); 
-            console.log("Firebase 紀錄新增成功. ID:", docRef.id);
-        }
-        
-        // 重新載入並更新儀表板 (確保數據一致性)
-        await fetchHistoryFromFirebase();
-        return true;
-
-    } catch (e) {
-        console.error("儲存/更新到 Firebase 失敗:", e);
-        alert('儲存到雲端失敗，請檢查網路或 Firebase 設定。');
-        return false;
-    }
-}
-
-async function saveRecord() {
+// saveRecord 邏輯更新
+function saveRecord() {
     const date = document.getElementById('inputDate').value;
     const income = parseFloat(document.getElementById('inputIncome').value);
     const orders = parseFloat(document.getElementById('inputOrders').value);
@@ -636,42 +704,43 @@ async function saveRecord() {
     const editId = document.getElementById('editId').value;
     const lockedOil = document.getElementById('recordOilPrice').value;
 
-    if(!date) return console.error('請選日期');
-    if(isNaN(income) || isNaN(km)) return console.error('請填寫金額與里程');
+    if(!date) return console.error('請選日期'); // 用 console.error 替代 alert
+    if(isNaN(income) || isNaN(km)) return console.error('請填寫金額與里程'); // 用 console.error 替代 alert
 
     const finalOil = (editId && lockedOil) ? parseFloat(lockedOil) : globalOilPrice;
     
-    let rec = {
-        // 使用時間戳記作為本地的 'id'，用於本地追蹤
-        id: editId ? parseInt(editId) : Date.now(), 
+    // 確保 ID 是字串 (Firestore 鍵值要求) 或數字 (用於判斷是否為編輯)
+    const rec = {
+        // 新紀錄使用 Date.now()，編輯紀錄保持原 ID (字串或數字)
+        id: editId ? (isNaN(parseInt(editId)) ? editId : parseInt(editId)) : Date.now(), 
         date: date, income: income, orders: orders||0, km: km, hours: hr+(min/60),
         oilPrice: finalOil,
         fuelRate: parseFloat(document.getElementById('settingFuelRate').value),
         maintCost: parseFloat(document.getElementById('settingMaint').value)
     };
 
-    // 如果是編輯模式，則需要帶上 Firebase 的文件 ID
-    if (editId) {
-        const existingRec = getHistory().find(r => r.id == editId);
-        if (existingRec && existingRec.firebaseId) {
-            rec.firebaseId = existingRec.firebaseId; 
-        }
+    let list = getHistory();
+    if(editId) {
+        // 確保編輯時能正確比對 ID (無論字串或數字)
+        const idx = list.findIndex(r => r.id.toString() === editId.toString());
+        if(idx!==-1) list[idx] = rec;
+    } else {
+        list.push(rec);
+        // 如果是新增今日紀錄，自動切換到今日篩選
+        if(date === getLocalDateString()) { currentFilter = 'day'; updateTabs(); }
     }
     
-    const success = await saveRecordToFirebase(rec);
-
-    if (success) {
-        // 如果是新增今日紀錄，自動切換到今日篩選
-        if(!editId && date === getLocalDateString()) { currentFilter = 'day'; updateTabs(); }
-        resetEditor();
-        refreshDashboard();
-    }
+    // 將紀錄儲存並同步 (會自動呼叫 refreshDashboard)
+    saveToFirebase(list); 
+    resetEditor();
 }
 
-function loadRecordToEditor(localId) {
-    const r = getHistory().find(i => i.id === localId);
+function loadRecordToEditor(id) {
+    const r = getHistory().find(i => i.id.toString() === id.toString());
     if(!r) return;
-    document.getElementById('editId').value = r.id; // 使用本地 ID 進行編輯器追蹤
+    
+    // 確保 ID 轉換為字串存入編輯器 (因 Date.now() 是數字，Firestore ID 是字串)
+    document.getElementById('editId').value = r.id.toString(); 
     document.getElementById('recordOilPrice').value = r.oilPrice || globalOilPrice;
     document.getElementById('inputDate').value = r.date;
     document.getElementById('inputIncome').value = r.income;
@@ -693,35 +762,25 @@ function loadRecordToEditor(localId) {
     document.getElementById('editorCard').scrollIntoView({behavior:'smooth'});
 }
 
-async function deleteCurrentRecord() {
-    if (!currentUserId) {
-        console.error('未登入，無法刪除雲端資料。');
-        alert('請先登入帳號才能刪除資料！');
+function deleteCurrentRecord() {
+    console.warn('執行刪除操作。注意：在編輯器中點擊刪除按鈕會立即執行，無二次確認視窗。'); 
+    
+    const id = document.getElementById('editId').value;
+    if (!id) return; // 確保有ID才刪除
+    
+    let list = getHistory();
+    const originalLength = list.length;
+    
+    const newList = list.filter(r => r.id.toString() !== id.toString()); // 確保 ID 比較正確
+
+    if(newList.length === originalLength) {
+        console.error(`刪除失敗：找不到 ID 為 ${id} 的紀錄。`);
         return;
-    }
-    
-    const localId = document.getElementById('editId').value;
-    if (!localId) return; 
-    
-    const recordToDelete = getHistory().find(r => r.id == localId);
-    if (!recordToDelete || !recordToDelete.firebaseId) {
-        console.error(`刪除失敗：找不到 ID 為 ${localId} 的紀錄或 Firebase ID。`);
-        return;
-    }
-    
-    try {
-        await db.collection(`uberRecords/${currentUserId}/records`).doc(recordToDelete.firebaseId).delete();
-        console.log("Firebase 紀錄刪除成功:", recordToDelete.firebaseId);
-        
-        await fetchHistoryFromFirebase(); // 重新載入快取
-        
-    } catch (e) {
-        console.error("從 Firebase 刪除失敗:", e);
-        alert('從雲端刪除失敗，請檢查網路。');
     }
 
+    // 將新列表儲存並同步 (會自動呼叫 refreshDashboard)
+    saveToFirebase(newList); 
     resetEditor();
-    refreshDashboard();
 }
 
 function resetEditor() {
@@ -741,7 +800,7 @@ function resetEditor() {
     document.getElementById('btnCancel').classList.add('hidden');
 }
 
-// === 篩選與儀表板更新 (保持不變，因為它依賴 getHistory()，而 getHistory() 現在讀取雲端快取) ===
+// === 篩選與儀表板更新 (保持不變，只讀取 allHistory) ===
 function updateTabs(btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -781,7 +840,7 @@ function setFilter(type, btn) {
 
 
 function getFilteredData() {
-    const list = getHistory();
+    const list = getHistory(); // 現在是 allHistory
     const todayStr = getLocalDateString();
     
     if(currentFilter==='day') return list.filter(r=>r.date===todayStr);
@@ -847,8 +906,10 @@ function calculateRecordStats(record) {
     };
 }
 
-function refreshDashboard() {
-    const filtered = getFilteredData().map(calculateRecordStats);
+function refreshDashboard(skipFilter=false) {
+    // skipFilter = true 時 (例如登出)，直接使用 allHistory，避免過濾器錯誤
+    const rawData = skipFilter ? allHistory : getFilteredData();
+    const filtered = rawData.map(calculateRecordStats);
     
     // 總計數據
     const totals = filtered.reduce((acc, r) => {
@@ -871,7 +932,6 @@ function refreshDashboard() {
     });
     
     // 計算平均時薪與單價
-    const totalMinutes = totals.totalHours * 60;
     const totalGrossHourly = totals.totalHours > 0 ? totals.totalIncome / totals.totalHours : 0;
     const totalNetHourly = totals.totalHours > 0 ? totals.netProfit / totals.totalHours : 0;
     const totalGrossPerOrder = totals.totalOrders > 0 ? totals.totalIncome / totals.totalOrders : 0; // V1.2.3
@@ -894,7 +954,7 @@ function refreshDashboard() {
 
     // 更新歷史列表 - V1.2.6 樣式調整 (全左對齊，只有淨利靠右)
     const listHtml = filtered.map(r => `
-        <div class="history-item" onclick="loadRecordToEditor(${r.id})">
+        <div class="history-item" onclick="loadRecordToEditor('${r.id}')">
             <div class="history-top-row">
                 <div class="history-stat-group w-1/3">
                     <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
@@ -951,7 +1011,7 @@ function refreshDashboard() {
     
     document.getElementById('historyList').innerHTML = listHtml || `
         <div class="p-5 text-center text-gray-500 text-sm">
-            --- ${currentUserId ? '此區間暫無紀錄' : '請先登入帳號以載入雲端資料'} ---
+            --- 此區間暫無紀錄 ---
         </div>
     `;
     
@@ -1018,12 +1078,14 @@ function updateChart() {
     if (!start || !end) return;
 
     // 篩選圖表區間數據
+    // 直接從 allHistory 取得所有紀錄，然後計算統計數據
     const allData = getHistory().map(calculateRecordStats);
     const chartData = allData.filter(r => r.date >= start && r.date <= end);
     
     if (chartData.length === 0) {
         // 清除 Canvas 上的殘留圖形
-        document.getElementById('mainChart').getContext('2d').clearRect(0, 0, 300, 300);
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, 300, 300);
         return;
     }
 
