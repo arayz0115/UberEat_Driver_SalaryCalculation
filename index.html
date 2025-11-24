@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.18</title>
+<title>UberEat Salary Calculator V1.2.16.1</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#050505">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.18 (圖示置中對齊)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與明細列表收合功能。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.16.1 (圖示修正)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，修正了列表圖示風格。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.18" />
+<meta property="og:image" content="https://placehold.co/1200x630/059669/ffffff?text=UberEat+V1.2.16.1" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -95,7 +95,7 @@
     }
     .tab-btn.active { background-color: #d1fae5; color: #065f46; font-weight: bold; border-color: #fff; }
 
-    /* === 歷史列表 V1.2.18 樣式修正 (圖示顏色與對齊) === */
+    /* === 歷史列表 V1.2.16.1 樣式修正 (圖示顏色與對齊) === */
     .history-item {
         background-color: #111216; 
         border-bottom: 1px solid #222; 
@@ -131,12 +131,12 @@
         width: 100%;
     }
 
-    /* V1.2.18: 獨立的收合/展開圖示區域 - 顏色改為灰色，微調 padding-top 實現垂直置中對齊 */
+    /* V1.2.16.1: 獨立的收合/展開圖示區域 - 顏色改為灰色，微調 padding-top 實現垂直置中對齊 */
     .history-toggle-icon {
         width: 30px; 
         height: 100%;
         padding-top: 1px; /* 調整對齊 */
-        color: #9ca3af; /* V1.2.18: 統一為灰色 */
+        color: #9ca3af; /* 統一為灰色 */
         cursor: pointer;
         z-index: 10;
         font-size: 1rem;
@@ -200,7 +200,7 @@
     .stat-label { font-size: 0.75rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
     .text-amber-soft { color: #fcd34d; }
 
-    /* V1.2.18: 編輯器和儀表板圖示顏色統一 */
+    /* V1.2.16.1: 編輯器和儀表板圖示顏色統一 */
     #editorToggleIcon, #dashboardToggleIcon {
         color: #9ca3af; /* 統一為灰色 */
     }
@@ -224,7 +224,7 @@
             <div class="w-1.5 h-6 bg-green-500 rounded-full"></div>
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.18 History Icon Centered</div>
+                <div class="text-[10px] text-gray-500">V1.2.16.1 History Icon Fixed</div>
             </div>
         </div>
         <div class="flex gap-2">
@@ -473,7 +473,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UberEat 外送薪資計算器 V1.2.18 (History Icon Centered)</div>
+        <div>UberEat 外送薪資計算器 V1.2.16.1 (History Icon Fixed)</div>
         <div class="mt-1">Developed by Ray © 2025</div>
         <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
@@ -672,12 +672,13 @@ function toggleCharts(force, initialLoad = false) {
 }
 
 
-// V1.2.17: 歷史明細收合/展開
+// V1.2.16.1: 歷史明細收合/展開
 let historyCollapseStates = {}; // 儲存明細的展開狀態
 
 function toggleHistoryDetails(id, element) {
     const subStats = document.getElementById('sub-stats-' + id);
-    const icon = element.querySelector('.history-toggle-icon');
+    // V1.2.16.1: 修正圖示選擇器
+    const icon = element.querySelector('.history-toggle-icon'); 
 
     if (subStats.classList.contains('hidden')) {
         subStats.classList.remove('hidden');
@@ -903,7 +904,7 @@ function deleteCurrentRecord() {
         
         // 刪除雲端 (如果已登入)
         if (firebase.auth().currentUser) {
-            db.collection("records").doc(id).delete().then(() => {
+            db.collection("users").doc(id).delete().then(() => {
                 console.log("雲端紀錄刪除成功");
             }).catch((error) => {
                 console.error("雲端紀錄刪除失敗:", error);
@@ -1156,6 +1157,7 @@ function renderHistoryList(data) {
         const subStatsClass = isExpanded ? '' : 'hidden';
         const iconRotate = isExpanded ? 'transform: rotate(180deg);' : 'transform: rotate(0deg);';
         
+        // V1.2.16.1: 修正列表 HTML 結構，將圖示單獨放置
         const itemHtml = `
             <div class="history-item" onclick="toggleHistoryDetails('${record.id}', this)">
                 
@@ -1375,16 +1377,14 @@ function renderPieChart(ctx, chartData) {
     const totalMaintCost = chartData.reduce((sum, r) => sum + r.maintenanceCost, 0);
     const totalNetProfit = chartData.reduce((sum, r) => sum + r.netProfit, 0);
     
-    // 如果總淨利為負數，將其計入總成本
-    const displayNetProfit = Math.max(0, totalNetProfit);
-    const effectiveTotalCost = totalOilCost + totalMaintCost + Math.abs(Math.min(0, totalNetProfit));
-
+    // V1.2.16.1: 復原到 V1.2.16 狀態，不處理負值，直接傳入原始淨利 (可能會導致圓餅圖顯示異常)
+    
     chartInstance = new Chart(ctx, {
         type: 'pie',
         data: {
             labels: ['總淨利', '總油耗成本', '總耗材成本'],
             datasets: [{
-                data: [displayNetProfit, totalOilCost, totalMaintCost],
+                data: [totalNetProfit, totalOilCost, totalMaintCost],
                 backgroundColor: ['#10b981', '#fcd34d', '#ef4444'],
                 hoverOffset: 4
             }]
@@ -1400,19 +1400,12 @@ function renderPieChart(ctx, chartData) {
                 tooltip: {
                     callbacks: {
                         label: (context) => {
-                            // 計算總和 (只包含顯示的數據)
                             const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                             const value = context.raw;
-                            const percentage = ((value / total) * 100).toFixed(1) + '%';
+                            // 修正：如果總和為0，避免 NaN
+                            const percentage = total === 0 ? '0.0%' : ((value / total) * 100).toFixed(1) + '%';
                             
-                            // 修正淨利為負時的顯示
-                            let labelText = context.label;
-                            if (context.label === '總淨利' && totalNetProfit < 0) {
-                                // 由於圓餅圖不適合展示負值，我們將淨利為負的絕對值隱含到其他成本中
-                                return `總淨利: -$${Math.abs(totalNetProfit).toFixed(0)} (負數不計入百分比)`;
-                            }
-
-                            return `${labelText}: $${value.toFixed(0)} (${percentage})`;
+                            return `${context.label}: $${value.toFixed(0)} (${percentage})`;
                         }
                     }
                 }
