@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <title>UberEat 外送薪資計算器 V1.1</title>
 
-    
 <!-- === App 化專用 Meta 設定 === -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,7 +12,6 @@
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
 <!-- === Open Graph (OG) Meta Tag for LINE/Social Sharing (V1.1) === -->
-<!-- 修正分享時的標題和說明 -->
 <meta property="og:title" content="UberEat 外送薪資計算器 V1.1" />
 <meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援多維度圖表分析，是您優化跑單效率的專業工具。" />
 <meta property="og:type" content="website" />
@@ -100,7 +98,6 @@
     /* === 歷史列表 === */
     .history-item {
         background-color: #111216; border-bottom: 1px solid #222; padding: 1rem;
-        display: flex; justify-content: space-between; align-items: center;
         cursor: pointer; transition: background 0.2s;
     }
     .history-item:active { background-color: #1c1e24; }
@@ -170,18 +167,24 @@
 
     <!-- 1. 儀表板 (Dashboard) -->
     <div class="card bg-gradient-to-br from-[#111216] to-[#064e3b20] border-green-500/30 p-5 mb-4">
-        <div class="flex justify-between items-start mb-4">
+        <!-- TOP ROW: 營收 / 淨利 / 成本 -->
+        <div class="grid grid-cols-3 gap-2 items-start mb-4">
             <div>
                 <label class="stat-label text-gray-400">區間總營收</label>
-                <div class="text-4xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
+                <div class="text-3xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
+            </div>
+            <div class="text-center">
+                <label class="stat-label text-red-400">總成本</label>
+                <!-- NEW: 總成本顯示 -->
+                <div class="text-3xl font-bold text-red-400 mt-1">$<span id="dashTotalCost">0</span></div> 
             </div>
             <div class="text-right">
                 <label class="stat-label text-green-400">總淨利</label>
-                <div class="text-2xl font-bold text-green-400 mt-1">$<span id="dashNetProfit">0</span></div>
+                <div class="text-3xl font-bold text-green-400 mt-1">$<span id="dashNetProfit">0</span></div>
             </div>
         </div>
         
-        <!-- NEW: 成本與工時數據 -->
+        <!-- Bottom Row: 成本細項與工時數據 -->
         <div class="border-t border-white/10 pt-4">
             <!-- Row 1: Cost Data & Summary -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center mb-4">
@@ -575,7 +578,8 @@ function refreshDashboard() {
     const listDiv = document.getElementById('historyList');
     
     let tInc=0, tNet=0, tOrders=0, tHr=0;
-    let tOilCost = 0, tMaintCost = 0; // NEW: 總成本計算
+    let tOilCost = 0, tMaintCost = 0; 
+    let tTotalCost = 0; // NEW: 總成本計算變數
 
     let html = '';
 
@@ -586,10 +590,10 @@ function refreshDashboard() {
             const rate = r.fuelRate||12;
             const maint = r.maintCost!==undefined?r.maintCost:1.5;
             
-            // NEW: 計算油耗成本與耗材成本
+            // 計算油耗成本與耗材成本
             const oilCost = (r.km/rate)*p; 
             const maintCost = (r.km*maint); 
-            const cost = oilCost + maintCost;
+            const cost = oilCost + maintCost; // 單筆總成本
             
             const net = r.income - cost;
 
@@ -599,17 +603,26 @@ function refreshDashboard() {
             tHr+=r.hours;
             tOilCost += oilCost; 
             tMaintCost += maintCost; 
+            tTotalCost += cost; // 累計總成本
 
+            // 區間明細 (每筆顯示成本細項)
             html += `
             <div class="history-item" onclick="loadRecordToEditor(${r.id})">
-                <div>
-                    <div class="text-gray-500 text-xs mb-1">${r.date}</div>
-                    <div class="text-amber-soft font-bold text-lg">$${Math.round(r.income)}</div>
+                <div class="flex justify-between items-center mb-1">
+                    <div class="text-gray-500 text-xs">${r.date}</div>
+                    <div class="text-green-400 font-bold text-lg">淨 $${Math.round(net).toLocaleString()}</div>
                 </div>
-                <div class="text-right">
-                    <div class="text-green-400 font-bold text-sm">淨 $${Math.round(net)}</div>
-                    <div class="text-gray-600 text-xs mt-1">${r.km}km / ${r.orders}單</div>
+                <div class="flex justify-between items-end">
+                    <div class="flex items-end gap-1">
+                        <div class="text-amber-soft font-bold text-xl">$${Math.round(r.income).toLocaleString()}</div>
+                        <div class="text-xs text-gray-400">營收</div>
+                    </div>
+                    <div class="text-right text-xs">
+                        <div class="text-red-400 font-bold">總成本: $${Math.round(cost).toLocaleString()}</div>
+                        <div class="text-gray-600 mt-1">油: $${Math.round(oilCost)} | 耗: $${Math.round(maintCost)}</div>
+                    </div>
                 </div>
+                <div class="text-gray-600 text-xs mt-1 text-right">${r.km}km / ${r.orders}單 | ${r.hours.toFixed(2)}h</div>
             </div>`;
         });
     }
@@ -620,11 +633,14 @@ function refreshDashboard() {
     document.getElementById('dashNetProfit').innerText = Math.round(tNet).toLocaleString();
     document.getElementById('dashOrders').innerText = tOrders;
     
-    // NEW: 成本顯示
+    // 更新總成本
+    document.getElementById('dashTotalCost').innerText = Math.round(tTotalCost).toLocaleString(); 
+    
+    // 成本細項顯示
     document.getElementById('dashOilCost').innerText = Math.round(tOilCost).toLocaleString();
     document.getElementById('dashMaintCost').innerText = Math.round(tMaintCost).toLocaleString();
 
-    // NEW: 實薪顯示 (未扣成本 vs. 已扣成本)
+    // 實薪顯示 (未扣成本 vs. 已扣成本)
     const grossHourly = tHr>0 ? Math.round(tInc/tHr) : 0;
     const netHourly = tHr>0 ? Math.round(tNet/tHr) : 0;
     document.getElementById('dashGrossHourly').innerText = grossHourly.toLocaleString();
