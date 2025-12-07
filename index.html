@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UBE Salary Calculator V3.0</title>
+<title>UBE Salary Calculator V3.1</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F3F0EA">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UBE Salary Calculator V3.0" />
-<meta property="og:description" content="UBE 外送薪資計算器 V3.0，Beige 風格，完整數據分析。" />
+<meta property="og:title" content="UBE Salary Calculator V3.1" />
+<meta property="og:description" content="UBE 外送薪資計算器 V3.1，極簡 Beige 風格，深度優化 UI。" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -23,193 +23,204 @@
 <style>
     /* === 全局 Beige 色系設定 === */
     :root {
-        --bg-color: #F3F0EA;      /* 淺米色背景 */
-        --card-bg: #FFFFFF;       /* 純白卡片 */
-        --text-main: #433E3F;     /* 深褐灰文字 */
-        --text-sub: #8C8788;      /* 淺灰文字 */
-        --accent-color: #6366F1;  /* 重點色 (紫/藍) */
-        --success-color: #10B981; /* 綠色 (淨利) */
-        --danger-color: #EF4444;  /* 紅色 (成本) */
-        --warn-color: #F59E0B;    /* 橘黃 (營收/未扣成本) */
-        --input-bg: #F9F7F5;      /* 輸入框背景 */
+        --bg-color: #F3F0EA;       /* 背景：淺米色 */
+        --card-bg: #FFFFFF;        /* 卡片：純白 */
+        --tile-bg: #F7F5F2;        /* 資訊塊：極淺灰米色 */
+        
+        --text-primary: #433E3F;   /* 主字色：深褐灰 (取代原先的黑色) */
+        --text-secondary: #8C8788; /* 次字色：暖灰 (取代原先的灰色) */
+        --text-muted: #BDB7B5;     /* 裝飾字色：淺灰 */
+
+        --border-color: #EBE8E3;   /* 邊框色 */
+        
+        /* 陰影系統 */
+        --shadow-soft: 0 4px 6px -1px rgba(67, 62, 63, 0.05);
+        --shadow-deep: 0 20px 25px -5px rgba(67, 62, 63, 0.1), 0 8px 10px -6px rgba(67, 62, 63, 0.05);
     }
 
     body { 
         background-color: var(--bg-color); 
-        color: var(--text-main); 
+        color: var(--text-primary); 
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
         padding-bottom: 120px;
-        padding-top: env(safe-area-inset-top);
+        padding-top: max(env(safe-area-inset-top), 20px);
         -webkit-font-smoothing: antialiased;
     }
     
-    /* === 卡片與標題 === */
+    /* === 標題區域 (優化間距) === */
     .section-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 0.5rem 0.5rem 0.5rem;
+        padding: 0 0.5rem;
+        margin-top: 2rem;    /* 增加上方間距，解決擠壓感 */
+        margin-bottom: 0.75rem;
         cursor: pointer;
+        user-select: none;
     }
     .section-title {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         font-weight: 700;
-        color: var(--text-sub);
+        color: var(--text-secondary);
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
     }
     .toggle-icon {
-        color: var(--text-sub);
-        transition: transform 0.3s ease;
+        color: var(--text-muted);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .toggle-icon.rotated {
-        transform: rotate(-180deg);
-    }
+    .toggle-icon.rotated { transform: rotate(-180deg); }
 
+    /* === 卡片樣式 (優化陰影與層級) === */
     .card {
         background-color: var(--card-bg);
         border: 1px solid white;
-        border-radius: 1.25rem;
-        padding: 1.25rem;
-        margin-bottom: 1.5rem; /* 增加間距 */
-        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        overflow: hidden; /* 確保內容不溢出 */
+        border-radius: 1.5rem; /* 更圓潤的導角 */
+        padding: 1.5rem;
+        margin-bottom: 0.5rem;
+        box-shadow: var(--shadow-soft);
+        overflow: hidden;
+        transition: box-shadow 0.3s ease;
     }
     
-    .card-highlight {
-        border: 1px solid var(--accent-color);
-        box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+    /* 展開時加重陰影，營造懸浮感 */
+    .card:not(.collapsed) {
+        box-shadow: var(--shadow-deep);
+        border-color: var(--border-color);
     }
 
     /* === 收合動畫 === */
     .collapsible-content {
-        max-height: 2000px; /* 足夠大的高度 */
+        max-height: 2000px;
         opacity: 1;
-        transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out, margin 0.3s ease;
-        overflow: hidden;
+        transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-out;
     }
     .collapsible-content.collapsed {
         max-height: 0;
         opacity: 0;
-        margin: 0;
         padding-top: 0;
         padding-bottom: 0;
+        margin: 0;
         border: none;
+        overflow: hidden;
     }
 
-    /* === 輸入框 === */
+    /* === 輸入框 (統一色系) === */
     .input-field {
-        background-color: var(--input-bg);
+        background-color: var(--tile-bg);
         border: 1px solid transparent;
-        color: var(--text-main);
-        border-radius: 0.75rem;
-        padding: 0.8rem 1rem;
+        color: var(--text-primary);
+        border-radius: 0.85rem;
+        padding: 0.9rem 1rem;
         width: 100%;
         font-size: 1rem;
-        font-weight: 500;
-        transition: 0.2s;
+        font-weight: 600;
+        transition: all 0.2s;
     }
     .input-field:focus { 
         outline: none; 
         background-color: #fff;
-        border-color: var(--accent-color); 
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        border-color: #D6D3D1; 
+        box-shadow: 0 0 0 4px rgba(214, 211, 209, 0.2);
     }
+    .input-field::placeholder { color: var(--text-muted); font-weight: 400; }
 
-    /* === 按鈕 === */
+    /* === 按鈕 (主題色) === */
     .btn { 
-        width: 100%; padding: 0.9rem; border-radius: 0.75rem; font-weight: 600; 
-        display: flex; justify-content: center; align-items: center; transition: 0.2s; 
+        width: 100%; padding: 1rem; border-radius: 0.85rem; font-weight: 600; 
+        display: flex; justify-content: center; align-items: center; transition: 0.2s; letter-spacing: 0.5px;
     }
-    .btn-primary { background-color: var(--text-main); color: white; }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-danger { background-color: #FEF2F2; color: #DC2626; border: 1px solid #FEE2E2; }
-    .btn-ghost { background-color: transparent; border: 1px solid #D1D5DB; color: #6B7280; }
+    .btn-primary { background-color: var(--text-primary); color: #F3F0EA; }
+    .btn-primary:active { transform: scale(0.97); background-color: #2D2A2B; }
+    .btn-danger { background-color: #F5F5F4; color: var(--text-secondary); border: 1px solid #E7E5E4; }
+    .btn-ghost { background-color: transparent; border: 1px solid #E7E5E4; color: var(--text-secondary); }
 
     /* === 篩選 Tab === */
-    .tab-scroll-container {
-        width: 100%; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: none; 
-    }
+    .tab-scroll-container { width: 100%; overflow-x: auto; padding: 0.5rem 0; scrollbar-width: none; }
     .tab-scroll-container::-webkit-scrollbar { display: none; }
-    .tab-scroll-content { display: flex; gap: 0.5rem; padding: 0 0.5rem; }
+    .tab-scroll-content { display: flex; gap: 0.6rem; padding: 0 0.5rem; }
     .tab-btn {
-        padding: 0.5rem 1.2rem; border-radius: 99px; font-size: 0.9rem; color: var(--text-sub); 
-        background: transparent; border: 1px solid transparent; white-space: nowrap; font-weight: 500; transition: 0.2s;
+        padding: 0.6rem 1.25rem; border-radius: 99px; font-size: 0.85rem; color: var(--text-secondary); 
+        background: #FFFFFF; border: 1px solid transparent; white-space: nowrap; font-weight: 600; transition: 0.2s;
+        box-shadow: var(--shadow-soft);
     }
     .tab-btn.active { 
-        background-color: var(--text-main); color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        background-color: var(--text-primary); color: #F3F0EA; box-shadow: 0 4px 10px rgba(67, 62, 63, 0.2);
     }
 
-    /* === 歷史列表 === */
-    .history-item {
-        background-color: var(--card-bg);
-        border-bottom: 1px solid var(--bg-color);
-        padding: 1.2rem 1rem;
+    /* === 儀表板 UI 優化 (Data Tiles) === */
+    .dashboard-hero {
+        text-align: center;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px dashed var(--border-color);
+        margin-bottom: 1.5rem;
     }
-    .history-item:last-child { border-bottom: none; }
-    .history-main-area { cursor: pointer; }
-    .history-toggle-icon { color: #D1D5DB; transition: transform 0.2s; cursor: pointer; padding: 5px; }
+    .hero-label { font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.5rem; }
+    .hero-value { font-size: 2.5rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -1px; }
 
-    /* === 儀表板與數據文字 === */
-    .stat-label { font-size: 0.7rem; color: #9CA3AF; text-transform: uppercase; font-weight: 600; margin-bottom: 2px; }
-    .stat-val-lg { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
-    .stat-val-md { font-size: 1.1rem; font-weight: 700; }
-    .stat-val-sm { font-size: 0.9rem; font-weight: 600; }
-
-    .text-profit { color: var(--success-color); }
-    .text-cost { color: var(--danger-color); }
-    .text-income { color: var(--warn-color); }
-
-    /* V1.2.16 風格的詳細數據 Grid */
-    .detail-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-        padding-top: 0.75rem;
-    }
-    .detail-row {
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-tile {
+        background-color: var(--tile-bg);
+        border-radius: 1rem;
+        padding: 1rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
     }
+    .tile-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.25rem; }
+    .tile-value { font-size: 1.25rem; color: var(--text-primary); font-weight: 700; }
     
-    .divider { border-top: 1px solid #F3F4F6; margin: 1rem 0; }
+    .detail-list { display: flex; flex-direction: column; gap: 0.8rem; }
+    .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+    .detail-key { color: var(--text-secondary); }
+    .detail-val { color: var(--text-primary); font-weight: 600; }
+
+    /* === 歷史列表 (去色化) === */
+    .history-item {
+        background-color: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.25rem 1rem;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-date { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.25rem; }
+    .history-income { font-size: 1.1rem; color: var(--text-primary); font-weight: 700; }
+    .history-sub { font-size: 0.85rem; color: var(--text-secondary); }
     
-    .footer-credit { text-align: center; margin-top: 2rem; color: #A8A29E; font-size: 0.7rem; }
+    /* === Footer === */
+    .footer-credit { text-align: center; margin-top: 3rem; color: #D6D3D1; font-size: 0.7rem; font-weight: 500; }
 </style>
 </head>
 <body class="max-w-md mx-auto p-4">
 
-    <div class="flex justify-between items-center mb-6 px-1 pt-2">
+    <div class="flex justify-between items-center mb-2 px-1 pt-4">
         <div>
             <h1 class="text-2xl font-bold text-[#433E3F] tracking-tight">UBE Salary Calculator</h1>
-            <div class="text-xs text-gray-400 font-medium">V3.0 Stable</div>
+            <div class="text-xs text-[#8C8788] font-medium tracking-wide">V3.1 Beige Ultimate</div>
         </div>
-        <div class="flex gap-2">
-            <button onclick="toggleAuthPanel()" class="w-9 h-9 flex items-center justify-center bg-white rounded-full shadow-sm border border-gray-100 text-gray-400 active:scale-95 transition">☁️</button>
-            <button onclick="toggleSettings()" class="w-9 h-9 flex items-center justify-center bg-white rounded-full shadow-sm border border-gray-100 text-gray-400 active:scale-95 transition">⚙️</button>
+        <div class="flex gap-3">
+            <button onclick="toggleAuthPanel()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm border border-[#EBE8E3] text-[#8C8788] active:scale-95 transition">☁️</button>
+            <button onclick="toggleSettings()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm border border-[#EBE8E3] text-[#8C8788] active:scale-95 transition">⚙️</button>
         </div>
     </div>
 
     <div id="authWrapper">
         <div class="section-header hidden" id="authHeader" onclick="togglePanel('auth')">
-            <span class="section-title text-blue-500">Cloud Sync</span>
+            <span class="section-title">Cloud Sync</span>
             <span class="toggle-icon" id="authIcon">▼</span>
         </div>
-        <div id="authPanel" class="card hidden border-l-4 border-l-blue-500">
-            <h3 class="text-blue-500 font-bold mb-3 text-sm uppercase">Firebase 雲端驗證</h3>
+        <div id="authPanel" class="card hidden"> <h3 class="text-[#433E3F] font-bold mb-4 text-sm uppercase tracking-wider text-center">Firebase Sync</h3>
             <div id="authContent">
-                <div id="authForm" class="grid grid-cols-1 gap-3 mb-3">
-                    <input id="authEmail" type="email" class="input-field" placeholder="Email" />
+                <div id="authForm" class="flex flex-col gap-3 mb-2">
+                    <input id="authEmail" type="email" class="input-field" placeholder="Email Address" />
                     <input id="authPassword" type="password" class="input-field" placeholder="Password" />
-                    <button onclick="registerUser()" class="btn btn-primary text-sm">註冊帳號</button>
-                    <button onclick="loginUser()" class="btn btn-ghost text-sm">登入</button>
-                    <button onclick="resetPassword()" class="text-xs text-center text-gray-400 mt-2">忘記密碼？</button>
+                    <button onclick="registerUser()" class="btn btn-primary text-sm mt-2">Create Account</button>
+                    <button onclick="loginUser()" class="btn btn-ghost text-sm">Sign In</button>
+                    <button onclick="resetPassword()" class="text-xs text-center text-[#8C8788] mt-2">Forgot Password?</button>
                 </div>
-                <div id="userInfo" class="hidden text-center">
-                    <p class="text-gray-600 mb-3 text-sm">已登入：<span id="userEmailDisplay" class="font-bold text-gray-800"></span></p>
-                    <button onclick="logoutUser()" class="btn btn-danger text-sm">登出</button>
+                <div id="userInfo" class="hidden text-center py-4">
+                    <p class="text-[#8C8788] mb-4 text-sm">Signed in as <br><span id="userEmailDisplay" class="font-bold text-[#433E3F] text-base"></span></p>
+                    <button onclick="logoutUser()" class="btn btn-danger text-sm">Sign Out</button>
                 </div>
             </div>
         </div>
@@ -217,40 +228,39 @@
 
     <div id="settingsWrapper">
         <div class="section-header hidden" id="settingsHeader" onclick="togglePanel('settings')">
-            <span class="section-title">Settings</span>
+            <span class="section-title">Parameters</span>
             <span class="toggle-icon" id="settingsIcon">▼</span>
         </div>
-        <div id="settingsPanel" class="card hidden border-l-4 border-l-gray-500">
-            <div class="grid grid-cols-2 gap-4 mb-4">
+        <div id="settingsPanel" class="card hidden"> <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label class="stat-label block">油品類型</label>
+                    <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Fuel Type</label>
                     <select id="oilType" class="input-field" onchange="fetchOilPrice()">
-                        <option value="92">92 無鉛</option>
-                        <option value="95">95 無鉛</option>
-                        <option value="98">98 無鉛</option>
-                        <option value="diesel">柴油</option>
+                        <option value="92">92 Unleaded</option>
+                        <option value="95">95 Unleaded</option>
+                        <option value="98">98 Unleaded</option>
+                        <option value="diesel">Diesel</option>
                     </select>
                 </div>
                 <div>
-                    <label class="stat-label block">即時油價</label>
-                    <div id="oilPriceDisplay" class="input-field bg-yellow-50 text-yellow-600 font-bold flex items-center">Loading...</div>
+                    <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Live Price</label>
+                    <div id="oilPriceDisplay" class="input-field bg-[#F7F5F2] text-[#433E3F] font-bold flex items-center">Loading...</div>
                 </div>
                 <div>
-                    <label class="stat-label block">油耗 (km/L)</label>
+                    <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Efficiency (km/L)</label>
                     <input id="settingFuelRate" type="number" class="input-field" />
                 </div>
                 <div>
-                    <label class="stat-label block">耗材 ($/km)</label>
+                    <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Maint. ($/km)</label>
                     <input id="settingMaint" type="number" step="0.1" class="input-field" />
                 </div>
             </div>
-            <button onclick="saveSettings()" class="btn btn-primary text-sm">儲存設定</button>
+            <button onclick="saveSettings()" class="btn btn-primary text-sm">Save Changes</button>
         </div>
     </div>
 
     <div id="editorWrapper">
         <div class="section-header" onclick="togglePanel('editor')">
-            <span class="section-title">Add Record</span>
+            <span class="section-title">New Entry</span>
             <span class="toggle-icon" id="editorIcon">▼</span>
         </div>
         
@@ -260,21 +270,21 @@
                 <input type="hidden" id="recordOilPrice" value=""> 
                 
                 <div class="flex justify-end items-center mb-2">
-                     <span id="editorOilHint" class="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded hidden">Locked Oil: --</span>
+                     <span id="editorOilHint" class="text-xs text-[#8C8788] bg-[#F7F5F2] px-2 py-1 rounded hidden">Locked: --</span>
                 </div>
 
                 <div class="flex flex-col gap-4 mb-4">
                     <div>
-                        <label class="stat-label block">日期</label>
+                        <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Date</label>
                         <input id="inputDate" type="date" class="input-field cursor-pointer" onclick="this.showPicker()" />
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="stat-label block">營業額</label>
-                            <input id="inputIncome" type="number" inputmode="numeric" class="input-field font-bold text-lg text-gray-800" placeholder="$0" />
+                            <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Income</label>
+                            <input id="inputIncome" type="number" inputmode="numeric" class="input-field text-xl" placeholder="$0" />
                         </div>
                         <div>
-                            <label class="stat-label block">單數</label>
+                            <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Orders</label>
                             <input id="inputOrders" type="number" inputmode="numeric" class="input-field" placeholder="0" />
                         </div>
                     </div>
@@ -282,20 +292,20 @@
 
                 <div class="grid grid-cols-2 gap-4 mb-6">
                     <div>
-                        <label class="stat-label block">里程 (KM)</label>
+                        <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Distance (KM)</label>
                         <input id="inputDist" type="number" step="0.1" inputmode="decimal" class="input-field" placeholder="0.0" />
                     </div>
                     <div>
-                        <label class="stat-label block">工時</label>
+                        <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">Duration</label>
                         <div class="flex gap-2">
-                            <input id="inputHr" type="number" class="input-field text-center px-1" placeholder="H" />
-                            <input id="inputMin" type="number" class="input-field text-center px-1" placeholder="M" />
+                            <input id="inputHr" type="number" class="input-field text-center px-1" placeholder="Hr" />
+                            <input id="inputMin" type="number" class="input-field text-center px-1" placeholder="Min" />
                         </div>
                     </div>
                 </div>
 
                 <div class="flex gap-3">
-                    <button onclick="saveRecord()" class="btn btn-primary shadow-lg shadow-gray-400/20" id="btnSave">Save Record</button>
+                    <button onclick="saveRecord()" class="btn btn-primary" id="btnSave">Save Record</button>
                     <button onclick="deleteCurrentRecord()" class="btn btn-danger hidden" id="btnDelete">Delete</button>
                     <button onclick="resetEditor()" class="btn btn-ghost hidden" id="btnCancel">Cancel</button>
                 </div>
@@ -309,65 +319,55 @@
             <span class="toggle-icon" id="dashboardIcon">▼</span>
         </div>
 
-        <div id="dashboardPanel" class="card collapsible-content p-5">
+        <div id="dashboardPanel" class="card collapsible-content">
             <div id="dashboardContent">
-                <div class="grid grid-cols-3 gap-2 text-center mb-4">
-                    <div class="flex flex-col items-center">
-                        <span class="stat-label">總營收</span>
-                        <div class="stat-val-lg text-income tracking-tight">$<span id="dashTotalIncome">0</span></div>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span class="stat-label">總成本</span>
-                        <div class="stat-val-lg text-cost tracking-tight">$<span id="dashTotalCost">0</span></div>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span class="stat-label">總淨利</span>
-                        <div class="stat-val-lg text-profit tracking-tight">$<span id="dashNetProfit">0</span></div>
+                <div class="dashboard-hero">
+                    <div class="hero-label">Total Revenue</div>
+                    <div class="hero-value">$<span id="dashTotalIncome">0</span></div>
+                    <div class="text-xs text-[#8C8788] mt-1 font-medium">
+                        <span id="dashOrders">0</span> Orders • <span id="dashHours">0</span>h <span id="dashMinutes">0</span>m
                     </div>
                 </div>
 
-                <div class="divider"></div>
+                <div class="stats-grid">
+                    <div class="stat-tile">
+                        <span class="tile-label">Net Profit</span>
+                        <div class="tile-value">$<span id="dashNetProfit">0</span></div>
+                    </div>
+                    <div class="stat-tile">
+                        <span class="tile-label">Total Cost</span>
+                        <div class="tile-value text-[#8C8788]">$<span id="dashTotalCost">0</span></div>
+                    </div>
+                </div>
 
-                <div class="grid grid-cols-3 gap-2 text-center mb-2">
-                    <div class="flex flex-col items-center">
-                        <span class="stat-label">油耗成本</span>
-                        <div class="stat-val-md text-cost">$<span id="dashOilCost">0</span></div>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span class="stat-label">耗材成本</span>
-                        <div class="stat-val-md text-cost">$<span id="dashMaintCost">0</span></div>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <span class="stat-label">總單數 / 工時</span>
-                        <div class="stat-val-sm text-gray-700 mt-1">
-                            <span id="dashOrders">0</span>單 | <span id="dashHours">0</span>h<span id="dashMinutes">0</span>
+                <div class="bg-[#F7F5F2] rounded-2xl p-4">
+                    <div class="detail-list">
+                        <div class="detail-row">
+                            <span class="detail-key">Hourly (Real)</span>
+                            <span class="detail-val">$<span id="dashNetHourly">0</span></span>
                         </div>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="detail-grid">
-                    <div class="detail-row">
-                        <span class="stat-label text-income">未扣成本時薪</span>
-                        <div class="stat-val-md text-income">$<span id="dashGrossHourly">0</span></div>
-                    </div>
-                    <div class="detail-row">
-                        <span class="stat-label text-profit">已扣成本時薪 (實薪)</span>
-                        <div class="stat-val-md text-profit">$<span id="dashNetHourly">0</span></div>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="detail-grid">
-                    <div class="detail-row">
-                        <span class="stat-label text-income">每單平均營收</span>
-                        <div class="stat-val-md text-income">$<span id="dashGrossPerOrder">0</span></div>
-                    </div>
-                    <div class="detail-row">
-                        <span class="stat-label text-profit">每單平均淨利</span>
-                        <div class="stat-val-md text-profit">$<span id="dashNetPerOrder">0</span></div>
+                        <div class="detail-row">
+                            <span class="detail-key">Hourly (Gross)</span>
+                            <span class="detail-val text-[#8C8788]">$<span id="dashGrossHourly">0</span></span>
+                        </div>
+                        <div class="w-full h-px bg-[#EBE8E3]"></div>
+                        <div class="detail-row">
+                            <span class="detail-key">Profit / Order</span>
+                            <span class="detail-val">$<span id="dashNetPerOrder">0</span></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-key">Revenue / Order</span>
+                            <span class="detail-val text-[#8C8788]">$<span id="dashGrossPerOrder">0</span></span>
+                        </div>
+                        <div class="w-full h-px bg-[#EBE8E3]"></div>
+                        <div class="detail-row">
+                            <span class="detail-key">Fuel Cost</span>
+                            <span class="detail-val text-[#8C8788]">$<span id="dashOilCost">0</span></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-key">Maint. Cost</span>
+                            <span class="detail-val text-[#8C8788]">$<span id="dashMaintCost">0</span></span>
+                        </div>
                     </div>
                 </div>
 
@@ -375,7 +375,7 @@
         </div>
     </div>
 
-    <div class="tab-scroll-container mb-4">
+    <div class="tab-scroll-container mb-2">
         <div class="tab-scroll-content">
             <button class="tab-btn active" onclick="setFilter('day', this)">Today</button>
             <button class="tab-btn" onclick="setFilter('week', this)">Week</button>
@@ -383,15 +383,15 @@
             <button class="tab-btn" onclick="setFilter('year', this)">Year</button>
             <button class="tab-btn" onclick="setFilter('all', this)">All</button>
             <button class="tab-btn" onclick="setFilter('custom', this)">Custom</button> 
-            <button class="tab-btn text-[#6366F1]" onclick="toggleCharts()">📊 Analysis</button>
+            <button class="tab-btn" onclick="toggleCharts()">Analysis</button>
         </div>
     </div>
     
     <div id="customDateFilter" class="card p-4 mb-4 hidden">
-        <h3 class="text-xs font-bold text-gray-400 mb-3 uppercase">Select Date Range</h3>
+        <h3 class="text-xs font-bold text-[#8C8788] mb-3 uppercase pl-1">Date Range</h3>
         <div class="flex gap-3 items-center">
             <input type="date" id="filterStart" class="input-field text-sm py-2" onchange="applyCustomFilter()" />
-            <span class="text-gray-400">to</span>
+            <span class="text-[#8C8788] font-bold">to</span>
             <input type="date" id="filterEnd" class="input-field text-sm py-2" onchange="applyCustomFilter()" />
         </div>
     </div>
@@ -403,29 +403,29 @@
         </div>
         <div id="chartsPanel" class="card hidden mb-4">
             <div class="flex justify-between items-center mb-4">
-                <div class="flex bg-gray-100 rounded-lg p-1">
-                    <button onclick="switchChartType('bar')" id="btnChartBar" class="px-3 py-1 text-xs rounded font-bold text-gray-500">Trends</button>
-                    <button onclick="switchChartType('pie')" id="btnChartPie" class="px-3 py-1 text-xs rounded font-bold text-gray-500">Share</button>
+                <div class="flex bg-[#F7F5F2] rounded-lg p-1 gap-1">
+                    <button onclick="switchChartType('bar')" id="btnChartBar" class="px-4 py-1.5 text-xs rounded-md font-bold bg-white text-[#433E3F] shadow-sm transition-all">Trends</button>
+                    <button onclick="switchChartType('pie')" id="btnChartPie" class="px-4 py-1.5 text-xs rounded-md font-bold text-[#8C8788] transition-all">Dist.</button>
                 </div>
             </div>
 
-            <div class="bg-gray-50 p-3 rounded-xl mb-4 border border-gray-100">
+            <div class="bg-[#F7F5F2] p-3 rounded-xl mb-4 border border-[#EBE8E3]">
                 <div class="flex gap-2 mb-2">
-                    <input type="date" id="chartStart" class="input-field text-xs py-1" onchange="updateChart()" />
-                    <span class="text-gray-400 self-center">~</span>
-                    <input type="date" id="chartEnd" class="input-field text-xs py-1" onchange="updateChart()" />
+                    <input type="date" id="chartStart" class="input-field text-xs py-1.5" onchange="updateChart()" />
+                    <span class="text-[#8C8788] self-center">~</span>
+                    <input type="date" id="chartEnd" class="input-field text-xs py-1.5" onchange="updateChart()" />
                 </div>
                 <div class="flex items-center gap-2">
-                    <label class="text-xs text-gray-500">Group By:</label>
-                    <select id="chartGroupBy" class="input-field text-xs py-1" onchange="updateChart()">
-                        <option value="day">Daily</option>
-                        <option value="month">Monthly</option>
-                        <option value="year">Yearly</option>
+                    <label class="text-xs text-[#8C8788] font-bold">BY:</label>
+                    <select id="chartGroupBy" class="input-field text-xs py-1.5" onchange="updateChart()">
+                        <option value="day">Day</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
                     </select>
                 </div>
             </div>
 
-            <div style="position: relative; height: 300px; width: 100%;">
+            <div style="position: relative; height: 280px; width: 100%;">
                 <canvas id="mainChart"></canvas>
             </div>
         </div>
@@ -435,16 +435,16 @@
         <div class="section-header">
             <span class="section-title">History</span>
         </div>
-        <div id="historyList" class="rounded-2xl overflow-hidden shadow-sm bg-white border border-gray-100"></div>
+        <div id="historyList" class="rounded-3xl overflow-hidden shadow-sm bg-white border border-[#EBE8E3]"></div>
     </div>
 
     <div class="footer-credit">
-        <div>UBE Salary Calculator V3.0</div>
+        <div>UBE Salary Calculator V3.1</div>
         <div class="mt-1">Developed by Ray © 2025</div>
     </div>
 
 <script>
-// === Firebase 配置 (保持原有設定) ===
+// === Firebase Config ===
 const firebaseConfig = {
     apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w",
     authDomain: "uber-driver-tracker.firebaseapp.com",
@@ -460,18 +460,18 @@ let firebaseUnsubscribe = null;
 if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    console.log("Firebase 初始化成功。");
 } else {
-    console.error("Firebase SDK 載入失敗或配置錯誤。");
+    console.error("Firebase SDK Error");
 }
 
-// === 變數與初始化 ===
+// === Variables ===
 const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
 let globalOilPrice = 30.0;
 let currentFilter = 'day';
 let chartInstance = null;
 let chartType = 'bar'; 
 
+// === Init ===
 window.onload = async () => {
     loadCollapseStates(); 
     resetEditor();
@@ -495,10 +495,7 @@ window.onload = async () => {
             } else {
                 document.getElementById('authPanel').classList.add('hidden');
                 document.getElementById('userInfo').classList.add('hidden');
-                if (firebaseUnsubscribe) {
-                    firebaseUnsubscribe();
-                    firebaseUnsubscribe = null;
-                }
+                if (firebaseUnsubscribe) { firebaseUnsubscribe(); firebaseUnsubscribe = null; }
                 refreshDashboard(); 
             }
         });
@@ -513,41 +510,34 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === V3.0 動畫收合/展開邏輯 ===
+// === Panel Toggle Logic ===
 function togglePanel(name) {
     const panel = document.getElementById(name + 'Panel');
     const icon = document.getElementById(name + 'Icon');
     const header = document.getElementById(name + 'Header');
     
-    // 如果是 auth/settings/charts 這種預設隱藏且無 collapse class 的，要切換 hidden
     if (name === 'auth' || name === 'settings' || name === 'charts') {
         panel.classList.toggle('hidden');
         if(icon) icon.classList.toggle('rotated');
         return;
     }
 
-    // 對於有 collapsible-content class 的元素 (editor, dashboard)
     if (panel.classList.contains('collapsed')) {
-        // 展開
         panel.classList.remove('collapsed');
         if(icon) icon.classList.remove('rotated');
         localStorage.removeItem(name + 'Collapsed');
     } else {
-        // 收合
         panel.classList.add('collapsed');
         if(icon) icon.classList.add('rotated');
         localStorage.setItem(name + 'Collapsed', 'true');
     }
 }
 
-// 載入狀態
 function loadCollapseStates() {
-    // 預設 Editor 展開
     if (localStorage.getItem('editorCollapsed') === 'true') {
         document.getElementById('editorPanel').classList.add('collapsed');
         document.getElementById('editorIcon').classList.add('rotated');
     }
-    // 預設 Dashboard 展開
     if (localStorage.getItem('dashboardCollapsed') === 'true') {
         document.getElementById('dashboardPanel').classList.add('collapsed');
         document.getElementById('dashboardIcon').classList.add('rotated');
@@ -566,7 +556,7 @@ function toggleHistoryDetails(id) {
     }
 }
 
-// === Firebase 實時監聽 ===
+// === Firebase ===
 function setupRealtimeListener(user) {
     if (!user || !db) return;
     if (firebaseUnsubscribe) { firebaseUnsubscribe(); firebaseUnsubscribe = null; }
@@ -578,31 +568,24 @@ function setupRealtimeListener(user) {
             if (JSON.stringify(cloudList) !== JSON.stringify(currentLocalList)) {
                 saveToHistory(cloudList); 
                 refreshDashboard(); 
-            } else {
-                refreshDashboard();
-            }
+            } else { refreshDashboard(); }
         } else {
             const localList = getHistory();
             if (localList.length > 0) uploadHistory(localList, user);
             else refreshDashboard();
         }
-    }, (error) => {
-        console.error("[Realtime Sync Error]", error);
-        refreshDashboard(); 
-    });
+    }, (error) => { refreshDashboard(); });
 }
 
-// === Auth Functions ===
+// === Auth ===
 function toggleAuthPanel() { 
-    const p = document.getElementById('authPanel');
-    const h = document.getElementById('authHeader');
-    p.classList.toggle('hidden');
-    h.classList.toggle('hidden');
+    document.getElementById('authPanel').classList.toggle('hidden');
+    document.getElementById('authHeader').classList.toggle('hidden');
 }
 function registerUser() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
-    if (email.length < 5 || password.length < 6) return alert("格式錯誤");
+    if (email.length < 5 || password.length < 6) return alert("Invalid Format");
     firebase.auth().createUserWithEmailAndPassword(email, password)
         .then(() => document.getElementById('authPanel').classList.add('hidden'))
         .catch(e => alert(e.message));
@@ -619,13 +602,13 @@ function logoutUser() {
     firebase.auth().signOut().then(() => {
         localStorage.removeItem('uber_ray_v1');
         document.getElementById('authPanel').classList.add('hidden');
-        alert("已登出，本地數據已清除。");
+        alert("Signed Out");
     });
 }
 function resetPassword() {
     const email = document.getElementById('authEmail').value;
-    if (!email) return alert("請輸入 Email");
-    firebase.auth().sendPasswordResetEmail(email).then(() => alert("郵件已發送")).catch(e => alert(e.message));
+    if (!email) return alert("Enter Email");
+    firebase.auth().sendPasswordResetEmail(email).then(() => alert("Email Sent")).catch(e => alert(e.message));
 }
 async function uploadHistory(data, user) {
     user = user || firebase.auth().currentUser;
@@ -638,9 +621,8 @@ async function uploadHistory(data, user) {
     } catch (e) { console.error("Upload failed", e); }
 }
 
-// === 設定與預設值 ===
+// === Settings ===
 function loadSettings() {
-    // V3.0 預設值: 油耗 39, 耗材 0.7
     document.getElementById('settingFuelRate').value = localStorage.getItem('fuelRate') || 39;
     document.getElementById('settingMaint').value = localStorage.getItem('maintCost') || 0.7;
     document.getElementById('oilType').value = localStorage.getItem('oilType') || '95';
@@ -685,8 +667,8 @@ function saveRecord() {
     const editId = document.getElementById('editId').value;
     const lockedOil = document.getElementById('recordOilPrice').value;
 
-    if(!date) return alert('請選日期');
-    if(isNaN(income) || isNaN(km)) return alert('請填寫金額與里程');
+    if(!date) return alert('Date required');
+    if(isNaN(income) || isNaN(km)) return alert('Income/Dist required');
 
     const finalOil = (editId && lockedOil) ? parseFloat(lockedOil) : globalOilPrice;
     const rec = {
@@ -715,7 +697,6 @@ function loadRecordToEditor(id) {
     const r = getHistory().find(i => i.id === id);
     if(!r) return;
     
-    // 展開 Editor
     const editor = document.getElementById('editorPanel');
     if(editor.classList.contains('collapsed')) togglePanel('editor');
     
@@ -731,10 +712,9 @@ function loadRecordToEditor(id) {
 
     const hint = document.getElementById('editorOilHint');
     hint.classList.remove('hidden');
-    hint.innerText = `Locked Oil: $${r.oilPrice||globalOilPrice}`;
+    hint.innerText = `Locked: $${r.oilPrice||globalOilPrice}`;
     
-    document.getElementById('editorPanel').classList.add('card-highlight');
-    document.getElementById('btnSave').innerText = "Update Record";
+    document.getElementById('btnSave').innerText = "Update";
     document.getElementById('btnDelete').classList.remove('hidden');
     document.getElementById('btnCancel').classList.remove('hidden');
     document.getElementById('editorWrapper').scrollIntoView({behavior:'smooth'});
@@ -760,13 +740,12 @@ function resetEditor() {
     document.getElementById('inputHr').value = "";
     document.getElementById('inputMin').value = "";
     document.getElementById('editorOilHint').classList.add('hidden');
-    document.getElementById('editorPanel').classList.remove('card-highlight');
     document.getElementById('btnSave').innerText = "Save Record";
     document.getElementById('btnDelete').classList.add('hidden');
     document.getElementById('btnCancel').classList.add('hidden');
 }
 
-// === 篩選與計算 ===
+// === Logic & Display ===
 function updateTabs(btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
@@ -840,7 +819,7 @@ function refreshDashboard() {
     const totalGrossPerOrder = totals.totalOrders > 0 ? totals.totalIncome / totals.totalOrders : 0;
     const totalNetPerOrder = totals.totalOrders > 0 ? totals.netProfit / totals.totalOrders : 0;
 
-    // 更新儀表板數據 (V1.2.16 完整數據回歸)
+    // 更新儀表板 (統一色系，移除綠/紅)
     document.getElementById('dashTotalIncome').innerText = formatCurrency(totals.totalIncome);
     document.getElementById('dashTotalCost').innerText = formatCurrency(totals.totalCost);
     document.getElementById('dashNetProfit').innerText = formatCurrency(totals.netProfit);
@@ -854,72 +833,37 @@ function refreshDashboard() {
     document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
     document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
 
-    // 更新歷史列表 (包含詳細數據)
+    // 更新歷史列表 (去色化設計)
     const listHtml = filtered.map(r => `
-        <div class="history-item">
-            <div class="history-main-area flex justify-between items-center" onclick="loadRecordToEditor(${r.id})">
-                <div class="flex-1">
-                    <div class="text-xs text-gray-400 font-semibold mb-1">${r.date}</div>
-                    <div class="flex items-baseline gap-2">
-                        <span class="stat-val-lg text-[#433E3F]">$${formatCurrency(r.income)}</span>
-                        <span class="text-xs text-gray-500">營收</span>
-                    </div>
+        <div class="history-item" onclick="loadRecordToEditor(${r.id})">
+            <div class="flex justify-between items-center mb-1">
+                <span class="history-date">${r.date}</span>
+                <span class="history-income">$${formatCurrency(r.income)}</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <div class="flex gap-2 text-xs text-[#8C8788] font-medium">
+                    <span>${r.orders} orders</span>
+                    <span>•</span>
+                    <span>${formatDuration(r.hours)}</span>
                 </div>
-                
-                <div class="flex-1 text-center border-l border-r border-gray-100 mx-2 px-2">
-                    <div class="text-xs text-gray-400 mb-1">淨利</div>
-                    <div class="text-lg font-bold text-profit">$${formatCurrency(r.netProfit)}</div>
-                </div>
-
-                <div class="flex-none flex items-center gap-2">
-                    <div class="text-right">
-                        <div class="text-xs text-cost">成本 $${formatCurrency(r.totalCost)}</div>
-                        <div class="text-[10px] text-gray-400">${r.orders}單 • ${r.km}km</div>
-                    </div>
-                    <span id="icon-detail-${r.id}" class="history-toggle-icon" onclick="event.stopPropagation(); toggleHistoryDetails(${r.id});">▶</span>
+                <div class="flex flex-col text-right">
+                    <span class="text-sm font-bold text-[#433E3F]">Net: $${formatCurrency(r.netProfit)}</span>
                 </div>
             </div>
-
-            <div id="detail-${r.id}" class="hidden mt-4 pt-4 border-t border-gray-50 text-sm">
-                <div class="grid grid-cols-2 gap-y-2 gap-x-4">
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">工時</span>
-                        <span class="text-gray-700 font-medium">${formatDuration(r.hours)}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">未扣成本時薪</span>
-                        <span class="text-income font-bold">$${formatCurrency(r.grossHourly)}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">已扣成本時薪</span>
-                        <span class="text-profit font-bold">$${formatCurrency(r.netHourly)}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">平均單營收</span>
-                        <span class="text-income">$${formatCurrency(r.grossPerOrder)}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">平均單淨利</span>
-                        <span class="text-profit font-bold">$${formatCurrency(r.netPerOrder)}</span>
-                    </div>
-                    <div class="flex justify-between mt-2 pt-2 border-t border-gray-50 col-span-2">
-                        <span class="text-xs text-gray-400">成本結構: 油耗 $${formatCurrency(r.oilCost)} / 耗材 $${formatCurrency(r.maintenanceCost)}</span>
-                    </div>
+            <div class="hidden" id="detail-${r.id}">
                 </div>
-            </div>
         </div>
     `).join('');
     
     document.getElementById('historyList').innerHTML = listHtml || `
-        <div class="p-8 text-center text-gray-400 text-sm bg-white border border-gray-100 rounded-xl">
-            無紀錄
+        <div class="p-10 text-center text-[#8C8788] text-sm bg-white">
+            No Records
         </div>
     `;
 
     if (!document.getElementById('chartsPanel').classList.contains('hidden')) updateChart();
 }
 
-// === 格式化 ===
 function formatCurrency(num) {
     if (isNaN(num)) return '0';
     return Math.abs(num).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -930,7 +874,7 @@ function formatDuration(h) {
     return `${hr}h ${min}m`.replace('0h ', '').replace(' 0m','');
 }
 
-// === 圖表 ===
+// === Charts ===
 function toggleCharts() {
     document.getElementById('chartsPanel').classList.toggle('hidden');
     document.getElementById('chartsHeader').classList.toggle('hidden');
@@ -939,8 +883,12 @@ function toggleCharts() {
 }
 function switchChartType(type) {
     chartType = type;
-    document.getElementById('btnChartBar').className = type === 'bar' ? "px-3 py-1 text-xs rounded font-bold bg-white text-gray-800 shadow-sm" : "px-3 py-1 text-xs rounded font-bold text-gray-500";
-    document.getElementById('btnChartPie').className = type === 'pie' ? "px-3 py-1 text-xs rounded font-bold bg-white text-gray-800 shadow-sm" : "px-3 py-1 text-xs rounded font-bold text-gray-500";
+    // 按鈕樣式切換 logic
+    const activeClass = "bg-white text-[#433E3F] shadow-sm";
+    const inactiveClass = "text-[#8C8788]";
+    
+    document.getElementById('btnChartBar').className = type === 'bar' ? `px-4 py-1.5 text-xs rounded-md font-bold transition-all ${activeClass}` : `px-4 py-1.5 text-xs rounded-md font-bold transition-all ${inactiveClass}`;
+    document.getElementById('btnChartPie').className = type === 'pie' ? `px-4 py-1.5 text-xs rounded-md font-bold transition-all ${activeClass}` : `px-4 py-1.5 text-xs rounded-md font-bold transition-all ${inactiveClass}`;
     updateChart();
 }
 function destroyChart() { if (chartInstance) { chartInstance.destroy(); chartInstance = null; } }
@@ -972,6 +920,10 @@ function updateChart() {
 
     const labels = Object.keys(groupedData).sort();
 
+    // Chart Colors (Monochrome Theme)
+    const colorPrimary = '#433E3F';
+    const colorSecondary = '#D6D3D1';
+
     if (chartType === 'bar') {
         chartInstance = new Chart(ctx, {
             type: 'bar',
@@ -979,17 +931,17 @@ function updateChart() {
                 labels: labels,
                 datasets: [
                     {
-                        label: '淨利潤',
+                        label: 'Net Profit',
                         data: labels.map(l => groupedData[l].netProfit),
-                        backgroundColor: '#6366F1',
-                        borderRadius: 6,
+                        backgroundColor: colorPrimary,
+                        borderRadius: 4,
                         barPercentage: 0.6
                     },
                     {
-                        label: '總成本',
+                        label: 'Cost',
                         data: labels.map(l => groupedData[l].cost),
-                        backgroundColor: '#E5E7EB',
-                        borderRadius: 6,
+                        backgroundColor: colorSecondary,
+                        borderRadius: 4,
                         barPercentage: 0.6
                     }
                 ]
@@ -998,21 +950,10 @@ function updateChart() {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { 
-                        stacked: true, 
-                        grid: { display: false },
-                        ticks: { color: '#9CA3AF', font: {size: 10} }
-                    },
-                    y: { 
-                        stacked: true, 
-                        beginAtZero: true, 
-                        grid: { color: '#F3F4F6', borderDash: [5, 5] },
-                        ticks: { color: '#9CA3AF', font: {size: 10} }
-                    }
+                    x: { stacked: true, grid: { display: false }, ticks: { color: '#8C8788', font: {size: 10} } },
+                    y: { stacked: true, beginAtZero: true, grid: { color: '#F3F0EA', borderDash: [5, 5] }, ticks: { color: '#8C8788', font: {size: 10} } }
                 },
-                plugins: {
-                    legend: { labels: { color: '#4B5563', font: {size: 11}, usePointStyle: true, boxWidth: 6 } }
-                }
+                plugins: { legend: { display: false } }
             }
         });
     } else {
@@ -1022,10 +963,10 @@ function updateChart() {
         chartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['淨利', '油耗', '耗材'],
+                labels: ['Net Profit', 'Fuel', 'Maint.'],
                 datasets: [{
                     data: [totalProfit, totalOil, totalMaint],
-                    backgroundColor: ['#6366F1', '#FCD34D', '#EF4444'],
+                    backgroundColor: [colorPrimary, '#A8A29E', '#E7E5E4'],
                     borderWidth: 0,
                     hoverOffset: 10
                 }]
@@ -1033,9 +974,7 @@ function updateChart() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'right', labels: { color: '#4B5563', usePointStyle: true } }
-                }
+                plugins: { legend: { position: 'right', labels: { color: '#4B5563', usePointStyle: true, boxWidth: 8 } } }
             }
         });
     }
