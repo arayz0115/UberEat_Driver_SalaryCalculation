@@ -3,14 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator - Grey Edition</title>
+<title>UberEat Salary Calculator V1.2.16</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f3f4f6">
+<meta name="theme-color" content="#F8F4EC">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 薪資計算器 (Grey UI)" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.16 (明細圖示優化 - 淺色暖調版)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，精準計算每一趟的薪資、油耗與耗材淨利，支援跨裝置實時同步，並優化了頁面佈局與明細列表收合功能。" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://placehold.co/1200x630/A1887F/ffffff?text=UberEat+V1.2.16" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -20,187 +23,323 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* === 全局設定：柔和灰階風格 === */
+    /* === 全局設定 - 修改為暖白色調 (核心修改) === */
     body { 
-        background-color: #f3f4f6; /* 淺灰背景 */
-        color: #4b5563; /* 深灰文字 */
+        background-color: #F8F4EC; /* 暖米白色背景 */
+        color: #333333; /* 深色文字 */
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-        padding-bottom: 120px;
-        padding-top: max(env(safe-area-inset-top), 20px);
-        -webkit-font-smoothing: antialiased;
+        padding-bottom: 120px; 
+        padding-top: env(safe-area-inset-top); 
     }
     
-    /* === 卡片樣式：懸浮、大圓角、無邊框 === */
-    .card {
-        background-color: #ffffff;
-        border: none;
-        border-radius: 1.5rem; /* 類似圖片的大圓角 */
-        padding: 1.25rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); /* 柔和陰影 */
-        transition: transform 0.2s ease;
-    }
+    /* === 顏色變數/實用類別覆寫 (確保儀表板/列表顏色正確) === */
+    /* 核心色覆寫：將原來的白/灰改為深色文字 */
+    .text-white { color: #333333 !important; } 
+    .text-gray-400 { color: #666666 !important; } 
+    .text-gray-500 { color: #888888 !important; } 
     
-    /* 點擊卡片時的微動效 */
-    .card:active { transform: scale(0.99); }
+    /* 主題色覆寫：淨利色、營收色、成本色 */
+    .text-amber-soft { color: #D1A96E !important; } /* 柔和金色 (營收) */
+    .text-green-400, .text-green-500, .text-green-300 { color: #77A685 !important; } /* 柔和鼠尾草綠 (淨利) */
+    .text-red-400, .text-red-500, .text-red-300 { color: #CC3333 !important; } /* 清晰的紅色 (成本) */
+    
+    /* 邊框與背景覆寫 (將深色背景改為淺色邊框/背景) */
+    .bg-\[\#1a1c23\] { background-color: #EFEAE4; }
+    .border-\[\#333\] { border-color: #D5C9B8; }
+    .active\:bg-gray-800:active { background-color: #EFEAE4; }
+    .border-white\/10 { border-color: #EFEAE4; }
+    .border-\[\#2a2d36\] { border-color: #D5C9B8; }
+    .border-gray-800 { border-color: #EFEAE4; }
+    
+    /* Auth/Settings Panel border color change: 使用暖棕色代替藍/綠 */
+    .text-blue-500, .text-blue-400 { color: #A1887F; } 
+    .text-green-500 { color: #A1887F; }
+    .border-blue-500\/50, .border-green-900\/50, .border-green-500\/30 { border-color: #D5C9B8; }
 
-    /* === 輸入框：嵌入式淺灰風格 === */
+    /* === 卡片樣式 - 淺色極簡風 === */
+    .card {
+        background-color: #FFFFFF; /* 純白色卡片 */
+        border: 1px solid #EFEAE4; /* 淺色細邊框 */
+        border-radius: 1.5rem; 
+        padding: 1.5rem; 
+        margin-bottom: 1rem;
+        position: relative;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); /* 輕微陰影增加層次感 */
+    }
+    /* Dashboard Card specific: 移除漸層，使用純白 */
+    .card.bg-gradient-to-br {
+        background-color: #FFFFFF;
+    }
+    .card-glow { 
+        border-color: #A1887F; /* 暖棕色邊框 */ 
+        box-shadow: 0 0 15px rgba(161, 136, 127, 0.1); 
+    } 
+
+    /* === 輸入框 - 柔和淺色背景 === */
     .input-field {
-        background-color: #f9fafb; /* 極淺灰 */
-        border: 1px solid transparent;
-        color: #374151;
-        border-radius: 1rem;
-        padding: 0.8rem 1rem;
+        background-color: #EFEAE4; /* 淺米色背景 */
+        border: 1px solid #D5C9B8; /* 柔和邊框 */
+        color: #333;
+        border-radius: 0.8rem; 
+        padding: 0.8rem;
         width: 100%;
-        font-size: 0.95rem;
-        transition: all 0.2s;
-        font-weight: 500;
+        font-size: 1rem;
+        transition: 0.2s;
     }
     .input-field:focus { 
         outline: none; 
-        background-color: #fff;
-        box-shadow: 0 0 0 2px #e5e7eb; /* 聚焦時淡淡的灰圈 */
+        border-color: #A1887F; /* 暖棕色聚焦邊框 */ 
+        background-color: #FFFFFF; 
     }
-    .input-field::placeholder { color: #9ca3af; }
 
-    /* === 按鈕：低飽和度 === */
-    .btn { 
-        width: 100%; padding: 0.9rem; border-radius: 1rem; 
-        font-weight: 600; display: flex; justify-content: center; align-items: center; 
-        transition: 0.2s; letter-spacing: 0.5px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    /* === 日期選擇器 === */
+    input[type="date"] { position: relative; font-size: 0.95rem; }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
+        color: transparent; background: transparent; cursor: pointer;
     }
+
+    /* === 按鈕 - 暖棕色主色調 === */
+    .btn { width: 100%; padding: 0.8rem; border-radius: 0.6rem; font-weight: 600; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
     .btn-primary { 
-        background-color: #4b5563; /* 石板灰 */
+        background-color: #A1887F; /* 暖棕色 */ 
         color: white; 
     } 
-    .btn-primary:active { background-color: #374151; transform: translateY(1px); }
-    
+    .btn-primary:active { 
+        background-color: #8D746A; 
+        transform: scale(0.98); 
+    }
     .btn-danger { 
-        background-color: #fee2e2; color: #ef4444; border: none; box-shadow: none;
-    }
+        background-color: #F8DADA; /* 淺紅背景 */
+        color: #CC3333; /* 深紅文字 */
+        border: 1px solid #F0CACA; 
+    } 
     .btn-ghost { 
-        background-color: transparent; border: 1px solid #e5e7eb; color: #6b7280; box-shadow: none;
+        background-color: transparent; 
+        border: 1px solid #D5C9B8; 
+        color: #9CA3AF; 
+    }
+    
+    .chart-toggle-btn { 
+        background: #EFEAE4; 
+        color: #888; 
+        border: 1px solid #D5C9B8; 
+    }
+    .chart-toggle-btn.active { 
+        background: #A1887F; 
+        color: white; 
+        border-color: #A1887F; 
     }
 
-    /* 圓形功能按鈕 (類似圖片右上角的 + 號) */
-    .circle-btn {
-        width: 40px; height: 40px; border-radius: 50%;
-        background: #ffffff; display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-        color: #6b7280; font-size: 1.1rem;
-        border: 1px solid #f3f4f6;
-    }
-    .circle-btn:active { transform: scale(0.95); background: #f9fafb; }
-
-    /* === Tab 篩選器 === */
+    /* === 篩選 Tab - 柔和色調 === */
     .tab-scroll-container {
-        width: 100%; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: none;
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        scrollbar-width: none; 
+        -ms-overflow-style: none;
     }
-    .tab-scroll-content { display: flex; gap: 0.8rem; padding: 0 0.5rem; }
+    .tab-scroll-container::-webkit-scrollbar { display: none; }
+
+    .tab-scroll-content {
+        display: flex;
+        gap: 0.6rem;
+        padding-right: 1.5rem; 
+        min-width: max-content; 
+    }
 
     .tab-btn {
-        padding: 0.6rem 1.2rem; border-radius: 2rem; 
-        font-size: 0.9rem; color: #9ca3af; 
-        background: transparent; border: none;
-        font-weight: 600;
-        transition: all 0.3s;
+        padding: 0.6rem 1.2rem; 
+        border-radius: 2rem; 
+        font-size: 0.9rem; 
+        color: #888; 
+        background: #EFEAE4; 
+        border: 1px solid #D5C9B8; 
+        white-space: nowrap;
+    }
+    /* 針對圖表按鈕 (原本的綠色按鈕) */
+    .tab-scroll-content > .tab-btn:last-child {
+        border-color: #A1887F;
+        color: #A1887F;
+        background: #FFFFFF;
     }
     .tab-btn.active { 
-        background-color: #4b5563; /* 深灰選中 */
-        color: #ffffff; 
-        box-shadow: 0 4px 12px rgba(75, 85, 99, 0.2);
+        background-color: #A1887F; /* 暖棕色背景 */
+        color: #FFFFFF; /* 白色文字 */ 
+        font-weight: bold; 
+        border-color: #A1887F; 
     }
 
-    /* === 歷史列表優化：獨立卡片式 === */
+    /* === 歷史列表 - 淺色線條與文字 (保留 V1.2.16 結構) === */
     .history-item {
-        background-color: #ffffff;
-        border-radius: 1.2rem;
-        padding: 1.2rem;
-        margin-bottom: 0.8rem;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
-        border: 1px solid #f3f4f6;
+        background-color: #FFFFFF; 
+        border-bottom: 1px solid #F0F0F0; 
+        padding-top: 1.25rem; 
+        padding-bottom: 0rem; 
+        padding-left: 1rem;
+        padding-right: 1rem;
+        transition: background 0.2s;
+        display: flex;
+        flex-direction: column; 
     }
     
-    .history-header-wrapper { display: flex; justify-content: space-between; align-items: flex-start; width: 100%; }
-    .history-main-area { display: flex; width: 100%; cursor: pointer; }
-    
+    .history-header-wrapper {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .history-main-area {
+        display: flex;
+        width: calc(100% - 30px); 
+        padding-bottom: 1.25rem; 
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .history-main-area:active { background-color: #F8F4EC; } /* 點擊時的淺色反饋 */ 
+
+    .history-top-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+    }
+
     .history-toggle-icon {
-        color: #d1d5db; /* 非常淡的灰色 */
-        padding-left: 10px;
+        width: 30px; 
+        height: 100%; 
+        padding-top: 5px; 
+        color: #A1887F; /* 暖棕色圖示 */
+        cursor: pointer;
+        z-index: 10;
+        font-size: 1rem;
+        transition: transform 0.2s;
+        text-align: right;
+        flex-shrink: 0; 
+    }
+    
+    .history-stat-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; 
+        text-align: left;
+    }
+    .history-stat-group.center {
+        align-items: center; 
+        text-align: center;
+    }
+    .history-stat-group.right {
+        align-items: flex-end;
+        text-align: right;
     }
 
-    /* 關鍵數字樣式 */
-    .history-main-value { font-size: 1.25rem; font-weight: 700; color: #374151; margin-top: 4px; }
-    .stat-label-small { font-size: 0.75rem; color: #9ca3af; font-weight: 500; }
+    /* 確保關鍵數字頂部對齊 */
+    .history-main-value {
+        font-size: 1.6rem; 
+        font-weight: bold;
+        line-height: 1.1;
+        margin-top: 2px;
+    }
+    .stat-label-small {
+        font-size: 0.75rem; 
+        color: #A0A0A0; /* 柔和灰色標籤 */ 
+        margin-top: 2px;
+        line-height: 1.2;
+    }
     
-    /* 強調色：去飽和 */
-    .text-accent { color: #576b95; } /* 柔和藍紫 */
-    .text-profit { color: #059669; } /* 稍微深一點的綠 */
-    .text-cost { color: #ef4444; }   /* 紅色保持，但背景會柔和 */
+    /* === 歷史列表底部詳細區塊 (保留並補齊數據顯示) === */
+    .history-sub-stats {
+        width: 100%;
+        padding-top: 0.75rem; 
+        padding-bottom: 1.25rem; 
+        font-size: 0.8rem;
+        color: #777; /* 柔和的詳細文字顏色 */
+        margin-top: 0.75rem; 
+        border-top: 1px solid #F0F0F0; 
+    }
+    
+    .history-sub-stats.hidden {
+        display: none;
+    }
 
-    /* === 儀表板數字 === */
-    .dash-label { font-size: 0.8rem; color: #9ca3af; letter-spacing: 0.5px; text-transform: uppercase; }
-    .dash-value { font-size: 1.8rem; font-weight: 800; color: #1f2937; letter-spacing: -0.5px; }
+    /* 內部 Performance Summary 區塊分隔線 */
+    .history-sub-stats .performance-summary {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #F0F0F0; 
+    }
 
+
+    /* === 字體與標籤 === */
+    .stat-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    /* .text-amber-soft 已在上方覆寫 */
+    
     /* === 版權 Footer === */
-    .footer-credit { text-align: center; margin-top: 2rem; color: #d1d5db; font-size: 0.75rem; }
-    
-    /* === 隱藏原生日期 icon (讓點擊整條 input 生效) === */
-    input[type="date"] { position: relative; }
-    input[type="date"]::-webkit-calendar-picker-indicator {
-        background: transparent; bottom: 0; color: transparent; cursor: pointer;
-        height: auto; left: 0; position: absolute; right: 0; top: 0; width: auto;
+    .footer-credit {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #EFEAE4;
+        color: #B0B0B0;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
     }
+
+    /* 覆寫 Chart.js 相關設定的顏色為淺色調 */
+    #mainChart { background-color: #FFFFFF; border-radius: 0.5rem; padding: 10px; }
 </style>
 </head>
-<body class="max-w-md mx-auto px-4">
+<body class="max-w-md mx-auto p-3">
 
-    <div class="flex justify-between items-center mb-6 pt-2">
-        <div>
-            <div class="text-xs text-gray-400 font-medium mb-1">Hello, Driver</div>
-            <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Salary Tracker</h1>
+    <div class="flex justify-between items-center mb-4 px-1 pt-2">
+        <div class="flex items-center gap-2">
+            <div class="w-1.5 h-6 rounded-full" style="background-color: #A1887F;"></div>
+            <div>
+                <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
+                <div class="text-[10px] text-gray-500">V1.2.16 History Icon Optimized</div>
+            </div>
         </div>
-        <div class="flex gap-3">
-            <button onclick="toggleAuthPanel()" class="circle-btn">
-                <span id="authStatusIcon" class="text-sm">☁️</span>
+        <div class="flex gap-2">
+            <button onclick="toggleAuthPanel()" class="p-2 bg-[#EFEAE4] rounded-full text-gray-400 border border-[#D5C9B8] text-xs active:bg-gray-200">
+                ☁️ <span id="authStatusText">未登入</span>
             </button>
-            <button onclick="toggleSettings()" class="circle-btn">
-                <span class="text-sm">⚙️</span>
+            <button onclick="toggleSettings()" class="p-2 bg-[#EFEAE4] rounded-full text-gray-400 border border-[#D5C9B8] text-xs active:bg-gray-200">
+                ⚙️ 設定
             </button>
         </div>
     </div>
 
-    <div id="authPanel" class="hidden mb-5 card border-l-4 border-blue-400">
-        <h3 class="text-gray-700 font-bold mb-4 text-sm uppercase tracking-wider">雲端帳戶</h3>
+    <div id="authPanel" class="hidden mb-4 card border-blue-500/50">
+        <h3 class="text-blue-500 font-bold mb-3 text-sm uppercase">Firebase 雲端驗證</h3>
         <div id="authContent">
-            <div id="authForm" class="grid grid-cols-1 gap-4 mb-2">
+            <div id="authForm" class="grid grid-cols-1 gap-3 mb-3">
                 <div>
-                    <input id="authEmail" type="email" class="input-field" placeholder="Email" />
+                    <label class="stat-label mb-1">Email</label>
+                    <input id="authEmail" type="email" class="input-field" placeholder="your@email.com" />
                 </div>
                 <div>
-                    <input id="authPassword" type="password" class="input-field" placeholder="密碼" />
+                    <label class="stat-label mb-1">密碼</label>
+                    <input id="authPassword" type="password" class="input-field" placeholder="密碼 (至少6位)" />
                 </div>
-                <div class="flex gap-2 mt-2">
-                    <button onclick="registerUser()" class="btn btn-primary text-sm shadow-lg shadow-gray-300">註冊</button>
-                    <button onclick="loginUser()" class="btn btn-ghost text-sm">登入</button>
-                </div>
-                <button onclick="resetPassword()" class="text-xs text-gray-400 text-center mt-2">忘記密碼？</button>
+                <button onclick="registerUser()" class="btn btn-primary text-sm">註冊 (新帳號)</button>
+                <button onclick="loginUser()" class="btn btn-ghost text-sm border-blue-600 text-blue-400">登入 (已有帳號)</button>
+                <button onclick="resetPassword()" class="text-xs text-gray-500 hover:text-gray-400 mt-2">忘記密碼？</button>
             </div>
             
-            <div id="userInfo" class="hidden text-center">
-                <p class="text-gray-600 mb-4 text-sm">已登入：<span id="userEmailDisplay" class="font-bold text-gray-800"></span></p>
-                <button onclick="logoutUser()" class="btn btn-danger text-sm">登出帳戶</button>
+            <div id="userInfo" class="hidden">
+                <p class="text-white mb-3">歡迎，<span id="userEmailDisplay" class="font-semibold text-amber-soft"></span></p>
+                <button onclick="logoutUser()" class="btn btn-danger text-sm">登出並清除本機狀態</button>
             </div>
         </div>
     </div>
 
-    <div id="settingsPanel" class="hidden mb-5 card">
-        <h3 class="text-gray-700 font-bold mb-4 text-sm uppercase tracking-wider">參數設定</h3>
-        <div class="grid grid-cols-2 gap-4 mb-4">
+    <div id="settingsPanel" class="hidden mb-4 card border-green-900/50">
+        <h3 class="text-green-500 font-bold mb-3 text-sm uppercase">全域參數</h3>
+        <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
-                <label class="stat-label-small mb-2 block">油品種類</label>
-                <select id="oilType" class="input-field appearance-none" onchange="fetchOilPrice()">
+                <label class="stat-label mb-1">油品</label>
+                <select id="oilType" class="input-field" onchange="fetchOilPrice()">
                     <option value="92">92 無鉛</option>
                     <option value="95">95 無鉛</option>
                     <option value="98">98 無鉛</option>
@@ -208,197 +347,215 @@
                 </select>
             </div>
             <div>
-                <label class="stat-label-small mb-2 block">即時油價</label>
-                <div id="oilPriceDisplay" class="input-field bg-gray-100 text-gray-500 font-bold flex items-center">Loading...</div>
+                <label class="stat-label mb-1">目前油價</label>
+                <div id="oilPriceDisplay" class="input-field text-amber-soft font-bold">讀取中...</div>
             </div>
         </div>
-        <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="grid grid-cols-2 gap-3 mb-3">
             <div>
-                <label class="stat-label-small mb-2 block">油耗 (km/L)</label>
+                <label class="stat-label mb-1">油耗 (km/L)</label>
                 <input id="settingFuelRate" type="number" class="input-field" />
             </div>
             <div>
-                <label class="stat-label-small mb-2 block">耗材 ($/km)</label>
+                <label class="stat-label mb-1">耗材 ($/km)</label>
                 <input id="settingMaint" type="number" step="0.1" class="input-field" />
             </div>
         </div>
         <button onclick="saveSettings()" class="btn btn-primary text-sm">儲存設定</button>
     </div>
 
-    <div class="card mb-6 relative overflow-hidden bg-white" id="dashboardCard">
-        <div class="flex justify-between items-center cursor-pointer mb-4" onclick="toggleDashboard()">
-            <h3 class="font-bold text-gray-400 flex items-center gap-2 text-xs uppercase tracking-widest">
-                Overview
+    <div class="card card-glow mb-4 p-5" id="editorCard">
+        <div class="flex justify-between items-center border-b border-gray-800 pb-2 cursor-pointer" onclick="toggleEditor()">
+            <h3 class="font-bold text-white flex items-center gap-2 text-base">
+                <span id="editorTitle">📝 新增紀錄</span>
             </h3>
-            <span id="dashboardToggleIcon" class="text-gray-300 text-xs">▼</span>
+            <span id="editorToggleIcon" class="text-xl text-gray-400">▼</span>
         </div>
         
-        <div id="dashboardContent">
-            <div class="flex flex-col items-center text-center mb-6">
-                <label class="text-xs text-gray-400 font-medium mb-1">Total Net Profit</label>
-                <div class="text-4xl font-extrabold text-gray-800 tracking-tight">$<span id="dashNetProfit">0</span></div>
-                <div class="text-xs text-gray-400 mt-1">區間實賺金額</div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div class="bg-gray-50 p-3 rounded-2xl text-center">
-                    <label class="text-[10px] text-gray-400 uppercase">總營收</label>
-                    <div class="text-xl font-bold text-gray-700 mt-1">$<span id="dashTotalIncome">0</span></div>
-                </div>
-                <div class="bg-gray-50 p-3 rounded-2xl text-center">
-                    <label class="text-[10px] text-gray-400 uppercase">總成本</label>
-                    <div class="text-xl font-bold text-gray-700 mt-1">$<span id="dashTotalCost">0</span></div> 
-                </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2 border-t border-gray-100 pt-4">
-                <div class="flex flex-col items-center text-center">
-                    <label class="text-[10px] text-gray-400">油錢</label>
-                    <div class="text-sm font-bold text-gray-600 mt-1">$<span id="dashOilCost">0</span></div>
-                </div>
-                <div class="flex flex-col items-center text-center">
-                    <label class="text-[10px] text-gray-400">耗材</label>
-                    <div class="text-sm font-bold text-gray-600 mt-1">$<span id="dashMaintCost">0</span></div>
-                </div>
-                <div class="flex flex-col items-center text-center">
-                    <label class="text-[10px] text-gray-400">單/時</label>
-                    <div class="text-sm font-bold text-gray-600 mt-1 leading-tight">
-                        <span id="dashOrders">0</span>單<br>
-                        <span id="dashHours">0</span>h
-                    </div>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
-                <div class="text-center">
-                    <label class="text-[10px] text-gray-400 block mb-1">淨時薪</label>
-                    <div class="text-lg font-bold text-gray-700">$<span id="dashNetHourly">0</span></div>
-                </div>
-                <div class="text-center">
-                    <label class="text-[10px] text-gray-400 block mb-1">每單淨利</label>
-                    <div class="text-lg font-bold text-gray-700">$<span id="dashNetPerOrder">0</span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="tab-scroll-container mb-4">
-        <div class="tab-scroll-content">
-            <button class="tab-btn active" onclick="setFilter('day', this)">Today</button>
-            <button class="tab-btn" onclick="setFilter('week', this)">Week</button>
-            <button class="tab-btn" onclick="setFilter('month', this)">Month</button>
-            <button class="tab-btn" onclick="setFilter('all', this)">All</button>
-            <button class="tab-btn" onclick="setFilter('custom', this)">Custom</button> 
-            <button class="tab-btn text-gray-500" onclick="toggleCharts()">Stats</button>
-        </div>
-    </div>
-    
-    <div id="customDateFilter" class="card p-4 mb-5 hidden">
-        <h3 class="text-xs font-bold text-gray-400 mb-3 uppercase">選擇區間</h3>
-        <div class="flex gap-3 items-center">
-            <input type="date" id="filterStart" class="input-field text-sm" onchange="applyCustomFilter()" />
-            <span class="text-gray-300">to</span>
-            <input type="date" id="filterEnd" class="input-field text-sm" onchange="applyCustomFilter()" />
-        </div>
-    </div>
-
-    <div class="card mb-6" id="editorCard">
-        <div class="flex justify-between items-center cursor-pointer mb-2" onclick="toggleEditor()">
-            <h3 class="font-bold text-gray-800 flex items-center gap-2 text-base">
-                <span id="editorTitle">Add Record</span>
-            </h3>
-            <span id="editorToggleIcon" class="text-2xl text-gray-300 font-light">+</span>
-        </div>
-        
-        <div id="editorContent" class="pt-2 hidden"> <input type="hidden" id="editId" value="">
+        <div id="editorContent" class="pt-4">
+            <input type="hidden" id="editId" value="">
             <input type="hidden" id="recordOilPrice" value=""> 
             
-            <div class="flex justify-end items-center mb-2">
-                 <span id="editorOilHint" class="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full hidden">Lock: --</span>
+            <div class="flex justify-end items-center mb-3">
+                 <span id="editorOilHint" class="text-xs text-gray-500 hidden">鎖定油價: --</span>
             </div>
 
-            <div class="flex flex-col gap-4 mb-4">
+            <div class="flex flex-col gap-3 mb-4">
                 <div>
-                    <label class="stat-label-small mb-1 ml-1">日期</label>
-                    <input id="inputDate" type="date" class="input-field cursor-pointer" onclick="this.showPicker()" />
+                    <label class="stat-label mb-1">日期</label>
+                    <input id="inputDate" type="date" class="input-field cursor-pointer text-sm" onclick="this.showPicker()" />
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="stat-label-small mb-1 ml-1">營業額 ($)</label>
-                        <input id="inputIncome" type="number" inputmode="numeric" class="input-field text-lg font-bold text-gray-700" placeholder="0" />
+                        <label class="stat-label mb-1">營業額</label>
+                        <input id="inputIncome" type="number" inputmode="numeric" class="input-field text-amber-soft font-bold text-lg" placeholder="$0" />
                     </div>
                     <div>
-                        <label class="stat-label-small mb-1 ml-1">單數</label>
+                        <label class="stat-label mb-1">單數</label>
                         <input id="inputOrders" type="number" inputmode="numeric" class="input-field" placeholder="0" />
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 mb-5">
+            <div class="grid grid-cols-2 gap-3 mb-4">
                 <div>
-                    <label class="stat-label-small mb-1 ml-1">里程 (KM)</label>
-                    <input id="inputDist" type="number" step="0.1" inputmode="decimal" class="input-field" placeholder="0.0" />
+                    <label class="stat-label mb-1">里程</label>
+                    <input id="inputDist" type="number" step="0.1" inputmode="decimal" class="input-field" placeholder="KM" />
                 </div>
                 <div>
-                    <label class="stat-label-small mb-1 ml-1">工時 (時/分)</label>
-                    <div class="flex gap-2">
-                        <input id="inputHr" type="number" class="input-field text-center px-1" placeholder="H" />
-                        <input id="inputMin" type="number" class="input-field text-center px-1" placeholder="M" />
+                    <label class="stat-label mb-1">工時</label>
+                    <div class="flex gap-1">
+                        <input id="inputHr" type="number" class="input-field text-center px-1" placeholder="時" />
+                        <input id="inputMin" type="number" class="input-field text-center px-1" placeholder="分" />
                     </div>
                 </div>
             </div>
 
-            <div class="flex gap-3">
-                <button onclick="saveRecord()" class="btn btn-primary shadow-lg shadow-gray-400/30" id="btnSave">儲存紀錄</button>
+            <div class="flex gap-2">
+                <button onclick="saveRecord()" class="btn btn-primary" id="btnSave">儲存</button>
                 <button onclick="deleteCurrentRecord()" class="btn btn-danger hidden" id="btnDelete">刪除</button>
                 <button onclick="resetEditor()" class="btn btn-ghost hidden" id="btnCancel">取消</button>
             </div>
         </div>
     </div>
 
-    <div id="chartsPanel" class="hidden card mb-6">
-        <div class="flex justify-between items-center mb-4">
-            <h4 class="text-sm font-bold text-gray-700">Analytics</h4>
-            <div class="flex bg-gray-100 rounded-lg p-1">
-                <button onclick="switchChartType('bar')" id="btnChartBar" class="px-3 py-1 rounded text-xs text-gray-500 font-bold bg-white shadow-sm transition-all">Bar</button>
-                <button onclick="switchChartType('pie')" id="btnChartPie" class="px-3 py-1 rounded text-xs text-gray-400 transition-all">Pie</button>
+    <div class="card mb-4 p-5" id="dashboardCard">
+        <div class="flex justify-between items-center cursor-pointer" onclick="toggleDashboard()">
+            <h3 class="font-bold text-white flex items-center gap-2 text-sm uppercase">
+                <div class="w-1.5 h-4 rounded-full" style="background-color: #A1887F;"></div>
+                區間總營收儀表板
+            </h3>
+            <span id="dashboardToggleIcon" class="text-xl text-gray-400">▼</span>
+        </div>
+        
+        <div id="dashboardContent" class="pt-4">
+            <div class="grid grid-cols-3 gap-2">
+
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-gray-400">區間總營收</label>
+                    <div class="text-3xl font-bold text-amber-soft mt-1 tracking-tight">$<span id="dashTotalIncome">0</span></div>
+                </div>
+                <div class="flex flex-col items-center text-center"> 
+                    <label class="stat-label text-red-400">總成本</label>
+                    <div class="text-3xl font-bold text-red-400 mt-1 tracking-tight">$<span id="dashTotalCost">0</span></div> 
+                </div>
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-green-400">總淨利</label>
+                    <div class="text-3xl font-bold text-green-400 mt-1 tracking-tight">$<span id="dashNetProfit">0</span></div>
+                </div>
+
+
+                <div class="col-span-3 border-t border-white/10 pt-4 mt-4"></div>
+
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-red-400">油耗成本</label>
+                    <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashOilCost">0</span></div>
+                </div>
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-red-400">耗材成本</label>
+                    <div class="text-lg font-bold text-red-400 mt-1">$<span id="dashMaintCost">0</span></div>
+                </div>
+                <div class="flex flex-col items-center text-center">
+                    <label class="stat-label text-gray-400">總單數 / 總工時</label>
+                    <div class="text-lg font-bold text-white mt-1">
+                        <span id="dashOrders">0</span>單 | 
+                        <span id="dashHours">0</span><span class="text-xs text-gray-500">h</span> <span id="dashMinutes">0</span><span class="text-xs text-gray-500">m</span>
+                    </div>
+                </div>
+                
+                
+                <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
+                    <div class="flex flex-col items-center text-center">
+                        <label class="stat-label text-amber-soft">未扣成本實薪</label>
+                        <div class="text-2xl font-bold text-amber-soft my-1 tracking-tight">$<span id="dashGrossHourly">0</span></div>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <label class="stat-label text-green-400">已扣成本實薪</label>
+                        <div class="text-2xl font-bold text-green-400 my-1 tracking-tight">$<span id="dashNetHourly">0</span></div>
+                    </div>
+                </div>
+
+                <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
+                    <div class="flex flex-col items-center text-center">
+                        <label class="stat-label text-amber-soft">每單平均營收</label>
+                        <div class="text-xl font-bold text-amber-soft my-1 tracking-tight">$<span id="dashGrossPerOrder">0</span></div>
+                    </div>
+                    <div class="flex flex-col items-center text-center">
+                        <label class="stat-label text-green-400">每單平均淨利</label>
+                        <div class="text-xl font-bold text-green-400 my-1 tracking-tight">$<span id="dashNetPerOrder">0</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tab-scroll-container mb-3">
+        <div class="tab-scroll-content">
+            <button class="tab-btn active" onclick="setFilter('day', this)">今日</button>
+            <button class="tab-btn" onclick="setFilter('week', this)">本週</button>
+            <button class="tab-btn" onclick="setFilter('month', this)">本月</button>
+            <button class="tab-btn" onclick="setFilter('year', this)">本年</button>
+            <button class="tab-btn" onclick="setFilter('all', this)">全部</button>
+            <button class="tab-btn" onclick="setFilter('custom', this)">自定義</button> 
+            <button class="tab-btn border-green-500 text-green-400" onclick="toggleCharts()">📈 進階圖表分析</button>
+        </div>
+    </div>
+    
+    <div id="customDateFilter" class="card p-3 mb-4 hidden border-blue-500/30">
+        <h3 class="text-xs font-bold text-blue-400 mb-2 uppercase">自定義區間篩選</h3>
+        <div class="flex gap-2 items-center">
+            <input type="date" id="filterStart" class="input-field text-sm py-1" onchange="applyCustomFilter()" />
+            <span class="text-gray-500">至</span>
+            <input type="date" id="filterEnd" class="input-field text-sm py-1" onchange="applyCustomFilter()" />
+        </div>
+    </div>
+
+    <div id="chartsPanel" class="hidden card mb-4 border border-green-500/30">
+        <div class="flex justify-between items-center mb-3">
+            <h4 class="text-sm font-bold text-white">📊 數據分析中心</h4>
+            <div class="flex bg-[#1a1c23] rounded-lg p-1">
+                <button onclick="switchChartType('bar')" id="btnChartBar" class="chart-toggle-btn active px-3 py-1 rounded text-xs">趨勢圖</button>
+                <button onclick="switchChartType('pie')" id="btnChartPie" class="chart-toggle-btn px-3 py-1 rounded text-xs">圓餅圖</button>
             </div>
         </div>
 
-        <div class="bg-gray-50 p-3 rounded-2xl mb-4 border border-gray-100">
+        <div class="bg-[#1a1c23] p-2 rounded-lg mb-3">
             <div class="flex gap-2 mb-2">
-                <input type="date" id="chartStart" class="bg-white border-none rounded-lg text-xs py-1 px-2 text-gray-600 w-1/2" onchange="updateChart()" />
-                <span class="text-gray-300 self-center">-</span>
-                <input type="date" id="chartEnd" class="bg-white border-none rounded-lg text-xs py-1 px-2 text-gray-600 w-1/2" onchange="updateChart()" />
+                <input type="date" id="chartStart" class="input-field text-xs py-1" onchange="updateChart()" />
+                <span class="text-gray-500 self-center">~</span>
+                <input type="date" id="chartEnd" class="input-field text-xs py-1" onchange="updateChart()" />
             </div>
             <div class="flex items-center gap-2">
-                <label class="text-xs text-gray-400">Group By:</label>
-                <select id="chartGroupBy" class="bg-white border-none rounded-lg text-xs py-1 px-2 text-gray-600 flex-1" onchange="updateChart()">
-                    <option value="day">Day</option>
-                    <option value="month">Month</option>
-                    <option value="year">Year</option>
+                <label class="text-xs text-gray-500">分組:</label>
+                <select id="chartGroupBy" class="input-field text-xs py-1" onchange="updateChart()">
+                    <option value="day">依日期 (日)</option>
+                    <option value="month">依月份 (月)</option>
+                    <option value="year">依年份 (年)</option>
                 </select>
             </div>
         </div>
 
-        <div style="position: relative; height: 250px; width: 100%;">
+        <div style="position: relative; height: 300px; width: 100%;">
             <canvas id="mainChart"></canvas>
         </div>
     </div>
 
     <div class="mb-8">
-        <h3 class="text-xs font-bold text-gray-400 mb-3 uppercase pl-2 tracking-widest">History</h3>
-        <div id="historyList" class="flex flex-col gap-1"></div>
+        <h3 class="text-xs font-bold text-gray-500 mb-2 uppercase pl-1">區間明細</h3>
+        <div id="historyList" class="rounded-xl overflow-hidden border border-[#2a2d36]"></div>
     </div>
 
     <div class="footer-credit">
-        <div>UberEat Salary Calculator v1.2.16 (Grey UI)</div>
+        <div>UberEat 外送薪資計算器 V1.2.16 (History Icon Optimized - 淺色暖調版)</div>
+        <div class="mt-1">Developed by Ray © 2025</div>
+        <div class="mt-1 text-xs text-gray-600">All Rights Reserved.</div>
     </div>
 
 <script>
-// === Firebase Config (請保留您的原始 Key) ===
+// === V1.2.8 修正版：Firebase 配置與初始化 (最穩定的結構) ===
+// ⚠️ 請務必確認這個 API Key 是您專案的有效密鑰！
 const firebaseConfig = {
-    apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", 
+    apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 您的 Key
     authDomain: "uber-driver-tracker.firebaseapp.com",
     projectId: "uber-driver-tracker", 
     storageBucket: "uber-driver-tracker.appspot.com",
@@ -406,18 +563,21 @@ const firebaseConfig = {
     appId: "1:333010467554:web:86f6a5067253fa433878b2"
 };
 
-let db;
-let firebaseUnsubscribe = null;
+let db; // 全域變數用於 Firestore 存取
+let firebaseUnsubscribe = null; // V1.2.12: 用來儲存實時監聽的取消函式
 
+// 💡 修正：移除多餘的 projectId 檢查，只檢查 SDK 是否載入且 Key 是否存在
 if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
     firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     console.log("Firebase 初始化成功。");
 } else {
-    console.error("Firebase SDK Error.");
+    // 如果因為某些原因導致初始化失敗 (例如 SDK 載入問題或配置錯誤)
+    console.error("Firebase SDK 載入失敗或配置錯誤。雲端同步功能將不會啟用。");
 }
 
-// === 全域變數 ===
+
+// === 變數與初始化 (保持不變) ===
 const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
 let globalOilPrice = 30.0;
 let currentFilter = 'day';
@@ -425,37 +585,56 @@ let chartInstance = null;
 let chartType = 'bar'; 
 
 window.onload = async () => {
+    // V1.2.13: 優先載入收合狀態，確保 UI 正確顯示
     loadCollapseStates(); 
+    
     resetEditor();
     loadSettings();
     
     const today = getLocalDateString();
+    
+    // 初始化自定義篩選器日期為今天
     document.getElementById('filterStart').value = today;
     document.getElementById('filterEnd').value = today;
 
+    // 初始化圖表日期範圍
     const now = new Date();
     document.getElementById('chartStart').value = new Date(now.getFullYear(), 0, 1).toISOString().slice(0,10);
     document.getElementById('chartEnd').value = today;
 
+    // 啟動 Firebase 登入狀態監聽 (V1.2.12: 替換為實時監聽邏輯)
     if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                document.getElementById('authStatusIcon').innerText = "✅"; 
+                // 使用者已登入
+                document.getElementById('authStatusText').innerText = "已登入"; 
                 document.getElementById('userEmailDisplay').innerText = user.email;
                 document.getElementById('authForm').classList.add('hidden');
                 document.getElementById('userInfo').classList.remove('hidden');
+                
+                // V1.2.12: 啟用實時監聽
                 setupRealtimeListener(user);
+
             } else {
-                document.getElementById('authStatusIcon').innerText = "☁️"; 
+                // 使用者已登出
+                document.getElementById('authStatusText').innerText = "未登入"; 
                 document.getElementById('authForm').classList.remove('hidden');
                 document.getElementById('userInfo').classList.add('hidden');
-                if (firebaseUnsubscribe) { firebaseUnsubscribe(); firebaseUnsubscribe = null; }
+                
+                // V1.2.12: 取消實時監聽 (如果有的話)
+                if (firebaseUnsubscribe) {
+                    firebaseUnsubscribe();
+                    firebaseUnsubscribe = null;
+                }
+                
+                // 登出後，顯示本地資料
                 refreshDashboard(); 
             }
         });
     } else {
         refreshDashboard();
     }
+    
     await fetchOilPrice();
 };
 
@@ -464,124 +643,234 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === UI 互動與收合邏輯 ===
+// === V1.2.14: 收合/展開相關函數 (保持不變) ===
+/**
+ * 處理單一區塊的收合與展開邏輯，並儲存狀態。
+ */
 function togglePanel(panelId, iconId, storageKey) {
     const content = document.getElementById(panelId + 'Content');
     const icon = document.getElementById(iconId);
     
     if (content.classList.contains('hidden')) {
+        // 展開 (Expand)
         content.classList.remove('hidden');
-        if(iconId === 'editorToggleIcon') icon.innerText = '−'; // 展開時變負號
-        else icon.innerText = '▼';
+        icon.innerText = '▼'; // V1.2.14: 使用簡潔的黑色實心三角形
         localStorage.removeItem(storageKey); 
     } else {
+        // 收合 (Collapse)
         content.classList.add('hidden');
-        if(iconId === 'editorToggleIcon') icon.innerText = '+'; // 收合時變加號
-        else icon.innerText = '▶';
+        icon.innerText = '▶'; // V1.2.14: 使用簡潔的黑色實心三角形
         localStorage.setItem(storageKey, 'true');
     }
 }
 
-function toggleEditor() { togglePanel('editor', 'editorToggleIcon', 'editorCollapsed'); }
-function toggleDashboard() { togglePanel('dashboard', 'dashboardToggleIcon', 'dashboardCollapsed'); }
-
-function loadCollapseStates() {
-    if (localStorage.getItem('editorCollapsed') === 'true') {
-        document.getElementById('editorContent').classList.add('hidden');
-        document.getElementById('editorToggleIcon').innerText = '+';
-    } else {
-        document.getElementById('editorContent').classList.add('hidden'); // 預設現在改為隱藏保持乾淨
-        document.getElementById('editorToggleIcon').innerText = '+';
-    }
-    // Dashboard 預設展開
-    document.getElementById('dashboardContent').classList.remove('hidden');
+function toggleEditor() {
+    // V1.2.13: 編輯區塊收合
+    togglePanel('editor', 'editorToggleIcon', 'editorCollapsed');
 }
 
+function toggleDashboard() {
+    // V1.2.13: 儀表板區塊收合
+    togglePanel('dashboard', 'dashboardToggleIcon', 'dashboardCollapsed');
+}
+
+/**
+ * 載入並應用 Local Storage 中儲存的收合狀態。
+ */
+function loadCollapseStates() {
+    // 編輯器狀態
+    if (localStorage.getItem('editorCollapsed') === 'true') {
+        document.getElementById('editorContent').classList.add('hidden');
+        document.getElementById('editorToggleIcon').innerText = '▶'; // V1.2.14: 使用簡潔圖示
+    } else {
+        document.getElementById('editorToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
+    }
+
+    // 儀表板狀態
+    if (localStorage.getItem('dashboardCollapsed') === 'true') {
+        document.getElementById('dashboardContent').classList.add('hidden');
+        document.getElementById('dashboardToggleIcon').innerText = '▶'; // V1.2.14: 使用簡潔圖示
+    } else {
+        document.getElementById('dashboardToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
+    }
+}
+
+// === V1.2.15: 歷史明細的收合/展開邏輯 (V1.2.16 修正：確保點擊不會觸發編輯) (保持不變) ===
 function toggleHistoryDetails(id) {
     const content = document.getElementById(`detail-${id}`);
     const icon = document.getElementById(`icon-detail-${id}`);
+
     if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
-        icon.innerText = '▲';
+        icon.innerText = '▼'; // 展開狀態
     } else {
         content.classList.add('hidden');
-        icon.innerText = '▼';
+        icon.innerText = '▶'; // 收合狀態
     }
 }
 
-// === Firebase 與資料邏輯 ===
+
+// === Firebase 相關函數 (保持不變) ===
+
+/**
+ * 啟用 Firestore 上的實時監聽，任何雲端資料的變動都會立即反映到本地。
+ */
 function setupRealtimeListener(user) {
     if (!user || !db) return;
-    if (firebaseUnsubscribe) { firebaseUnsubscribe(); firebaseUnsubscribe = null; }
+    
+    // V1.2.12: 如果已經在監聽，先取消舊的監聽
+    if (firebaseUnsubscribe) {
+        firebaseUnsubscribe();
+        firebaseUnsubscribe = null;
+    }
+
     const userRef = db.collection('records').doc(user.uid);
+
+    // 設定新的實時監聽
     firebaseUnsubscribe = userRef.onSnapshot((doc) => {
         if (doc.exists) {
             const cloudList = doc.data().data || [];
+            
+            // 檢查雲端資料是否與本地資料不同，避免無限循環或不必要的刷新
             const currentLocalList = getHistory();
+            
             if (JSON.stringify(cloudList) !== JSON.stringify(currentLocalList)) {
+                console.log(`[Realtime Sync] 偵測到雲端資料更新，共 ${cloudList.length} 筆。`);
+                
+                // 1. 更新本地儲存 (覆蓋)
                 saveToHistory(cloudList); 
+                
+                // 2. 更新儀表板 UI
                 refreshDashboard(); 
+                
             } else {
+                // V1.2.12 修正: 即使資料相同，也刷新儀表板以確保 UI 狀態正確
+                console.log('[Realtime Sync] 雲端資料與本地一致，刷新儀表板確保一致性。');
                 refreshDashboard();
             }
         } else {
+            // 雲端文件不存在 (可能是新用戶或已清除資料)
             const localList = getHistory();
-            if (localList.length > 0) uploadHistory(localList, user);
-            else refreshDashboard();
+            if (localList.length > 0) {
+                // 雲端無資料，但本地有資料：執行單次上傳 (將本地資料作為雲端初始資料)
+                console.log("雲端文件不存在，但偵測到本地紀錄，執行單次上傳。");
+                uploadHistory(localList, user);
+            } else {
+                console.log("雲端與本地均無紀錄。");
+                refreshDashboard();
+            }
         }
     }, (error) => {
-        console.error(error);
+        console.error("[Realtime Listener Error]", error);
+        alert(`實時同步發生錯誤: ${error.message}，請嘗試重新整理。`);
+        // 監聽失敗，至少顯示本地資料
         refreshDashboard(); 
     });
 }
+
 
 function toggleAuthPanel() { document.getElementById('authPanel').classList.toggle('hidden'); }
 
 function registerUser() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
-    if (!db) return;
+    if (email.length < 5 || password.length < 6) {
+        return alert("Email 或密碼格式不正確 (密碼需至少6位)");
+    }
+    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+    
     firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then(() => document.getElementById('authPanel').classList.add('hidden'))
-        .catch((error) => alert(error.message));
+        .then((userCredential) => {
+            console.log("註冊成功，已自動登入:", userCredential.user.email);
+            // 💡 修正：註冊成功後，自動隱藏面板
+            document.getElementById('authPanel').classList.add('hidden');
+        })
+        .catch((error) => {
+            console.error("註冊失敗:", error.message);
+            alert(`註冊失敗: ${error.message}`);
+        });
 }
 
 function loginUser() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
-    if (!db) return;
+    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+
     firebase.auth().signInWithEmailAndPassword(email, password)
-        .then(() => document.getElementById('authPanel').classList.add('hidden'))
-        .catch((error) => alert(error.message));
+        .then((userCredential) => {
+            console.log("登入成功:", userCredential.user.email);
+            // 💡 修正：登入成功後，立刻隱藏面板，解決狀態顯示延遲的問題
+            document.getElementById('authPanel').classList.add('hidden');
+        })
+        .catch((error) => {
+            console.error("登入失敗:", error.message);
+            alert(`登入失敗: ${error.message}`);
+        });
 }
 
 function logoutUser() {
-    if (!db) return;
-    if (firebaseUnsubscribe) { firebaseUnsubscribe(); firebaseUnsubscribe = null; }
-    firebase.auth().signOut().then(() => {
-        localStorage.removeItem('uber_ray_v1');
-        document.getElementById('authPanel').classList.add('hidden');
-        alert("已登出");
-    });
+    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+    
+    // V1.2.12: 登出前取消實時監聽
+    if (firebaseUnsubscribe) {
+        firebaseUnsubscribe();
+        firebaseUnsubscribe = null;
+    }
+    
+    firebase.auth().signOut()
+        .then(() => {
+            console.log("登出成功");
+            // 登出後，將本機資料清空 (確保下次登入能拉取雲端資料，實現跨裝置一致性)
+            localStorage.removeItem('uber_ray_v1');
+            document.getElementById('authPanel').classList.add('hidden'); // 隱藏面板
+            alert("登出成功，本機紀錄已清除。下次登入將自動同步雲端資料。");
+            // onAuthStateChanged 會自動呼叫 refreshDashboard()
+        })
+        .catch((error) => {
+            console.error("登出失敗:", error.message);
+            alert(`登出失敗: ${error.message}`);
+        });
 }
 
 function resetPassword() {
     const email = document.getElementById('authEmail').value;
-    if (!email) return alert("請輸入 Email");
-    firebase.auth().sendPasswordResetEmail(email).then(() => alert("重設信已寄出"));
+    if (!email) return alert("請先輸入您的 Email！");
+    if (!db) return alert("Firebase 資料庫未初始化，請檢查配置。");
+    
+    firebase.auth().sendPasswordResetEmail(email)
+        .then(() => {
+            alert("密碼重設郵件已寄出，請檢查您的信箱！");
+        })
+        .catch((error) => {
+            console.error("密碼重設失敗:", error.message);
+            alert(`密碼重設失敗: ${error.message}`);
+        });
 }
 
+/**
+ * 將 Local Storage 中的資料上傳到 Firestore。
+ */
 async function uploadHistory(data, user) {
     user = user || firebase.auth().currentUser;
-    if (!user || !db) return;
+    if (!user || !db) {
+        console.warn("未登入使用者或資料庫未初始化，無法執行雲端上傳。");
+        return;
+    }
+    
     try {
         await db.collection('records').doc(user.uid).set({
             data: data,
             lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
         });
-    } catch (e) { console.error(e); }
+        console.log(`雲端上傳成功，共 ${data.length} 筆紀錄。`);
+    } catch (e) {
+        console.error("雲端資料上傳失敗:", e);
+        // 不彈出 alert，避免干擾，讓實時監聽機制處理
+    }
 }
 
+
+// === 設定處理 (保持不變) ===
 function loadSettings() {
     document.getElementById('settingFuelRate').value = localStorage.getItem('fuelRate') || 12;
     document.getElementById('settingMaint').value = localStorage.getItem('maintCost') || 1.5;
@@ -596,21 +885,29 @@ function saveSettings() {
 }
 function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('hidden'); }
 
+// === 油價獲取 (保持不變) ===
 async function fetchOilPrice() {
     try {
         const type = document.getElementById('oilType').value;
+        // 使用 try-catch 確保即使 API 失敗也能使用預設值
         const res = await fetch(workerAPI);
         const data = await res.json();
         if(data[type]) {
             globalOilPrice = parseFloat(data[type]);
             document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice}`;
+        } else {
+            document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice} (預設/API錯誤)`;
         }
-    } catch(e) { console.log(e); }
+    } catch(e) { 
+        document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice} (預設/網路錯誤)`;
+    }
 }
 
+// === 歷史資料 CRUD (保持不變) ===
 function getHistory() { try { return JSON.parse(localStorage.getItem('uber_ray_v1') || '[]'); } catch { return []; } }
 function saveToHistory(data) { localStorage.setItem('uber_ray_v1', JSON.stringify(data)); }
 
+// V1.2.12: saveRecord() 儲存後，透過 uploadHistory 觸發實時監聽
 function saveRecord() {
     const date = document.getElementById('inputDate').value;
     const income = parseFloat(document.getElementById('inputIncome').value);
@@ -621,8 +918,8 @@ function saveRecord() {
     const editId = document.getElementById('editId').value;
     const lockedOil = document.getElementById('recordOilPrice').value;
 
-    if(!date) return alert('請選日期');
-    if(isNaN(income) || isNaN(km)) return alert('請填寫金額與里程');
+    if(!date) return console.error('請選日期');
+    if(isNaN(income) || isNaN(km)) return console.error('請填寫金額與里程');
 
     const finalOil = (editId && lockedOil) ? parseFloat(lockedOil) : globalOilPrice;
     const rec = {
@@ -639,20 +936,27 @@ function saveRecord() {
         if(idx!==-1) list[idx] = rec;
     } else {
         list.push(rec);
+        // 如果是新增今日紀錄，自動切換到今日篩選
         if(date === getLocalDateString()) { currentFilter = 'day'; updateTabs(); }
     }
     list.sort((a,b) => new Date(b.date)-new Date(a.date));
     saveToHistory(list);
+    
+    // V1.2.12: 資料儲存後，立即上傳到雲端，這將觸發所有連線設備的 onSnapshot 實時監聽
     uploadHistory(list);
+
     resetEditor();
+    // 實時監聽器會自動呼叫 refreshDashboard，這裡可以不用手動呼叫
 }
 
 function loadRecordToEditor(id) {
     const r = getHistory().find(i => i.id === id);
     if(!r) return;
     
+    // V1.2.13: 確保在編輯時，編輯器是展開的
     document.getElementById('editorContent').classList.remove('hidden');
-    document.getElementById('editorToggleIcon').innerText = '−';
+    document.getElementById('editorToggleIcon').innerText = '▼'; // V1.2.14: 使用簡潔圖示
+    localStorage.removeItem('editorCollapsed');
     
     document.getElementById('editId').value = r.id;
     document.getElementById('recordOilPrice').value = r.oilPrice || globalOilPrice;
@@ -666,22 +970,40 @@ function loadRecordToEditor(id) {
 
     const hint = document.getElementById('editorOilHint');
     hint.classList.remove('hidden');
-    hint.innerText = `Lock: $${r.oilPrice||globalOilPrice}`;
+    hint.innerText = `鎖定油價: $${r.oilPrice||globalOilPrice}`;
     
-    document.getElementById('editorTitle').innerText = "Edit Record";
-    document.getElementById('btnSave').innerText = "Update";
+    document.getElementById('editorTitle').innerText = "✏️ 編輯紀錄";
+    document.getElementById('editorCard').classList.add('card-glow');
+    document.getElementById('btnSave').innerText = "確認修改";
     document.getElementById('btnDelete').classList.remove('hidden');
     document.getElementById('btnCancel').classList.remove('hidden');
     document.getElementById('editorCard').scrollIntoView({behavior:'smooth'});
 }
 
+// V1.2.12: deleteCurrentRecord() 刪除後，透過 uploadHistory 觸發實時監聽
 function deleteCurrentRecord() {
+    // ⚠️ 根據平台規範，不使用 window.confirm/alert。
+    console.warn('執行刪除操作。'); 
+    
     const id = document.getElementById('editId').value;
     if (!id) return;
-    const list = getHistory().filter(r => r.id != id);
-    saveToHistory(list);
-    uploadHistory(list);
+    
+    const list = getHistory();
+    const originalLength = list.length;
+    
+    const newList = list.filter(r => r.id != id);
+    if(newList.length === originalLength) {
+        console.error(`刪除失敗：找不到 ID 為 ${id} 的紀錄。`);
+        return;
+    }
+
+    saveToHistory(newList);
+    
+    // V1.2.12: 資料刪除後，立即上傳到雲端，這將觸發所有連線設備的 onSnapshot 實時監聽
+    uploadHistory(newList);
+    
     resetEditor();
+    // 實時監聽器會自動呼叫 refreshDashboard，這裡可以不用手動呼叫
 }
 
 function resetEditor() {
@@ -693,28 +1015,34 @@ function resetEditor() {
     document.getElementById('inputDist').value = "";
     document.getElementById('inputHr').value = "";
     document.getElementById('inputMin').value = "";
-    document.getElementById('editorTitle').innerText = "Add Record";
+    document.getElementById('editorTitle').innerText = "📝 新增紀錄";
     document.getElementById('editorOilHint').classList.add('hidden');
-    document.getElementById('btnSave').innerText = "Save";
+    document.getElementById('editorCard').classList.remove('card-glow');
+    document.getElementById('btnSave').innerText = "儲存";
     document.getElementById('btnDelete').classList.add('hidden');
     document.getElementById('btnCancel').classList.add('hidden');
 }
 
+// === 篩選與儀表板更新 (保持不變) ===
 function updateTabs(btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     if(btn) btn.classList.add('active');
     else {
+        // 確保重新載入時，能正確激活目前的 filter 按鈕
         const buttons = document.querySelectorAll('.tab-scroll-content .tab-btn');
-        const map = {'day':0, 'week':1, 'month':2, 'all':3, 'custom':4};
-        if(map[currentFilter] !== undefined) buttons[map[currentFilter]].classList.add('active');
+        const map = {'day':0, 'week':1, 'month':2, 'year':3, 'all':4, 'custom':5};
+        buttons[map[currentFilter]]?.classList.add('active');
     }
 }
 
 function applyCustomFilter() {
+    // 只有在 'custom' 模式下，改變日期才觸發更新
     if (currentFilter === 'custom') {
         const start = document.getElementById('filterStart').value;
         const end = document.getElementById('filterEnd').value;
-        if (start && end) refreshDashboard();
+        if (start && end) {
+            refreshDashboard();
+        }
     }
 }
 
@@ -722,6 +1050,8 @@ function setFilter(type, btn) {
     currentFilter = type;
     updateTabs(btn);
     const customPanel = document.getElementById('customDateFilter');
+    
+    // 顯示/隱藏自定義區間輸入框
     if (type === 'custom') {
         customPanel.classList.remove('hidden');
         applyCustomFilter(); 
@@ -731,44 +1061,78 @@ function setFilter(type, btn) {
     }
 }
 
+
 function getFilteredData() {
     const list = getHistory();
     const todayStr = getLocalDateString();
     
     if(currentFilter==='day') return list.filter(r=>r.date===todayStr);
+
     if(currentFilter==='week') {
         const d = new Date();
+        // (d.getDay() + 6) % 7: 0=週一, 1=週二, ..., 6=週日
         const dayOfWeek = (d.getDay() + 6) % 7; 
+        
         const startDate = new Date(d);
-        startDate.setDate(d.getDate() - dayOfWeek);
-        return list.filter(r => r.date >= startDate.toISOString().split('T')[0]);
+        startDate.setDate(d.getDate() - dayOfWeek); // 回到本週一
+        
+        // 確保只比對 YYYY-MM-DD
+        const startDateStr = startDate.toISOString().split('T')[0];
+
+        // 篩選從本週一到今天(或篩選區間內的所有日期)的紀錄
+        return list.filter(r => r.date >= startDateStr);
     }
+    
     if(currentFilter==='month') return list.filter(r=>r.date.startsWith(todayStr.slice(0,7)));
+    if(currentFilter==='year') return list.filter(r=>r.date.startsWith(todayStr.slice(0,4)));
     if(currentFilter==='all') return list;
+
     if(currentFilter==='custom') {
         const start = document.getElementById('filterStart').value;
         const end = document.getElementById('filterEnd').value;
         return list.filter(r => r.date >= start && r.date <= end);
     }
-    return list;
+    
+    return list; // Default to return all if filter type is unknown/unhandled
 }
 
 function calculateRecordStats(record) {
     const { income, orders, km, hours, oilPrice, fuelRate, maintCost } = record;
+    
+    // 1. 成本計算
     const oilCost = (km / fuelRate) * oilPrice;
     const maintenanceCost = km * maintCost;
     const totalCost = oilCost + maintenanceCost;
+    
+    // 2. 淨利計算
     const netProfit = income - totalCost;
-    const netHourly = hours > 0 ? netProfit / hours : 0;
-    const netPerOrder = orders > 0 ? netProfit / orders : 0;
-    const grossPerOrder = orders > 0 ? income / orders : 0;
 
-    return { ...record, oilCost, maintenanceCost, totalCost, netProfit, netHourly, netPerOrder, grossPerOrder };
+    // 3. 時薪計算
+    const grossHourly = hours > 0 ? income / hours : 0;
+    const netHourly = hours > 0 ? netProfit / hours : 0;
+
+    // 4. 單價計算
+    const grossPerOrder = orders > 0 ? income / orders : 0;
+    const netPerOrder = orders > 0 ? netProfit / orders : 0;
+
+
+    return {
+        ...record,
+        oilCost: oilCost,
+        maintenanceCost: maintenanceCost,
+        totalCost: totalCost,
+        netProfit: netProfit,
+        grossHourly: grossHourly,
+        netHourly: netHourly,
+        grossPerOrder: grossPerOrder,
+        netPerOrder: netPerOrder
+    };
 }
 
 function refreshDashboard() {
     const filtered = getFilteredData().map(calculateRecordStats);
     
+    // 總計數據
     const totals = filtered.reduce((acc, r) => {
         acc.totalIncome += r.income;
         acc.totalCost += r.totalCost;
@@ -778,11 +1142,25 @@ function refreshDashboard() {
         acc.totalOrders += r.orders;
         acc.totalHours += r.hours;
         return acc;
-    }, { totalIncome: 0, totalCost: 0, netProfit: 0, totalOilCost: 0, totalMaintCost: 0, totalOrders: 0, totalHours: 0 });
+    }, {
+        totalIncome: 0,
+        totalCost: 0,
+        netProfit: 0,
+        totalOilCost: 0,
+        totalMaintCost: 0,
+        totalOrders: 0,
+        totalHours: 0
+    });
     
+    // 計算平均時薪與單價
+    const totalMinutes = totals.totalHours * 60;
+    const totalGrossHourly = totals.totalHours > 0 ? totals.totalIncome / totals.totalHours : 0;
     const totalNetHourly = totals.totalHours > 0 ? totals.netProfit / totals.totalHours : 0;
+    const totalGrossPerOrder = totals.totalOrders > 0 ? totals.totalIncome / totals.totalOrders : 0;
     const totalNetPerOrder = totals.totalOrders > 0 ? totals.netProfit / totals.totalOrders : 0;
 
+
+    // 更新儀表板
     document.getElementById('dashTotalIncome').innerText = formatCurrency(totals.totalIncome);
     document.getElementById('dashTotalCost').innerText = formatCurrency(totals.totalCost);
     document.getElementById('dashNetProfit').innerText = formatCurrency(totals.netProfit);
@@ -790,60 +1168,91 @@ function refreshDashboard() {
     document.getElementById('dashMaintCost').innerText = formatCurrency(totals.totalMaintCost);
     document.getElementById('dashOrders').innerText = totals.totalOrders.toFixed(0);
     document.getElementById('dashHours').innerText = Math.floor(totals.totalHours);
+    document.getElementById('dashMinutes').innerText = Math.round((totals.totalHours - Math.floor(totals.totalHours)) * 60);
+    document.getElementById('dashGrossHourly').innerText = formatCurrency(totalGrossHourly);
     document.getElementById('dashNetHourly').innerText = formatCurrency(totalNetHourly);
+    document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
     document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
 
+    // V1.2.16: 更新歷史列表結構 (這段代碼保持不變，因為數據是完整的)
     const listHtml = filtered.map(r => `
         <div class="history-item">
             <div class="history-header-wrapper">
                 <div class="history-main-area" onclick="loadRecordToEditor(${r.id})">
-                    <div class="flex flex-col justify-center w-1/5 border-r border-gray-100 mr-3">
-                         <div class="text-sm font-bold text-gray-800">${r.date.slice(5)}</div>
-                         <div class="text-[10px] text-gray-400">Date</div>
-                    </div>
-                    
-                    <div class="flex-1 flex justify-between items-center pr-2">
-                        <div>
-                             <div class="text-sm font-bold text-gray-700">$${formatCurrency(r.netProfit)}</div>
-                             <div class="text-[10px] text-green-600">Net Profit</div>
+                    <div class="history-top-row">
+                        <div class="history-stat-group w-1/3">
+                            <div class="text-sm font-semibold text-white">${r.date.slice(5)}</div>
+                            <div class="history-main-value text-amber-soft">$${formatCurrency(r.income)}</div>
+                            <div class="stat-label-small text-amber-soft">總營收</div>
                         </div>
-                        <div class="text-right">
-                             <div class="text-xs font-bold text-gray-500">$${formatCurrency(r.income)}</div>
-                             <div class="text-[10px] text-red-400">-$${formatCurrency(r.totalCost)}</div>
+                        
+                        <div class="history-stat-group center w-1/3">
+                            <div class="text-sm font-semibold text-red-300">成本</div>
+                            <div class="history-main-value text-red-400">$${formatCurrency(r.totalCost)}</div>
+                            <div class="stat-label-small text-red-500">油耗 + 耗材</div>
+                        </div>
+
+                        <div class="history-stat-group right w-1/3">
+                            <div class="text-sm font-semibold text-green-300">淨利</div>
+                            <div class="history-main-value text-green-400">$${formatCurrency(r.netProfit)}</div>
+                            <div class="stat-label-small text-green-500">實賺</div>
                         </div>
                     </div>
                 </div>
-                <span id="icon-detail-${r.id}" class="history-toggle-icon" onclick="event.stopPropagation(); toggleHistoryDetails(${r.id});">▼</span>
+                <span id="icon-detail-${r.id}" class="history-toggle-icon" onclick="event.stopPropagation(); toggleHistoryDetails(${r.id});">▶</span>
             </div>
 
-            <div id="detail-${r.id}" class="hidden mt-3 pt-3 border-t border-gray-100 text-xs">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-gray-400">Orders / KM</span>
-                    <span class="text-gray-600 font-medium">${r.orders} 單 / ${r.km.toFixed(1)} KM</span>
+            <div id="detail-${r.id}" class="history-sub-stats hidden">
+                <div class="flex flex-col gap-1 w-full">
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-gray-400">單數/里程</span>
+                        <span class="text-white">${r.orders} 單 / ${r.km.toFixed(1)} KM</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-gray-400">工時</span>
+                        <span class="text-white">${formatDuration(r.hours)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-red-500">油/耗材成本</span>
+                        <span class="text-red-400">$${formatCurrency(r.oilCost)} / $${formatCurrency(r.maintenanceCost)}</span>
+                    </div>
                 </div>
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-gray-400">Work Time</span>
-                    <span class="text-gray-600 font-medium">${formatDuration(r.hours)}</span>
-                </div>
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-gray-400">Net Hourly</span>
-                    <span class="text-gray-800 font-bold">$${formatCurrency(r.netHourly)}/h</span>
+                
+                <div class="w-full performance-summary flex flex-col gap-1">
+                     <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-green-500">已扣成本時薪</span>
+                        <span class="text-green-400 font-bold">$${formatCurrency(r.netHourly)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-amber-soft">每單平均營收</span>
+                        <span class="text-amber-soft">$${formatCurrency(r.grossPerOrder)}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="stat-label-small text-green-500">每單平均淨利</span>
+                        <span class="text-green-400 font-bold">$${formatCurrency(r.netPerOrder)}</span>
+                    </div>
                 </div>
             </div>
         </div>
     `).join('');
     
     document.getElementById('historyList').innerHTML = listHtml || `
-        <div class="p-8 text-center text-gray-300 text-sm">No records found.</div>
+        <div class="p-5 text-center text-gray-500 text-sm">
+            --- 此區間暫無紀錄 ---
+        </div>
     `;
     
+    // 更新圖表 (如果已開啟)
     if (!document.getElementById('chartsPanel').classList.contains('hidden')) {
         updateChart();
     }
 }
 
+// === 輔助函數 (Utility Functions - 保持不變) ===
+
 function formatCurrency(num) {
     if (isNaN(num)) return '0';
+    // 負數取絕對值後格式化，再加回負號
     const isNegative = num < 0;
     const formatted = Math.abs(num).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return isNegative ? `-${formatted}` : formatted;
@@ -852,30 +1261,30 @@ function formatCurrency(num) {
 function formatDuration(totalHours) {
     const hours = Math.floor(totalHours);
     const minutes = Math.round((totalHours - hours) * 60);
-    return `${hours}h ${minutes}m`;
+    let str = '';
+    if (hours > 0) str += `${hours}h`;
+    if (minutes > 0) str += `${minutes}m`;
+    if (hours === 0 && minutes === 0) return '0m';
+    return str.trim();
 }
 
-// === Chart.js 設定 ===
+// === 圖表相關函數 (Charts - 更新顏色) ===
+
 function toggleCharts() {
     const panel = document.getElementById('chartsPanel');
     panel.classList.toggle('hidden');
-    if (!panel.classList.contains('hidden')) updateChart();
-    else destroyChart();
+    if (!panel.classList.contains('hidden')) {
+        updateChart();
+    } else {
+        destroyChart();
+    }
 }
 
 function switchChartType(type) {
     chartType = type;
-    const btnBar = document.getElementById('btnChartBar');
-    const btnPie = document.getElementById('btnChartPie');
-    
-    // 重置按鈕樣式
-    [btnBar, btnPie].forEach(b => {
-        b.className = "px-3 py-1 rounded text-xs text-gray-400 transition-all";
-    });
-    
-    const activeBtn = type === 'bar' ? btnBar : btnPie;
-    activeBtn.className = "px-3 py-1 rounded text-xs text-gray-500 font-bold bg-white shadow-sm transition-all";
-    
+    document.getElementById('btnChartBar').classList.remove('active');
+    document.getElementById('btnChartPie').classList.remove('active');
+    document.getElementById(`btnChart${type.charAt(0).toUpperCase() + type.slice(1)}`).classList.add('active');
     updateChart();
 }
 
@@ -888,33 +1297,58 @@ function destroyChart() {
 
 function updateChart() {
     destroyChart();
+    
     const start = document.getElementById('chartStart').value;
     const end = document.getElementById('chartEnd').value;
     const groupBy = document.getElementById('chartGroupBy').value;
+
     if (!start || !end) return;
 
+    // 篩選圖表區間數據
     const allData = getHistory().map(calculateRecordStats);
     const chartData = allData.filter(r => r.date >= start && r.date <= end);
     
-    if (chartData.length === 0) return;
+    if (chartData.length === 0) {
+        // 清除 Canvas 上的殘留圖形
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, 300, 300);
+        return;
+    }
 
     let groupedData = {};
-    chartData.forEach(r => {
-        let label = r.date; 
-        if(groupBy === 'month') label = r.date.slice(0, 7);
-        if(groupBy === 'year') label = r.date.slice(0, 4);
-        
-        if (!groupedData[label]) groupedData[label] = { netProfit: 0, cost: 0 };
-        groupedData[label].netProfit += r.netProfit;
-        groupedData[label].cost += r.totalCost;
-    });
+
+    if (groupBy === 'day') {
+        chartData.forEach(r => {
+            const label = r.date.slice(5); // M-D
+            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
+            groupedData[label].income += r.income;
+            groupedData[label].netProfit += r.netProfit;
+            groupedData[label].cost += r.totalCost;
+            groupedData[label].orders += r.orders;
+        });
+    } else if (groupBy === 'month') {
+        chartData.forEach(r => {
+            const label = r.date.slice(0, 7); // YYYY-MM
+            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
+            groupedData[label].income += r.income;
+            groupedData[label].netProfit += r.netProfit;
+            groupedData[label].cost += r.totalCost;
+            groupedData[label].orders += r.orders;
+        });
+    } else if (groupBy === 'year') {
+        chartData.forEach(r => {
+            const label = r.date.slice(0, 4); // YYYY
+            if (!groupedData[label]) { groupedData[label] = { income: 0, netProfit: 0, cost: 0, orders: 0 }; }
+            groupedData[label].income += r.income;
+            groupedData[label].netProfit += r.netProfit;
+            groupedData[label].cost += r.totalCost;
+            groupedData[label].orders += r.orders;
+        });
+    }
 
     const labels = Object.keys(groupedData).sort();
-    const ctx = document.getElementById('mainChart').getContext('2d');
 
-    // Muted Colors
-    const colorProfit = '#6b7280'; // Cool Grey
-    const colorCost = '#d1d5db';   // Light Grey
+    const ctx = document.getElementById('mainChart').getContext('2d');
 
     if (chartType === 'bar') {
         chartInstance = new Chart(ctx, {
@@ -923,18 +1357,16 @@ function updateChart() {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Net Profit',
+                        label: '淨利潤',
                         data: labels.map(l => groupedData[l].netProfit),
-                        backgroundColor: colorProfit,
-                        borderRadius: 6,
-                        barThickness: 12
+                        backgroundColor: '#77A685', /* 柔和綠色 */
+                        borderRadius: 4,
                     },
                     {
-                        label: 'Cost',
+                        label: '總成本',
                         data: labels.map(l => groupedData[l].cost),
-                        backgroundColor: colorCost,
-                        borderRadius: 6,
-                        barThickness: 12
+                        backgroundColor: '#CC3333', /* 清晰紅色 */
+                        borderRadius: 4,
                     },
                 ]
             },
@@ -942,35 +1374,69 @@ function updateChart() {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: { grid: { display: false }, ticks: { color: '#9ca3af', font: {size: 10} } },
-                    y: { grid: { color: '#f3f4f6' }, ticks: { color: '#9ca3af', font: {size: 10} }, beginAtZero: true }
+                    x: {
+                        stacked: true,
+                        grid: { display: false, color: '#EFEAE4' }, /* 淺色網格 */
+                        ticks: { color: '#888' }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: { color: '#EFEAE4' }, /* 淺色網格 */
+                        ticks: { color: '#888' }
+                    }
                 },
                 plugins: {
-                    legend: { labels: { color: '#6b7280', font: {size: 11}, usePointStyle: true, boxWidth: 8 } }
+                    legend: {
+                        labels: { color: '#333' } /* 深色標籤 */
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) { label += `$${context.parsed.y.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`; }
+                                return label;
+                            }
+                        }
+                    }
                 }
             }
         });
-    } else {
-        const totalOil = chartData.reduce((s, r) => s + r.oilCost, 0);
-        const totalMaint = chartData.reduce((s, r) => s + r.maintenanceCost, 0);
-        const totalNet = chartData.reduce((s, r) => s + r.netProfit, 0);
+    } else if (chartType === 'pie') {
+        const totalOilCost = chartData.reduce((sum, r) => sum + r.oilCost, 0);
+        const totalMaintCost = chartData.reduce((sum, r) => sum + r.maintenanceCost, 0);
+        const totalNetProfit = chartData.reduce((sum, r) => sum + r.netProfit, 0);
         
         chartInstance = new Chart(ctx, {
-            type: 'doughnut',
+            type: 'pie',
             data: {
-                labels: ['Net Profit', 'Oil', 'Maint'],
+                labels: ['總淨利', '總油耗成本', '總耗材成本'],
                 datasets: [{
-                    data: [totalNet, totalOil, totalMaint],
-                    backgroundColor: [colorProfit, '#e5e7eb', '#9ca3af'],
-                    borderWidth: 0
+                    // 顏色更新: 淨利(綠), 油耗(金), 耗材(紅)
+                    data: [totalNetProfit, totalOilCost, totalMaintCost],
+                    backgroundColor: ['#77A685', '#D1A96E', '#CC3333'],
+                    hoverOffset: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '70%',
                 plugins: {
-                    legend: { position: 'right', labels: { color: '#6b7280', usePointStyle: true, boxWidth: 8 } }
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#333' } /* 深色標籤 */
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = ((value / total) * 100).toFixed(1) + '%';
+                                return `${context.label}: $${value.toFixed(0)} (${percentage})`;
+                            }
+                        }
+                    }
                 }
             }
         });
