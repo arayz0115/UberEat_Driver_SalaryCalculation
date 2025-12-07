@@ -3,17 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UberEat Salary Calculator V1.2.17 (簡潔暖調版)</title>
+<title>UberEat Salary Calculator V1.2.17 (米棕暖調版)</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f7f5f1">
-<link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#211B17"> <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.17 (簡潔暖調版)" />
-<meta property="og:description" content="專為 UberEat 外送員打造，採用簡潔、柔和的 UI 設計，優化了介面佈局與色彩風格。" />
+<meta property="og:title" content="UberEat 外送薪資計算器 V1.2.17 (米棕暖調版)" />
+<meta property="og:description" content="專為 UberEat 外送員打造，採用統一的米棕色系 UI 設計，優化了介面佈局與色彩風格。" />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://placehold.co/1200x630/ff9800/ffffff?text=UberEat+V1.2.17" />
+<meta property="og:image" content="https://placehold.co/1200x630/A07F6A/E8D9CE?text=UberEat+V1.2.17" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -23,41 +22,49 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-    /* === 全局設定 (淺色系風格 - 核心修改) === */
+    /* * 全面米棕色系調整 (基色 #D0B29A)
+     * 主要顏色定義:
+     * - 背景: #211B17 (深紅棕)
+     * - 卡片/輸入框: #332A25 (略淺紅棕)
+     * - 主色/強調色: #A07F6A (米棕色)
+     * - 文字/淨利: #E8D9CE (暖白色)
+     * - 成本: #7F4F42 (深紅棕)
+     */
+    
+    /* === 全局設定 (深色暖調風格) === */
     body { 
-        /* 柔和的米白色背景，類似圖片 */
-        background-color: #f7f5f1; 
-        color: #1c1c1c; /* 主要文字顏色 */
+        background-color: #211B17; /* 深紅棕色 (取代極黑) */
+        color: #E8D9CE; /* 暖白色 (取代亮灰) */
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
         padding-bottom: 120px; 
         padding-top: env(safe-area-inset-top); 
     }
     
-    /* 確保所有 text-white 變成深色 */
-    .text-white, .text-gray-800 { color: #1c1c1c !important; }
-    .text-gray-400 { color: #757575 !important; }
-    .text-gray-500 { color: #9e9e9e !important; } 
-
-    /* === 卡片樣式 (圓潤、柔和的白色卡片) === */
+    /* === 顏色覆蓋 (確保 Tailwind 預設顏色符合新色系) === */
+    .text-white, .text-gray-800, .text-gray-100 { color: #E8D9CE !important; } /* 高光文字 */
+    .text-gray-400 { color: #A07F6A !important; } /* 標籤和低調文字 */
+    .text-gray-500 { color: #6D5C53 !important; } /* 次要文字 */
+    
+    /* === 卡片樣式 (圓潤、柔和的深色卡片) === */
     .card {
-        background-color: #ffffff; /* 白色卡片背景 */
-        border: 1px solid #e0e0e0; /* 淺灰色邊框 */
-        border-radius: 1.5rem; /* 更圓潤的圓角 */
+        background-color: #332A25; /* 略淺的紅棕色 (取代深灰) */
+        border: 1px solid #443B33; /* 略深的紅棕邊框 */
+        border-radius: 1.5rem; 
         padding: 1.5rem; 
         margin-bottom: 1rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* 輕微陰影 */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
         position: relative;
     }
     .card-glow { 
-        border-color: #ffe0b2; /* 柔和的橘色邊框 */
-        box-shadow: 0 0 10px rgba(255, 152, 0, 0.15); 
+        border-color: #A07F6A; /* 主色邊框 */
+        box-shadow: 0 0 10px rgba(160, 127, 106, 0.4); 
     } 
 
-    /* === 輸入框 (背景柔和，文字顏色統一) === */
+    /* === 輸入框 (統一的 #4F4F4F 變體) === */
     .input-field {
-        background-color: #eeeeee; /* 淺灰色背景 */
-        border: 1px solid #dddddd;
-        color: #4F4F4F !important; /* **【修改】統一文字顏色為 #4F4F4F** */
+        background-color: #443B33; /* 輸入框背景更深，增加對比 */
+        border: 1px solid #6D5C53;
+        color: #E8D9CE !important; /* **【覆蓋】文字顏色使用暖白色** */
         border-radius: 0.8rem; 
         padding: 0.8rem;
         width: 100%;
@@ -67,139 +74,93 @@
     }
     .input-field:focus { 
         outline: none; 
-        border-color: #ff9800; /* 橘色焦點色 */
-        background-color: #ffffff; 
+        border-color: #A07F6A; /* 主色焦點色 */
+        background-color: #4C4037; 
     }
     
     /* 營業額 (強調色調整) */
     #inputIncome {
-        color: #ff9800 !important; /* 柔和橘色，取代原來的 amber-soft */
+        color: #F0A38C !important; /* 暖橘色 (營收強調色) */
         font-weight: bold;
     }
 
     /* === 按鈕 (統一風格) === */
     .btn { width: 100%; padding: 0.8rem; border-radius: 0.8rem; font-weight: 600; transition: 0.2s; display: flex; justify-content: center; align-items: center;}
     .btn-primary { 
-        background-color: #ff9800; /* 主要按鈕使用圖片中的橘色 */
+        background-color: #A07F6A; /* 主按鈕使用米棕色 */
         color: white; 
     } 
     .btn-primary:active { 
-        background-color: #fb8c00; 
+        background-color: #8D6B58; 
         transform: scale(0.98); 
     }
     .btn-danger { 
-        background-color: #ffebee; 
-        color: #e57373; 
-        border: 1px solid #ffcdd2; 
+        background-color: #7F4F42; /* 深紅棕色 (成本/危險) */
+        color: #E8D9CE; 
+        border: 1px solid #7F4F42; 
         font-weight: normal; 
     }
     .btn-ghost { 
         background-color: transparent; 
-        border: 1px solid #dddddd; 
-        color: #757575; 
+        border: 1px solid #6D5C53; 
+        color: #A07F6A; /* 主色文字 */
     }
     
-    /* === 儀表板與歷史數字顏色定義 (柔和化) === */
-    /* 營收 - 柔和橘 */
-    .text-amber-soft { color: #ff9800 !important; } 
-    /* 淨利 - 柔和綠 */
-    .text-green-400, .text-green-500, .text-green-300 { color: #4CAF50 !important; } 
-    /* 成本 - 柔和紅 */
-    .text-red-400, .text-red-500, .text-red-300 { color: #e57373 !important; } 
-    /* Auth/Settings Panel border color change: 使用柔和橘色代替藍/綠 */
-    .text-blue-500, .text-blue-400 { color: #ff9800 !important; } 
-    .text-green-500 { color: #ff9800 !important; }
-    
-    /* === 篩選 Tab (淺色系風格) === */
-    .tab-scroll-container { 
-        overflow-x: scroll; 
-        padding-bottom: 5px; /* 增加空間防止陰影遮蓋 */
-        -webkit-overflow-scrolling: touch;
-    }
-    .tab-scroll-container::-webkit-scrollbar { display: none; }
-    .tab-scroll-content { display: flex; gap: 0.5rem; }
+    /* 圖表切換按鈕 */
+    .chart-toggle-btn { background: #443B33; color: #E8D9CE; border: 1px solid #6D5C53; }
+    .chart-toggle-btn.active { background: #A07F6A; color: white; border-color: #A07F6A; } 
+
+    /* === 儀表板與歷史數字顏色定義 (米棕色系) === */
+    .text-amber-soft { color: #F0A38C !important; } /* 營收 - 暖橘色 */
+    .text-green-400, .text-green-500, .text-green-300 { color: #E8D9CE !important; } /* 淨利 - 暖白色 (高光) */
+    .text-red-400, .text-red-500, .text-red-300 { color: #7F4F42 !important; } /* 成本 - 深紅棕色 */
+    .text-blue-500, .text-blue-400 { color: #A07F6A !important; } /* 雲端/自訂義標籤使用主色 */
+
+    /* === 篩選 Tab (統一風格) === */
     .tab-btn {
         padding: 0.5rem 1rem; border-radius: 2rem; font-size: 0.9rem; 
-        color: #757575; 
-        background: #f0f0f0; 
-        border: none;
+        color: #E8D9CE; 
+        background: #332A25; 
+        border: 1px solid #6D5C53; 
         white-space: nowrap;
     }
+    /* 活躍 Tab */
     .tab-btn.active { 
-        background-color: #ff9800; 
-        color: white; 
+        background-color: #E8D9CE; 
+        color: #332A25; /* 深色文字 */
         font-weight: bold; 
+        border-color: #E8D9CE;
     }
-    .tab-btn.border-green-500.text-green-400 {
-        background-color: #f0f0f0; 
-        color: #ff9800 !important; 
-        border: 1px solid #ff9800 !important;
+    /* 圖表按鈕 */
+    .tab-btn.border-green-500.text-green-400 { 
+        border-color: #A07F6A !important; 
+        color: #A07F6A !important; 
     }
 
-    /* === 歷史列表 (淺色系，無邊框，僅有淺色分隔線) === */
+    /* === 歷史列表 (卡片背景，深色分隔線) === */
     .history-item {
-        background-color: #ffffff; 
-        border-bottom: 1px solid #eeeeee; /* 淺色分隔線 */
+        background-color: #332A25; 
+        border-bottom: 1px solid #443B33; 
+        /* ... 保持內邊距與過渡動畫 ... */
         padding-top: 1.25rem; 
         padding-bottom: 0rem; 
         padding-left: 1rem;
         padding-right: 1rem;
         transition: background 0.2s;
     }
-    .history-item:last-child { border-bottom: none; }
-    .history-header-wrapper { display: flex; justify-content: space-between; align-items: center; }
-    .history-main-area { flex-grow: 1; cursor: pointer; padding-bottom: 1.25rem; }
-    .history-main-area:active { background-color: #f7f7f7; } 
-    .history-top-row { display: flex; justify-content: space-between; }
-    .history-stat-group { text-align: center; }
-    .history-stat-group.right { text-align: right; }
-    .history-stat-group.center { text-align: center; }
-    .history-main-value { font-size: 1.5rem; font-weight: bold; margin-top: 0.25rem; }
-    .stat-label-small { font-size: 0.65rem; color: #9e9e9e; text-transform: uppercase; }
-    .history-toggle-icon { 
-        color: #757575; 
-        font-size: 1.5rem;
-        padding-left: 0.5rem;
-        cursor: pointer;
-    }
+    .history-main-area:active { background-color: #443B33; } 
+    .stat-label-small { font-size: 0.7rem; color: #A07F6A; text-transform: uppercase; } /* 標籤使用主色 */
+    .history-toggle-icon { color: #E8D9CE; } /* 圖示使用暖白色 */
     .history-sub-stats {
-        color: #757575;
-        border-top: 1px solid #eeeeee; 
-        padding: 1rem 0;
-        margin-top: 0.5rem;
-    }
-    .history-sub-stats .performance-summary {
-        border-top: 1px solid #eeeeee; 
-        padding-top: 1rem;
-        margin-top: 0.5rem;
+        color: #E8D9CE;
+        border-top: 1px solid #443B33; 
     }
     
-    /* 儀表板分隔線 (淺色) */
-    .border-t.border-white\/10 { border-top-color: #eeeeee !important; }
+    /* 儀表板分隔線 */
+    .border-t.border-white\/10 { border-top-color: #443B33 !important; }
 
-    /* === 收合動畫效果 (保持不變) === */
-    .collapsible-content {
-        max-height: 500px; 
-        overflow: hidden;
-        transition: max-height 0.5s ease-in-out, opacity 0.4s ease-in-out; 
-        opacity: 1;
-        padding-top: 1rem; 
-        padding-bottom: 0;
-    }
-
-    .collapsible-content.is-collapsed {
-        max-height: 0;
-        opacity: 0;
-        padding-top: 0; 
-    }
-    
-    /* 確保 Chart Panel 是淺色背景 */
-    #mainChart { background-color: #FFFFFF; border-radius: 0.5rem; padding: 10px; }
-    .bg-\[\#1a1c23\] { background-color: #f7f5f1 !important; }
-
-    /* === 頂部 Logo 調整 (移除顏色條，使用深色文字) === */
+    /* 移除頂部 Logo 左側的顏色條 */
     .w-1\.5 { display: none !important; }
-    .text-lg.font-bold.text-white { color: #1c1c1c !important; } 
 
 </style>
 </head>
@@ -207,17 +168,17 @@
 
     <div class="flex justify-between items-center mb-4 px-1 pt-2">
         <div class="flex items-center gap-2">
-            <div class="w-1.5 h-6 rounded-full" style="background-color: #ff9800;"></div> 
+            <div class="w-1.5 h-6 bg-[#A07F6A] rounded-full"></div> 
             <div>
                 <h1 class="text-lg font-bold text-white leading-tight">UberEat 外送薪資計算器</h1>
-                <div class="text-[10px] text-gray-500">V1.2.17 簡潔暖調版</div>
+                <div class="text-[10px] text-gray-500">V1.2.17 米棕暖調版</div>
             </div>
         </div>
         <div class="flex gap-2">
-            <button onclick="toggleAuthPanel()" class="p-2 bg-[#eeeeee] rounded-full text-gray-400 text-xs active:bg-gray-200" style="border: 1px solid #dddddd;">
+            <button onclick="toggleAuthPanel()" class="p-2 bg-[#332A25] rounded-full text-gray-400 border border-[#6D5C53] text-xs active:bg-[#443B33]">
                 <span class="text-sm">☁️</span> <span id="authStatusText">未登入</span>
             </button>
-            <button onclick="toggleSettings()" class="p-2 bg-[#eeeeee] rounded-full text-gray-400 text-xs active:bg-gray-200" style="border: 1px solid #dddddd;">
+            <button onclick="toggleSettings()" class="p-2 bg-[#332A25] rounded-full text-gray-400 border border-[#6D5C53] text-xs active:bg-[#443B33]">
                 <span class="text-sm">⚙️</span> 設定
             </button>
         </div>
@@ -278,8 +239,8 @@
     </div>
 
     <div class="card mb-4 p-5" id="editorCard">
-        <div class="flex justify-between items-center border-b border-gray-800 pb-2 cursor-pointer" onclick="toggleEditor()">
-            <h3 class="font-bold text-lg text-gray-800 leading-tight" id="editorTitle">
+        <div class="flex justify-between items-center border-b border-[#443B33] pb-2 cursor-pointer" onclick="toggleEditor()">
+            <h3 class="font-bold text-lg text-white leading-tight" id="editorTitle">
                 新增紀錄
             </h3>
             <span id="editorToggleIcon" class="text-xl text-gray-400">▼</span>
@@ -334,7 +295,7 @@
 
     <div class="card mb-4 p-5" id="dashboardCard">
         <div class="flex justify-between items-center cursor-pointer" onclick="toggleDashboard()">
-            <h3 class="font-bold text-lg text-gray-800 leading-tight">
+            <h3 class="font-bold text-lg text-white leading-tight">
                 區間總營收儀表板
             </h3>
             <span id="dashboardToggleIcon" class="text-xl text-gray-400">▼</span>
@@ -368,11 +329,10 @@
                 </div>
                 <div class="flex flex-col items-center text-center">
                     <label class="stat-label text-gray-400 text-xs">總單/總時</label>
-                    <div class="text-xl font-bold text-gray-800 mt-1 leading-tight">
+                    <div class="text-xl font-bold text-white mt-1 leading-tight">
                         <span id="dashOrders">0</span>單 / <span id="dashHours">0</span>h<span id="dashMinutes">0</span>m
                     </div>
                 </div>
-                
                 
                 <div class="col-span-3 border-t border-white/10 pt-4 mt-4 grid grid-cols-2 gap-4">
                     <div class="flex flex-col items-center text-center">
@@ -423,13 +383,13 @@
     <div id="chartsPanel" class="hidden card mb-4">
         <div class="flex justify-between items-center mb-3">
             <h4 class="text-sm font-bold text-white">數據分析中心</h4>
-            <div class="flex bg-[#eeeeee] rounded-lg p-1">
+            <div class="flex bg-[#443B33] rounded-lg p-1">
                 <button onclick="switchChartType('bar')" id="btnChartBar" class="chart-toggle-btn active px-3 py-1 rounded text-xs">趨勢圖</button>
                 <button onclick="switchChartType('pie')" id="btnChartPie" class="chart-toggle-btn px-3 py-1 rounded text-xs">圓餅圖</button>
             </div>
         </div>
 
-        <div class="bg-[#f7f5f1] p-2 rounded-lg mb-3">
+        <div class="bg-[#211B17] p-2 rounded-lg mb-3">
             <div class="flex gap-2 mb-2">
                 <input type="date" id="chartStart" class="input-field text-xs py-1" onchange="updateChart()" />
                 <span class="text-gray-500 self-center">~</span>
@@ -446,7 +406,7 @@
         </div>
 
         <div style="position: relative; height: 300px; width: 100%;">
-            <canvas id="mainChart"></canvas>
+            <canvas id="mainChart" class="bg-[#332A25] rounded-lg p-2"></canvas>
         </div>
     </div>
 
@@ -455,13 +415,13 @@
         <div id="historyList" class="rounded-xl overflow-hidden"></div>
     </div>
 
-    <div class="footer-credit text-center text-xs text-gray-500 py-4">
-        <div>UberEat 外送薪資計算器 V1.2.17 (簡潔暖調版)</div>
-        <div class="mt-1">Developed by Ray © 2025</div>
+    <div class="footer-credit text-center text-xs py-4 border-t border-[#443B33]">
+        <div class="text-[#6D5C53]">UberEat 外送薪資計算器 V1.2.17 (米棕暖調版)</div>
+        <div class="mt-1 text-[#6D5C53]">Developed by Ray © 2025</div>
     </div>
 
 <script>
-// === Firebase 配置與初始化 ===
+// === Firebase 配置與初始化 (保持不變) ===
 const firebaseConfig = {
     apiKey: "AIzaSyAqiTFbvsIkUVUrBmwaR28448EFMg4FO-w", // 您的 Key
     authDomain: "uber-driver-tracker.firebaseapp.com",
@@ -483,7 +443,7 @@ if (typeof firebase !== 'undefined' && firebaseConfig.apiKey) {
 }
 
 
-// === 變數與初始化 ===
+// === 變數與初始化 (保持不變) ===
 const workerAPI = "https://ubereat-oil-proxy.leo3026772.workers.dev/";
 let globalOilPrice = 30.0;
 let currentFilter = 'day';
@@ -536,19 +496,24 @@ function getLocalDateString() {
     return new Date(Date.now() - offset).toISOString().split('T')[0];
 }
 
-// === 收合/展開相關函數 (使用動畫) ===
+// === 收合/展開相關函數 (保持不變) ===
 function togglePanel(panelId, iconId, storageKey) {
     const content = document.getElementById(panelId + 'Content');
     const icon = document.getElementById(iconId);
     
-    if (content.classList.contains('is-collapsed')) {
-        content.classList.remove('is-collapsed');
-        icon.innerText = '▼'; 
-        localStorage.removeItem(storageKey); 
+    if (content.classList.contains('collapsible-content')) {
+        if (content.classList.contains('is-collapsed')) {
+            content.classList.remove('is-collapsed');
+            icon.innerText = '▼'; 
+            localStorage.removeItem(storageKey); 
+        } else {
+            content.classList.add('is-collapsed');
+            icon.innerText = '▶'; 
+            localStorage.setItem(storageKey, 'true');
+        }
     } else {
-        content.classList.add('is-collapsed');
-        icon.innerText = '▶'; 
-        localStorage.setItem(storageKey, 'true');
+        // 處理非動畫收合區塊 (如 Auth/Settings)
+        content.classList.toggle('hidden');
     }
 }
 
@@ -641,7 +606,9 @@ function setupRealtimeListener(user) {
 }
 
 
-function toggleAuthPanel() { document.getElementById('authPanel').classList.toggle('hidden'); }
+function toggleAuthPanel() { 
+    document.getElementById('authPanel').classList.toggle('hidden'); 
+}
 
 function registerUser() {
     const email = document.getElementById('authEmail').value;
@@ -830,7 +797,7 @@ function loadRecordToEditor(id) {
     hint.classList.remove('hidden');
     hint.innerText = `鎖定油價: $${r.oilPrice||globalOilPrice}`;
     
-    // 移除 Emoji
+    // 標題移除 Emoji
     document.getElementById('editorTitle').innerText = "編輯紀錄"; 
     document.getElementById('editorCard').classList.add('card-glow');
     document.getElementById('btnSave').innerText = "確認修改";
@@ -869,7 +836,7 @@ function resetEditor() {
     document.getElementById('inputDist').value = "";
     document.getElementById('inputHr').value = "";
     document.getElementById('inputMin').value = "";
-    // 移除 Emoji
+    // 標題移除 Emoji
     document.getElementById('editorTitle').innerText = "新增紀錄"; 
     document.getElementById('editorOilHint').classList.add('hidden');
     document.getElementById('editorCard').classList.remove('card-glow');
@@ -1200,13 +1167,13 @@ function updateChart() {
                     {
                         label: '淨利潤',
                         data: labels.map(l => groupedData[l].netProfit),
-                        backgroundColor: '#4CAF50', /* 柔和綠色 */
+                        backgroundColor: '#E8D9CE', /* 淨利使用暖白色 */
                         borderRadius: 4,
                     },
                     {
                         label: '總成本',
                         data: labels.map(l => groupedData[l].cost),
-                        backgroundColor: '#e57373', /* 柔和紅棕色 */
+                        backgroundColor: '#7F4F42', /* 成本使用深紅棕色 */
                         borderRadius: 4,
                     },
                 ]
@@ -1217,19 +1184,19 @@ function updateChart() {
                 scales: {
                     x: {
                         stacked: true,
-                        grid: { display: false, color: '#EFEAE4' }, 
-                        ticks: { color: '#888' }
+                        grid: { display: false, color: '#332A25' }, /* 網格線顏色調整 */
+                        ticks: { color: '#E8D9CE' } /* 座標軸文字顏色調整 */
                     },
                     y: {
                         stacked: true,
                         beginAtZero: true,
-                        grid: { color: '#EFEAE4' }, 
-                        ticks: { color: '#888' }
+                        grid: { color: '#443B33' }, /* 網格線顏色調整 */
+                        ticks: { color: '#E8D9CE' } /* 座標軸文字顏色調整 */
                     }
                 },
                 plugins: {
                     legend: {
-                        labels: { color: '#333' } 
+                        labels: { color: '#E8D9CE' } /* 圖例文字顏色調整 */
                     },
                     tooltip: {
                         callbacks: {
@@ -1254,9 +1221,9 @@ function updateChart() {
             data: {
                 labels: ['總淨利', '總油耗成本', '總耗材成本'],
                 datasets: [{
-                    // 顏色更新: 淨利(綠), 油耗(橘/金), 耗材(紅)
+                    // 顏色更新: 淨利(#E8D9CE), 油耗(#A07F6A), 耗材(#7F4F42)
                     data: [totalNetProfit, totalOilCost, totalMaintCost],
-                    backgroundColor: ['#4CAF50', '#ff9800', '#e57373'], 
+                    backgroundColor: ['#E8D9CE', '#A07F6A', '#7F4F42'], 
                     hoverOffset: 4
                 }]
             },
@@ -1266,7 +1233,7 @@ function updateChart() {
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: { color: '#333' } 
+                        labels: { color: '#E8D9CE' } /* 圖例文字顏色調整 */
                     },
                     tooltip: {
                         callbacks: {
