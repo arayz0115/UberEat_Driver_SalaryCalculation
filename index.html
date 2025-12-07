@@ -53,7 +53,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 0 0.5rem;
-        margin-top: 2rem;    /* 增加上方間距，解決擠壓感 */
+        margin-top: 2rem;
         margin-bottom: 0.75rem;
         cursor: pointer;
         user-select: none;
@@ -75,7 +75,7 @@
     .card {
         background-color: var(--card-bg);
         border: 1px solid white;
-        border-radius: 1.5rem; /* 更圓潤的導角 */
+        border-radius: 1.5rem;
         padding: 1.5rem;
         margin-bottom: 0.5rem;
         box-shadow: var(--shadow-soft);
@@ -83,7 +83,6 @@
         transition: box-shadow 0.3s ease;
     }
     
-    /* 展開時加重陰影，營造懸浮感 */
     .card:not(.collapsed) {
         box-shadow: var(--shadow-deep);
         border-color: var(--border-color);
@@ -114,7 +113,7 @@
         padding: 0.9rem 1rem;
         width: 100%;
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: 600; 
         transition: all 0.2s;
     }
     .input-field:focus { 
@@ -127,7 +126,7 @@
 
     /* === 按鈕 (主題色) === */
     .btn { 
-        width: 100%; padding: 1rem; border-radius: 0.85rem; font-weight: 600; 
+        width: 100%; padding: 1rem; border-radius: 0.85rem; font-weight: 500; 
         display: flex; justify-content: center; align-items: center; transition: 0.2s; letter-spacing: 0.5px;
     }
     .btn-primary { background-color: var(--text-primary); color: #F3F0EA; }
@@ -141,7 +140,8 @@
     .tab-scroll-content { display: flex; gap: 0.6rem; padding: 0 0.5rem; }
     .tab-btn {
         padding: 0.6rem 1.25rem; border-radius: 99px; font-size: 0.85rem; color: var(--text-secondary); 
-        background: #FFFFFF; border: 1px solid transparent; white-space: nowrap; font-weight: 600; transition: 0.2s;
+        background: #FFFFFF; border: 1px solid transparent; white-space: nowrap; font-weight: 500; 
+        transition: 0.2s;
         box-shadow: var(--shadow-soft);
     }
     .tab-btn.active { 
@@ -156,7 +156,11 @@
         margin-bottom: 1.5rem;
     }
     .hero-label { font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.5rem; }
-    .hero-value { font-size: 2.5rem; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -1px; }
+    .hero-value { 
+        font-size: 2.5rem; 
+        font-weight: 700;
+        color: var(--text-primary); line-height: 1; letter-spacing: -1px; 
+    }
 
     .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
     .stat-tile {
@@ -169,12 +173,16 @@
         text-align: center;
     }
     .tile-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.25rem; }
-    .tile-value { font-size: 1.25rem; color: var(--text-primary); font-weight: 700; }
+    .tile-value { 
+        font-size: 1.25rem; 
+        color: var(--text-primary); 
+        font-weight: 600; 
+    }
     
     .detail-list { display: flex; flex-direction: column; gap: 0.8rem; }
     .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
     .detail-key { color: var(--text-secondary); }
-    .detail-val { color: var(--text-primary); font-weight: 600; }
+    .detail-val { color: var(--text-primary); font-weight: 500; } 
 
     /* === 歷史列表 (去色化) === */
     .history-item {
@@ -184,7 +192,11 @@
     }
     .history-item:last-child { border-bottom: none; }
     .history-date { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.25rem; }
-    .history-income { font-size: 1.1rem; color: var(--text-primary); font-weight: 700; }
+    .history-income { 
+        font-size: 1.1rem; 
+        color: var(--text-primary); 
+        font-weight: 600; 
+    }
     .history-sub { font-size: 0.85rem; color: var(--text-secondary); }
     
     /* === Footer === */
@@ -196,7 +208,7 @@
     <div class="flex justify-between items-center mb-2 px-1 pt-4">
         <div>
             <h1 class="text-2xl font-bold text-[#433E3F] tracking-tight">UBE 薪資計算器</h1>
-            <div class="text-xs text-[#8C8788] font-medium tracking-wide">V3.1 極致米色版</div>
+            <div class="text-xs text-[#8C8788] font-medium tracking-wide">V3.1</div>
         </div>
         <div class="flex gap-3">
             <button onclick="toggleAuthPanel()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm border border-[#EBE8E3] text-[#8C8788] active:scale-95 transition">☁️</button>
@@ -441,7 +453,7 @@
 
     <div class="footer-credit">
         <div>UBE 薪資計算器 V3.1</div>
-        <div class="mt-1">Ray 開發 © 2025</div>
+        <div class="mt-1">Developed by Ray © 2025</div>
     </div>
 
 <script>
@@ -837,7 +849,7 @@ function refreshDashboard() {
     document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
     document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
 
-    // *************** 歷史列表 HTML 結構 (已修正並加入所有缺失的數據) ***************
+    // *************** 歷史列表 HTML 結構 ***************
     const listHtml = filtered.map(r => `
         <div class="history-item" id="item-${r.id}">
             <div class="flex flex-col cursor-pointer" onclick="toggleHistoryDetails(${r.id});">
@@ -865,17 +877,17 @@ function refreshDashboard() {
                         <span class="detail-val text-[#8C8788]">$${formatCurrency(r.totalCost)}</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-key">距離 (公里)</span>
+                        <span class="detail-key">距離</span>
                         <span class="detail-val">${r.km.toFixed(1)} km</span>
                     </div>
 
                     <div class="w-full h-px bg-[#EBE8E3] my-2"></div>
                     <div class="detail-row">
-                        <span class="detail-key">實質時薪 (淨利)</span>
+                        <span class="detail-key">實質時薪</span>
                         <span class="detail-val">$${formatCurrency(r.netHourly)}</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-key">總時薪 (收入)</span>
+                        <span class="detail-key">總時薪</span>
                         <span class="detail-val text-[#8C8788]">$${formatCurrency(r.grossHourly)}</span>
                     </div>
                     
@@ -885,7 +897,7 @@ function refreshDashboard() {
                         <span class="detail-val">$${formatCurrency(r.netPerOrder)}</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-key">每單收入 (營收)</span>
+                        <span class="detail-key">每單收入</span>
                         <span class="detail-val text-[#8C8788]">$${formatCurrency(r.grossPerOrder)}</span>
                     </div>
                     
