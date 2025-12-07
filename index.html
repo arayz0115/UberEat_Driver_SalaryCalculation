@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UBE 薪資計算器 V3.1</title>
+<title>UBE 薪資計算器 V3.2</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#F3F0EA">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732200.png">
 
-<meta property="og:title" content="UBE 薪資計算器 V3.1" />
-<meta property="og:description" content="UBE 外送薪資計算器 V3.1，極簡 Beige 風格，深度優化 UI。" />
+<meta property="og:title" content="UBE 薪資計算器 V3.2" />
+<meta property="og:description" content="UBE 外送薪資計算器 V3.2，極簡 Beige 風格，深度優化 UI。" />
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -60,7 +60,8 @@
     }
     .section-title {
         font-size: 0.9rem;
-        font-weight: 700;
+        /* 修正 1: 標題字重從 700 調整為 600 */
+        font-weight: 600; 
         color: var(--text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.08em;
@@ -113,7 +114,8 @@
         padding: 0.9rem 1rem;
         width: 100%;
         font-size: 1rem;
-        font-weight: 600; 
+        /* 修正 1: 輸入框內文字字重從 600 調整為 500 */
+        font-weight: 500; 
         transition: all 0.2s;
     }
     .input-field:focus { 
@@ -126,6 +128,7 @@
 
     /* === 按鈕 (主題色) === */
     .btn { 
+        /* 按鈕文字字重保持 500 (Medium) */
         width: 100%; padding: 1rem; border-radius: 0.85rem; font-weight: 500; 
         display: flex; justify-content: center; align-items: center; transition: 0.2s; letter-spacing: 0.5px;
     }
@@ -139,6 +142,7 @@
     .tab-scroll-container::-webkit-scrollbar { display: none; }
     .tab-scroll-content { display: flex; gap: 0.6rem; padding: 0 0.5rem; }
     .tab-btn {
+        /* Tab 文字字重保持 500 (Medium) */
         padding: 0.6rem 1.25rem; border-radius: 99px; font-size: 0.85rem; color: var(--text-secondary); 
         background: #FFFFFF; border: 1px solid transparent; white-space: nowrap; font-weight: 500; 
         transition: 0.2s;
@@ -158,7 +162,8 @@
     .hero-label { font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.5rem; }
     .hero-value { 
         font-size: 2.5rem; 
-        font-weight: 700;
+        /* 修正 1: 總值字重從 700 調整為 600 */
+        font-weight: 600;
         color: var(--text-primary); line-height: 1; letter-spacing: -1px; 
     }
 
@@ -172,16 +177,23 @@
         align-items: center;
         text-align: center;
     }
-    .tile-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.25rem; }
+    .tile-label { 
+        font-size: 0.75rem; color: var(--text-secondary); 
+        /* 修正 1: 標籤字重從 600 調整為 500 */
+        font-weight: 500; 
+        margin-bottom: 0.25rem; 
+    }
     .tile-value { 
         font-size: 1.25rem; 
         color: var(--text-primary); 
-        font-weight: 600; 
+        /* 修正 1: 數值字重從 600 調整為 500 */
+        font-weight: 500; 
     }
     
     .detail-list { display: flex; flex-direction: column; gap: 0.8rem; }
     .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
     .detail-key { color: var(--text-secondary); }
+    /* 詳細列表數值字重保持 500 (Medium) */
     .detail-val { color: var(--text-primary); font-weight: 500; } 
 
     /* === 歷史列表 (去色化) === */
@@ -191,11 +203,17 @@
         padding: 1.25rem 1rem;
     }
     .history-item:last-child { border-bottom: none; }
-    .history-date { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 0.25rem; }
+    .history-date { 
+        font-size: 0.75rem; color: var(--text-secondary); 
+        /* 修正 1: 日期字重從 600 調整為 500 */
+        font-weight: 500; 
+        margin-bottom: 0.25rem; 
+    }
     .history-income { 
         font-size: 1.1rem; 
         color: var(--text-primary); 
-        font-weight: 600; 
+        /* 修正 1: 金額字重從 600 調整為 500 */
+        font-weight: 500; 
     }
     .history-sub { font-size: 0.85rem; color: var(--text-secondary); }
     
@@ -208,7 +226,7 @@
     <div class="flex justify-between items-center mb-2 px-1 pt-4">
         <div>
             <h1 class="text-2xl font-bold text-[#433E3F] tracking-tight">UBE 薪資計算器</h1>
-            <div class="text-xs text-[#8C8788] font-medium tracking-wide">V3.1</div>
+            <div class="text-xs text-[#8C8788] font-medium tracking-wide">V3.2</div>
         </div>
         <div class="flex gap-3">
             <button onclick="toggleAuthPanel()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm border border-[#EBE8E3] text-[#8C8788] active:scale-95 transition">☁️</button>
@@ -222,7 +240,7 @@
             <span class="toggle-icon" id="authIcon">▼</span>
         </div>
         <div id="authPanel" class="card hidden"> 
-            <h3 class="text-[#433E3F] font-bold mb-4 text-sm uppercase tracking-wider text-center">Firebase 雲端同步</h3>
+            <h3 class="text-[#433E3F] font-semibold mb-4 text-sm uppercase tracking-wider text-center">Firebase 雲端同步</h3>
             <div id="authContent">
                 <div id="authForm" class="flex flex-col gap-3 mb-2">
                     <input id="authEmail" type="email" class="input-field" placeholder="電子郵件地址" />
@@ -452,7 +470,7 @@
     </div>
 
     <div class="footer-credit">
-        <div>UBE 薪資計算器 V3.1</div>
+        <div>UBE 薪資計算器 V3.2</div>
         <div class="mt-1">Developed by Ray © 2025</div>
     </div>
 
