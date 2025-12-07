@@ -545,7 +545,7 @@ function loadCollapseStates() {
     }
 }
 
-// *************** 【修改點 1: 歷史紀錄可下拉式顯示】 ***************
+// 修正後的下拉功能
 function toggleHistoryDetails(id) {
     const content = document.getElementById(`detail-${id}`);
     const icon = document.getElementById(`icon-detail-${id}`);
@@ -559,7 +559,6 @@ function toggleHistoryDetails(id) {
         icon.style.transform = "rotate(0deg)";
     }
 }
-// ***************************************************************
 
 // === Firebase ===
 function setupRealtimeListener(user) {
@@ -590,7 +589,7 @@ function toggleAuthPanel() {
 function registerUser() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
-    if (email.length < 5 || password.length < 6) return alert("Invalid Format");
+    if (email.length < 5 || password.length < 6) return alert("輸入格式錯誤"); // 翻譯
     firebase.auth().createUserWithEmailAndPassword(email, password)
         .then(() => document.getElementById('authPanel').classList.add('hidden'))
         .catch(e => alert(e.message));
@@ -607,13 +606,13 @@ function logoutUser() {
     firebase.auth().signOut().then(() => {
         localStorage.removeItem('uber_ray_v1');
         document.getElementById('authPanel').classList.add('hidden');
-        alert("已登出"); // 翻譯: 已登出
+        alert("已登出"); 
     });
 }
 function resetPassword() {
     const email = document.getElementById('authEmail').value;
-    if (!email) return alert("請輸入電子郵件"); // 翻譯: Enter Email
-    firebase.auth().sendPasswordResetEmail(email).then(() => alert("已發送重設郵件")).catch(e => alert(e.message)); // 翻譯: Email Sent
+    if (!email) return alert("請輸入電子郵件"); 
+    firebase.auth().sendPasswordResetEmail(email).then(() => alert("已發送重設郵件")).catch(e => alert(e.message)); 
 }
 async function uploadHistory(data, user) {
     user = user || firebase.auth().currentUser;
@@ -672,8 +671,8 @@ function saveRecord() {
     const editId = document.getElementById('editId').value;
     const lockedOil = document.getElementById('recordOilPrice').value;
 
-    if(!date) return alert('請選擇日期'); // 翻譯: Date required
-    if(isNaN(income) || isNaN(km)) return alert('請輸入收入及距離'); // 翻譯: Income/Dist required
+    if(!date) return alert('請選擇日期'); 
+    if(isNaN(income) || isNaN(km)) return alert('請輸入收入及距離'); 
 
     const finalOil = (editId && lockedOil) ? parseFloat(lockedOil) : globalOilPrice;
     const rec = {
@@ -717,9 +716,9 @@ function loadRecordToEditor(id) {
 
     const hint = document.getElementById('editorOilHint');
     hint.classList.remove('hidden');
-    hint.innerText = `鎖定油價: $${r.oilPrice||globalOilPrice}`; // 翻譯: Locked:
+    hint.innerText = `鎖定油價: $${r.oilPrice||globalOilPrice}`; 
     
-    document.getElementById('btnSave').innerText = "更新紀錄"; // 翻譯: Update
+    document.getElementById('btnSave').innerText = "更新紀錄"; 
     document.getElementById('btnDelete').classList.remove('hidden');
     document.getElementById('btnCancel').classList.remove('hidden');
     document.getElementById('editorWrapper').scrollIntoView({behavior:'smooth'});
@@ -745,7 +744,7 @@ function resetEditor() {
     document.getElementById('inputHr').value = "";
     document.getElementById('inputMin').value = "";
     document.getElementById('editorOilHint').classList.add('hidden');
-    document.getElementById('btnSave').innerText = "儲存紀錄"; // 翻譯: Save Record
+    document.getElementById('btnSave').innerText = "儲存紀錄"; 
     document.getElementById('btnDelete').classList.add('hidden');
     document.getElementById('btnCancel').classList.add('hidden');
 }
@@ -824,7 +823,7 @@ function refreshDashboard() {
     const totalGrossPerOrder = totals.totalOrders > 0 ? totals.totalIncome / totals.totalOrders : 0;
     const totalNetPerOrder = totals.totalOrders > 0 ? totals.netProfit / totals.totalOrders : 0;
 
-    // 更新儀表板 (統一色系，移除綠/紅)
+    // 更新儀表板
     document.getElementById('dashTotalIncome').innerText = formatCurrency(totals.totalIncome);
     document.getElementById('dashTotalCost').innerText = formatCurrency(totals.totalCost);
     document.getElementById('dashNetProfit').innerText = formatCurrency(totals.netProfit);
@@ -838,7 +837,7 @@ function refreshDashboard() {
     document.getElementById('dashGrossPerOrder').innerText = formatCurrency(totalGrossPerOrder);
     document.getElementById('dashNetPerOrder').innerText = formatCurrency(totalNetPerOrder);
 
-    // *************** 【修改點 2: 更新歷史列表 HTML 結構 (可下拉、中文翻譯)】 ***************
+    // *************** 歷史列表 HTML 結構 (已修正並加入所有缺失的數據) ***************
     const listHtml = filtered.map(r => `
         <div class="history-item" id="item-${r.id}">
             <div class="flex flex-col cursor-pointer" onclick="toggleHistoryDetails(${r.id});">
@@ -851,26 +850,53 @@ function refreshDashboard() {
                 </div>
                 <div class="flex justify-between items-center">
                     <div class="flex gap-2 text-xs text-[#8C8788] font-medium">
-                        <span>${r.orders} 單</span> <span>•</span>
+                        <span>${r.orders} 單</span>
+                        <span>•</span>
                         <span>${formatDuration(r.hours)}</span>
                     </div>
-                    <span class="text-sm font-bold text-[#433E3F]">淨利: $${formatCurrency(r.netProfit)}</span> </div>
+                    <span class="text-sm font-bold text-[#433E3F]">淨利: $${formatCurrency(r.netProfit)}</span>
+                </div>
             </div>
             
             <div class="hidden pt-4 mt-3 border-t border-[#EBE8E3]" id="detail-${r.id}">
                 <div class="detail-list">
                     <div class="detail-row">
-                        <span class="detail-key">實質時薪</span> <span class="detail-val">$${formatCurrency(r.netHourly)}</span>
+                        <span class="detail-key">總成本</span>
+                        <span class="detail-val text-[#8C8788]">$${formatCurrency(r.totalCost)}</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-key">總時薪</span> <span class="detail-val text-[#8C8788]">$${formatCurrency(r.grossHourly)}</span>
+                        <span class="detail-key">距離 (公里)</span>
+                        <span class="detail-val">${r.km.toFixed(1)} km</span>
                     </div>
-                    <div class="w-full h-px bg-[#EBE8E3] my-1"></div>
+
+                    <div class="w-full h-px bg-[#EBE8E3] my-2"></div>
                     <div class="detail-row">
-                        <span class="detail-key">燃油成本</span> <span class="detail-val text-[#8C8788]">-$${formatCurrency(r.oilCost)}</span>
+                        <span class="detail-key">實質時薪 (淨利)</span>
+                        <span class="detail-val">$${formatCurrency(r.netHourly)}</span>
                     </div>
                     <div class="detail-row">
-                        <span class="detail-key">保養成本</span> <span class="detail-val text-[#8C8788]">-$${formatCurrency(r.maintenanceCost)}</span>
+                        <span class="detail-key">總時薪 (收入)</span>
+                        <span class="detail-val text-[#8C8788]">$${formatCurrency(r.grossHourly)}</span>
+                    </div>
+                    
+                    <div class="w-full h-px bg-[#EBE8E3] my-2"></div>
+                    <div class="detail-row">
+                        <span class="detail-key">每單淨利</span>
+                        <span class="detail-val">$${formatCurrency(r.netPerOrder)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-key">每單收入 (營收)</span>
+                        <span class="detail-val text-[#8C8788]">$${formatCurrency(r.grossPerOrder)}</span>
+                    </div>
+                    
+                    <div class="w-full h-px bg-[#EBE8E3] my-2"></div>
+                    <div class="detail-row">
+                        <span class="detail-key">燃油成本</span>
+                        <span class="detail-val text-[#8C8788]">-$${formatCurrency(r.oilCost)}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-key">保養成本</span>
+                        <span class="detail-val text-[#8C8788]">-$${formatCurrency(r.maintenanceCost)}</span>
                     </div>
                 </div>
                 <button onclick="loadRecordToEditor(${r.id}); event.stopPropagation();" class="mt-4 w-full bg-[#F7F5F2] text-[#8C8788] text-sm font-semibold py-2 rounded-lg active:scale-[0.99] transition">編輯紀錄</button>
@@ -955,14 +981,14 @@ function updateChart() {
                 labels: labels,
                 datasets: [
                     {
-                        label: '淨利潤', // 翻譯: Net Profit
+                        label: '淨利潤', 
                         data: labels.map(l => groupedData[l].netProfit),
                         backgroundColor: colorPrimary,
                         borderRadius: 4,
                         barPercentage: 0.6
                     },
                     {
-                        label: '成本', // 翻譯: Cost
+                        label: '成本', 
                         data: labels.map(l => groupedData[l].cost),
                         backgroundColor: colorSecondary,
                         borderRadius: 4,
@@ -987,7 +1013,7 @@ function updateChart() {
         chartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['淨利潤', '燃油', '保養'], // 翻譯: Net Profit, Fuel, Maint.
+                labels: ['淨利潤', '燃油', '保養'], 
                 datasets: [{
                     data: [totalProfit, totalOil, totalMaint],
                     backgroundColor: [colorPrimary, '#A8A29E', '#E7E5E4'],
