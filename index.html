@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>UBE 薪資計算器 V3.2</title>
+<title>UBE 薪資計算器 V3.2 (自助加油版)</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -60,7 +60,6 @@
     }
     .section-title {
         font-size: 0.9rem;
-        /* 修正 1: 標題字重從 700 調整為 600 */
         font-weight: 600; 
         color: var(--text-secondary);
         text-transform: uppercase;
@@ -114,7 +113,6 @@
         padding: 0.9rem 1rem;
         width: 100%;
         font-size: 1rem;
-        /* 修正 1: 輸入框內文字字重從 600 調整為 500 */
         font-weight: 500; 
         transition: all 0.2s;
     }
@@ -128,7 +126,6 @@
 
     /* === 按鈕 (主題色) === */
     .btn { 
-        /* 按鈕文字字重保持 500 (Medium) */
         width: 100%; padding: 1rem; border-radius: 0.85rem; font-weight: 500; 
         display: flex; justify-content: center; align-items: center; transition: 0.2s; letter-spacing: 0.5px;
     }
@@ -142,7 +139,6 @@
     .tab-scroll-container::-webkit-scrollbar { display: none; }
     .tab-scroll-content { display: flex; gap: 0.6rem; padding: 0 0.5rem; }
     .tab-btn {
-        /* Tab 文字字重保持 500 (Medium) */
         padding: 0.6rem 1.25rem; border-radius: 99px; font-size: 0.85rem; color: var(--text-secondary); 
         background: #FFFFFF; border: 1px solid transparent; white-space: nowrap; font-weight: 500; 
         transition: 0.2s;
@@ -162,7 +158,6 @@
     .hero-label { font-size: 0.8rem; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0.5rem; }
     .hero-value { 
         font-size: 2.5rem; 
-        /* 修正 1: 總值字重從 700 調整為 600 */
         font-weight: 600;
         color: var(--text-primary); line-height: 1; letter-spacing: -1px; 
     }
@@ -179,21 +174,18 @@
     }
     .tile-label { 
         font-size: 0.75rem; color: var(--text-secondary); 
-        /* 修正 1: 標籤字重從 600 調整為 500 */
         font-weight: 500; 
         margin-bottom: 0.25rem; 
     }
     .tile-value { 
         font-size: 1.25rem; 
         color: var(--text-primary); 
-        /* 修正 1: 數值字重從 600 調整為 500 */
         font-weight: 500; 
     }
     
     .detail-list { display: flex; flex-direction: column; gap: 0.8rem; }
     .detail-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
     .detail-key { color: var(--text-secondary); }
-    /* 詳細列表數值字重保持 500 (Medium) */
     .detail-val { color: var(--text-primary); font-weight: 500; } 
 
     /* === 歷史列表 (去色化) === */
@@ -205,14 +197,12 @@
     .history-item:last-child { border-bottom: none; }
     .history-date { 
         font-size: 0.75rem; color: var(--text-secondary); 
-        /* 修正 1: 日期字重從 600 調整為 500 */
         font-weight: 500; 
         margin-bottom: 0.25rem; 
     }
     .history-income { 
         font-size: 1.1rem; 
         color: var(--text-primary); 
-        /* 修正 1: 金額字重從 600 調整為 500 */
         font-weight: 500; 
     }
     .history-sub { font-size: 0.85rem; color: var(--text-secondary); }
@@ -226,7 +216,7 @@
     <div class="flex justify-between items-center mb-2 px-1 pt-4">
         <div>
             <h1 class="text-2xl font-bold text-[#433E3F] tracking-tight">UBE 薪資計算器</h1>
-            <div class="text-xs text-[#8C8788] font-medium tracking-wide">V3.2</div>
+            <div class="text-xs text-[#8C8788] font-medium tracking-wide">V3.2 (Self-Service)</div>
         </div>
         <div class="flex gap-3">
             <button onclick="toggleAuthPanel()" class="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm border border-[#EBE8E3] text-[#8C8788] active:scale-95 transition">☁️</button>
@@ -267,9 +257,13 @@
                     <label class="text-xs text-[#8C8788] font-bold mb-1 block uppercase pl-1">油品種類</label>
                     <select id="oilType" class="input-field" onchange="fetchOilPrice()">
                         <option value="92">92 無鉛汽油</option>
+                        <option value="92_self">92 無鉛汽油 (自助)</option>
                         <option value="95">95 無鉛汽油</option>
+                        <option value="95_self">95 無鉛汽油 (自助)</option>
                         <option value="98">98 無鉛汽油</option>
+                        <option value="98_self">98 無鉛汽油 (自助)</option>
                         <option value="diesel">柴油</option>
+                        <option value="diesel_self">柴油 (自助)</option>
                     </select>
                 </div>
                 <div>
@@ -575,17 +569,14 @@ function loadCollapseStates() {
     }
 }
 
-// 修正後的下拉功能
 function toggleHistoryDetails(id) {
     const content = document.getElementById(`detail-${id}`);
     const icon = document.getElementById(`icon-detail-${id}`);
     if (content.classList.contains('hidden')) {
         content.classList.remove('hidden');
-        // 箭頭從右 (0度) 轉到下 (90度)
         icon.style.transform = "rotate(90deg)";
     } else {
         content.classList.add('hidden');
-        // 箭頭從下 (90度) 轉回右 (0度)
         icon.style.transform = "rotate(0deg)";
     }
 }
@@ -619,7 +610,7 @@ function toggleAuthPanel() {
 function registerUser() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
-    if (email.length < 5 || password.length < 6) return alert("輸入格式錯誤"); // 翻譯
+    if (email.length < 5 || password.length < 6) return alert("輸入格式錯誤"); 
     firebase.auth().createUserWithEmailAndPassword(email, password)
         .then(() => document.getElementById('authPanel').classList.add('hidden'))
         .catch(e => alert(e.message));
@@ -673,16 +664,47 @@ function toggleSettings() {
     document.getElementById('settingsHeader').classList.toggle('hidden');
 }
 
+// === Updated fetchOilPrice (Self-Service Logic) ===
 async function fetchOilPrice() {
+    const DISCOUNTS = {
+        gas: 0.8,
+        diesel: 0.3
+    };
+
     try {
-        const type = document.getElementById('oilType').value;
+        const typeSelect = document.getElementById('oilType').value;
+        document.getElementById('oilPriceDisplay').innerText = "讀取中...";
+        
         const res = await fetch(workerAPI);
         const data = await res.json();
-        if(data[type]) {
-            globalOilPrice = parseFloat(data[type]);
-            document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice}`;
+        
+        let finalPrice = 0;
+        
+        if (typeSelect.endsWith('_self')) {
+            const baseType = typeSelect.replace('_self', '');
+            
+            if (data[typeSelect]) {
+                finalPrice = parseFloat(data[typeSelect]);
+            } else if (data[baseType]) {
+                const basePrice = parseFloat(data[baseType]);
+                const discount = baseType === 'diesel' ? DISCOUNTS.diesel : DISCOUNTS.gas;
+                finalPrice = Math.round((basePrice - discount) * 10) / 10;
+            }
+        } else {
+            if (data[typeSelect]) {
+                finalPrice = parseFloat(data[typeSelect]);
+            }
         }
+
+        if (finalPrice > 0) {
+            globalOilPrice = finalPrice;
+            document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice}`;
+        } else {
+             document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice} (未更新)`;
+        }
+
     } catch(e) { 
+        console.error("油價讀取失敗", e);
         document.getElementById('oilPriceDisplay').innerText = `$${globalOilPrice}`;
     }
 }
@@ -939,7 +961,6 @@ function refreshDashboard() {
             尚無紀錄
         </div>
     `;
-    // ***************************************************************
 
     if (!document.getElementById('chartsPanel').classList.contains('hidden')) updateChart();
 }
@@ -963,7 +984,6 @@ function toggleCharts() {
 }
 function switchChartType(type) {
     chartType = type;
-    // 按鈕樣式切換 logic
     const activeClass = "bg-white text-[#433E3F] shadow-sm";
     const inactiveClass = "text-[#8C8788]";
     
@@ -1000,7 +1020,6 @@ function updateChart() {
 
     const labels = Object.keys(groupedData).sort();
 
-    // Chart Colors (Monochrome Theme)
     const colorPrimary = '#433E3F';
     const colorSecondary = '#D6D3D1';
 
